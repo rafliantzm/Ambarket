@@ -1,4 +1,4 @@
-name: Ambarket Android Release Build
+﻿name: Ambarket Android Release Build
 
 on:
   workflow_dispatch:
@@ -14,6 +14,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Verify project structure
+        run: |
+          pwd
+          ls -la
+          ls -la ambarket_mobile
+          test -f ambarket_mobile/pubspec.yaml
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -27,9 +34,11 @@ jobs:
           cache: true
 
       - name: Flutter version
+        working-directory: ambarket_mobile
         run: flutter --version
 
       - name: Create env file
+        working-directory: ambarket_mobile
         run: |
           cat > .env <<EOF
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
@@ -37,28 +46,33 @@ jobs:
           EOF
 
       - name: Install dependencies
+        working-directory: ambarket_mobile
         run: flutter pub get
 
       - name: Analyze
+        working-directory: ambarket_mobile
         run: flutter analyze
 
       - name: Test
+        working-directory: ambarket_mobile
         run: flutter test
 
       - name: Build APK release
+        working-directory: ambarket_mobile
         run: flutter build apk --release
 
       - name: Build AppBundle release
+        working-directory: ambarket_mobile
         run: flutter build appbundle --release
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ambarket-rc1-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: ambarket_mobile/build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: ambarket-rc1-aab
-          path: build/app/outputs/bundle/release/app-release.aab
+          path: ambarket_mobile/build/app/outputs/bundle/release/app-release.aab
