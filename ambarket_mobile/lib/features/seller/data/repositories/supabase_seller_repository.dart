@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../marketplace/domain/models/product_model.dart';
 import '../../domain/models/create_product_input.dart';
 import '../../domain/repositories/seller_repository.dart';
+import '../../domain/models/seller_dashboard_stats.dart';
+import '../../../order/domain/models/order_model.dart';
+import '../../../offer/domain/models/offer_model.dart';
 
 class SupabaseSellerRepository implements SellerRepository {
   final SupabaseClient _client;
@@ -166,5 +169,81 @@ class SupabaseSellerRepository implements SellerRepository {
         .from('product_images')
         .delete()
         .eq('id', imageId);
+  }
+
+  @override
+  Future<SellerDashboardStats> fetchSellerDashboardStats(String sellerId) async {
+    // Products counts
+    final activeProductsRes = await _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'available').count(CountOption.exact);
+    final soldProductsRes = await _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'sold').count(CountOption.exact);
+    final reservedProductsRes = await _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'reserved').count(CountOption.exact);
+
+    // Orders counts
+    final pendingOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'pending_payment').count(CountOption.exact);
+    final paidOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'paid').count(CountOption.exact);
+    final packedOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'packed').count(CountOption.exact);
+    final shippedOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'shipped').count(CountOption.exact);
+    final completedOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'completed').count(CountOption.exact);
+
+    // Offers counts
+    final pendingOffersRes = await _client.from('offers').select('id').eq('seller_id', sellerId).eq('status', 'pending').count(CountOption.exact);
+
+    // Total revenue from completed orders
+    final completedOrdersData = await _client.from('orders').select('total_price').eq('seller_id', sellerId).eq('status', 'completed');
+    double revenue = 0.0;
+    for (var row in completedOrdersData) {
+      if (row['total_price'] != null) {
+        revenue += (row['total_price'] as num).toDouble();
+      }
+    }
+
+    // Rating
+    // If we have reviews table we could query it. Assuming we don't have direct access or it's heavy, we default to 0 for now
+    // If we have a 'profiles' or 'seller_profiles' rating, we could fetch it.
+    final profileData = await _client.from('profiles').select('rating, total_reviews').eq('id', sellerId).maybeSingle();
+    double avgRating = 0.0;
+    int reviewsCount = 0;
+    if (profileData != null) {
+      if (profileData['rating'] != null) avgRating = (profileData['rating'] as num).toDouble();
+      if (profileData['total_reviews'] != null) reviewsCount = profileData['total_reviews'] as int;
+    }
+
+    return SellerDashboardStats(
+      activeProductsCount: activeProductsRes.count,
+      soldProductsCount: soldProductsRes.count,
+      reservedProductsCount: reservedProductsRes.count,
+      pendingOrdersCount: pendingOrdersRes.count,
+      paidOrdersCount: paidOrdersRes.count,
+      packedOrdersCount: packedOrdersRes.count,
+      shippedOrdersCount: shippedOrdersRes.count,
+      completedOrdersCount: completedOrdersRes.count,
+      pendingOffersCount: pendingOffersRes.count,
+      averageRating: avgRating,
+      totalReviews: reviewsCount,
+      totalRevenueDummy: revenue,
+    );
+  }
+
+  @override
+  Future<List<OrderModel>> fetchRecentSellerOrders(String sellerId, {int limit = 5}) async {
+    final response = await _client
+        .from('orders')
+        .select()
+        .eq('seller_id', sellerId)
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return (response as List).map((json) => OrderModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<List<OfferModel>> fetchRecentSellerOffers(String sellerId, {int limit = 5}) async {
+    final response = await _client
+        .from('offers')
+        .select()
+        .eq('seller_id', sellerId)
+        .eq('status', 'pending') // Usually recent offers are pending offers that need action
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return (response as List).map((json) => OfferModel.fromJson(json)).toList();
   }
 }

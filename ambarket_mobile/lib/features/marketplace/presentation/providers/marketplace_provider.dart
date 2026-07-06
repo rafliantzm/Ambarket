@@ -149,6 +149,13 @@ final productDetailProvider = FutureProvider.family<ProductModel, String>((ref, 
   return repo.fetchProductDetail(id);
 });
 
+// Related Products Provider
+// Takes a tuple of (productId, categoryId)
+final relatedProductsProvider = FutureProvider.family<List<ProductModel>, ({String productId, String categoryId})>((ref, args) async {
+  final repo = ref.watch(marketplaceRepositoryProvider);
+  return repo.fetchRelatedProducts(args.productId, args.categoryId);
+});
+
 // Wishlist Product IDs Provider
 class WishlistNotifier extends AsyncNotifier<Set<String>> {
   late final MarketplaceRepository _repo;

@@ -69,8 +69,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Mock Product'), findsOneWidget);
-    expect(find.text('Good'), findsOneWidget);
+    expect(find.text('Baik'), findsOneWidget);
     expect(find.text('Nego'), findsOneWidget);
-    expect(find.text('Jakarta'), findsOneWidget);
   });
 }

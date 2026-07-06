@@ -6,6 +6,10 @@ import '../../data/repositories/supabase_seller_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../marketplace/domain/models/product_model.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../../domain/models/seller_dashboard_stats.dart';
+import '../../../order/domain/models/order_model.dart';
+import '../../../offer/domain/models/offer_model.dart';
+
 
 // Seller Repository Provider
 final sellerRepositoryProvider = Provider<SellerRepository>((ref) {
@@ -129,4 +133,28 @@ class ProductActionController extends AsyncNotifier<void> {
 
 final productActionControllerProvider = AsyncNotifierProvider<ProductActionController, void>(() {
   return ProductActionController();
+});
+
+
+// Phase 8E.1 Dashboard Providers
+
+final sellerDashboardStatsProvider = FutureProvider.autoDispose<SellerDashboardStats>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) throw Exception('User not logged in');
+  final repo = ref.watch(sellerRepositoryProvider);
+  return repo.fetchSellerDashboardStats(user.id);
+});
+
+final sellerRecentOrdersProvider = FutureProvider.autoDispose<List<OrderModel>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) throw Exception('User not logged in');
+  final repo = ref.watch(sellerRepositoryProvider);
+  return repo.fetchRecentSellerOrders(user.id, limit: 5);
+});
+
+final sellerRecentOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) throw Exception('User not logged in');
+  final repo = ref.watch(sellerRepositoryProvider);
+  return repo.fetchRecentSellerOffers(user.id, limit: 5);
 });

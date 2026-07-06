@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ambarket_mobile/features/seller/presentation/screens/seller_dashboard_screen.dart';
 import 'package:ambarket_mobile/features/seller/presentation/providers/seller_provider.dart';
 import 'package:ambarket_mobile/features/marketplace/domain/models/product_model.dart';
-import 'dart:async';
+import 'package:ambarket_mobile/features/profile/presentation/providers/profile_provider.dart';
+import 'package:ambarket_mobile/features/profile/domain/models/profile_model.dart';
+import 'package:ambarket_mobile/features/seller/domain/models/seller_dashboard_stats.dart';
 
 class MockMyProductsNotifier extends MyProductsNotifier {
   final List<ProductModel> _products;
@@ -17,11 +20,32 @@ class MockMyProductsNotifier extends MyProductsNotifier {
 }
 
 void main() {
+  final mockUser = ProfileModel(
+    id: 'user1',
+    
+    name: 'Test Seller',
+    username: 'testseller',
+    role: 'seller',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  );
+
+  final mockStats = SellerDashboardStats(
+    activeProductsCount: 10,
+    pendingOrdersCount: 2,
+    totalRevenueDummy: 1500000,
+    averageRating: 4.8,
+  );
+
   group('SellerDashboardScreen Tests', () {
-    testWidgets('renders empty state when no products', (WidgetTester tester) async {
+    testWidgets('renders header, stats, and quick actions', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            currentProfileProvider.overrideWith((ref) => mockUser),
+            sellerDashboardStatsProvider.overrideWith((ref) => mockStats),
+            sellerRecentOrdersProvider.overrideWith((ref) => []),
+            sellerRecentOffersProvider.overrideWith((ref) => []),
             myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
           ],
           child: const MaterialApp(
@@ -30,46 +54,38 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Anda belum memiliki produk'), findsOneWidget);
-      expect(find.text('Tambah Produk'), findsWidgets);
+      // Header
+      expect(find.text('Test Seller'), findsOneWidget);
+      expect(find.text('@testseller'), findsOneWidget);
+      expect(find.text('Terverifikasi'), findsOneWidget);
+
+      // Quick Actions
+      expect(find.text('Aksi Cepat'), findsOneWidget);
+      expect(find.text('Tambah Produk'), findsWidgets); // Header button + quick action
+      expect(find.text('Pesanan'), findsOneWidget);
+
+      // Stats Grid
+      expect(find.text('Ringkasan Performa'), findsOneWidget);
+      expect(find.text('Produk Aktif'), findsOneWidget);
+      expect(find.text('10'), findsOneWidget);
+      expect(find.text('Pesanan Baru'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('Rp1.500.000'), findsOneWidget);
+      expect(find.text('4.8'), findsOneWidget);
     });
 
-    testWidgets('renders products and stats correctly', (WidgetTester tester) async {
-      final mockProducts = [
-        ProductModel(
-          id: '1',
-          sellerId: 'user1',
-          categoryId: 'cat1',
-          title: 'Laptop Bekas',
-          description: 'Masih bagus',
-          price: 5000000,
-          condition: 'good',
-          location: 'Jakarta',
-          isNegotiable: true,
-          status: 'active',
-          createdAt: DateTime.now(),
-        ),
-        ProductModel(
-          id: '2',
-          sellerId: 'user1',
-          categoryId: 'cat1',
-          title: 'HP Rusak',
-          description: 'Minus LCD',
-          price: 500000,
-          condition: 'need_repair',
-          location: 'Jakarta',
-          isNegotiable: false,
-          status: 'sold',
-          createdAt: DateTime.now(),
-        ),
-      ];
-
+    testWidgets('renders recent orders and offers empty states', (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            myProductsProvider.overrideWith(() => MockMyProductsNotifier(mockProducts)),
+            currentProfileProvider.overrideWith((ref) => mockUser),
+            sellerDashboardStatsProvider.overrideWith((ref) => mockStats),
+            sellerRecentOrdersProvider.overrideWith((ref) => []),
+            sellerRecentOffersProvider.overrideWith((ref) => []),
+            myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
           ],
           child: const MaterialApp(
             home: SellerDashboardScreen(),
@@ -77,64 +93,38 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
-      // Stats
-      expect(find.text('2'), findsOneWidget); // Total
-      expect(find.text('1'), findsNWidgets(2)); // Active and Sold (both have 1)
-      expect(find.text('0'), findsOneWidget); // Archived
+      // Ensure lists are empty but headers are there
+      expect(find.text('Pesanan Terbaru'), findsOneWidget);
+      expect(find.text('Belum Ada Pesanan'), findsOneWidget);
 
-      // List
-      expect(find.text('Laptop Bekas'), findsOneWidget);
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
-      await tester.pumpAndSettle();
-      expect(find.text('HP Rusak'), findsOneWidget);
+      expect(find.text('Tawaran Pending'), findsOneWidget);
+      expect(find.text('Tidak Ada Tawaran Pending'), findsOneWidget);
+    });
+
+    testWidgets('renders product performance empty state', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentProfileProvider.overrideWith((ref) => mockUser),
+            sellerDashboardStatsProvider.overrideWith((ref) => mockStats),
+            sellerRecentOrdersProvider.overrideWith((ref) => []),
+            sellerRecentOffersProvider.overrideWith((ref) => []),
+            myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
+          ],
+          child: const MaterialApp(
+            home: SellerDashboardScreen(),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
       
-      // Status tags
-      expect(find.text('Active'), findsWidgets);
-      expect(find.text('Sold'), findsWidgets);
-    });
-
-    testWidgets('shows confirmation dialog on mark sold', (WidgetTester tester) async {
-      final mockProducts = [
-        ProductModel(
-          id: '1',
-          sellerId: 'user1',
-          categoryId: 'cat1',
-          title: 'Laptop Bekas',
-          description: 'Masih bagus',
-          price: 5000000,
-          condition: 'good',
-          location: 'Jakarta',
-          isNegotiable: true,
-          status: 'active',
-          createdAt: DateTime.now(),
-        ),
-      ];
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            myProductsProvider.overrideWith(() => MockMyProductsNotifier(mockProducts)),
-          ],
-          child: const MaterialApp(
-            home: SellerDashboardScreen(),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final buttonFinder = find.text('Mark Sold');
-      expect(buttonFinder, findsOneWidget);
-
-      await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Tandai Terjual'), findsOneWidget);
-      expect(find.text('Apakah Anda yakin ingin menandai produk ini sebagai terjual?'), findsOneWidget);
-      expect(find.text('Batal'), findsOneWidget);
-      expect(find.text('Ya'), findsOneWidget);
+      expect(find.text('Performa Produk'), findsOneWidget);
+      expect(find.text('Belum Ada Produk'), findsOneWidget);
     });
   });
 }

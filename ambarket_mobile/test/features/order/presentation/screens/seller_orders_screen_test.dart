@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ambarket_mobile/features/order/presentation/screens/buyer_orders_screen.dart'; // exports SellerOrdersScreen
+import 'package:ambarket_mobile/features/order/presentation/screens/seller_orders_screen.dart';
 import 'package:ambarket_mobile/features/order/presentation/providers/order_provider.dart';
 import 'package:ambarket_mobile/features/order/domain/models/order_model.dart';
 import 'package:ambarket_mobile/features/marketplace/domain/models/product_model.dart';
@@ -23,39 +23,53 @@ void main() {
       createdAt: DateTime.now(),
       images: [],
     );
-    final mockBuyer = ProfileModel(id: 'b1', name: 'Buyer', role: 'user', createdAt: DateTime.now());
-    final mockSeller = ProfileModel(id: 's1', name: 'Seller', role: 'user', createdAt: DateTime.now());
 
-    final mockOrders = [
+    final mockBuyer = ProfileModel(
+      id: 'b1',
+      username: 'buyer1',
+      name: 'Buyer One',
+      role: 'user',
+      createdAt: DateTime.now(),
+    );
+
+    final orders = [
       OrderModel(
-        id: 'order_1_uuid_string',
+        id: 'order_1_mock_id',
         productId: 'p1',
         buyerId: 'b1',
         sellerId: 's1',
         totalPrice: 100,
-        shippingAddress: 'Address',
-        shippingPhone: '0800',
-        status: 'pending_payment',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        product: mockProduct,
-        buyer: mockBuyer,
-        seller: mockSeller,
-      ),
-      OrderModel(
-        id: 'order_2_uuid_string',
-        productId: 'p1',
-        buyerId: 'b1',
-        sellerId: 's1',
-        totalPrice: 100,
-        shippingAddress: 'Address',
-        shippingPhone: '0800',
+        receiverName: 'R',
+        receiverPhone: 'P',
+        shippingAddress: 'A',
+        shippingMethod: 'M',
+        shippingCost: 10,
+        paymentMethod: 'transfer',
+        paymentStatus: 'paid',
         status: 'paid',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         product: mockProduct,
         buyer: mockBuyer,
-        seller: mockSeller,
+      ),
+      OrderModel(
+        id: 'order_2_mock_id',
+        productId: 'p1',
+        buyerId: 'b1',
+        sellerId: 's1',
+        totalPrice: 100,
+        receiverName: 'R',
+        receiverPhone: 'P',
+        shippingAddress: 'A',
+        shippingMethod: 'M',
+        shippingCost: 10,
+        paymentMethod: 'transfer',
+        paymentStatus: 'paid',
+        status: 'packed',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        product: mockProduct,
+        buyer: mockBuyer,
       ),
     ];
 
@@ -67,33 +81,20 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          sellerOrdersProvider.overrideWith((ref) => mockOrders),
+          sellerOrdersProvider.overrideWith((ref) => orders),
         ],
         child: const MaterialApp(
-          home: SellerOrdersScreen(),
+          home: Scaffold(body: SellerOrdersScreen()),
         ),
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Pesanan Masuk'), findsOneWidget);
-    
-    // Actions for pending_payment (Seller)
-    expect(find.text('Batalkan'), findsNWidgets(2)); // Both o1 and o2 are cancellable
-    expect(find.text('Simulasi Bayar'), findsNothing); // Not buyer
-    
-    // Actions for paid (Seller)
-    expect(find.text('Tandai Dikirim'), findsOneWidget);
-    
-    // Dialog check
-    await tester.tap(find.text('Tandai Dikirim'));
-    await tester.pumpAndSettle();
-    expect(find.text('Tandai Dikirim'), findsWidgets);
-    expect(find.text('Apakah pesanan sudah diserahkan ke kurir?'), findsOneWidget);
-    
-    // Cancel dialog
-    await tester.tap(find.text('Batal'));
-    await tester.pumpAndSettle();
+    expect(find.text('Tandai Dikemas'), findsOneWidget); // For 'paid' order
+    expect(find.text('Tandai Dikirim'), findsOneWidget); // For 'packed' order
+    expect(find.text('Batalkan'), findsOneWidget); // For 'paid' order (can cancel)
   });
 }

@@ -64,6 +64,74 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }
 
   @override
+  Future<List<ProductModel>> fetchRecommendedProducts({int limit = 10, int offset = 0}) async {
+    final response = await _client
+        .from('products')
+        .select('*, categories(*), product_images(*)')
+        .eq('status', 'active')
+        .order('created_at', ascending: false) // Using latest as a proxy for recommended for now
+        .range(offset, offset + limit - 1);
+        
+    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<List<ProductModel>> fetchLatestProducts({int limit = 10, int offset = 0}) async {
+    final response = await _client
+        .from('products')
+        .select('*, categories(*), product_images(*)')
+        .eq('status', 'active')
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
+        
+    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<List<ProductModel>> fetchBestDealProducts({int limit = 10, int offset = 0}) async {
+    final response = await _client
+        .from('products')
+        .select('*, categories(*), product_images(*)')
+        .eq('status', 'active')
+        .order('price', ascending: true) // Lowest price first
+        .range(offset, offset + limit - 1);
+        
+    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<List<ProductModel>> fetchNearbyProducts(String? location, {int limit = 10, int offset = 0}) async {
+    var filter = _client
+        .from('products')
+        .select('*, categories(*), product_images(*)')
+        .eq('status', 'active');
+        
+    if (location != null && location.isNotEmpty) {
+      filter = filter.ilike('location', '%$location%');
+    }
+    
+    final response = await filter
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
+        
+    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<List<ProductModel>> fetchRelatedProducts(String productId, String categoryId, {int limit = 6}) async {
+    final response = await _client
+        .from('products')
+        .select('*, categories(*), product_images(*)')
+        .eq('status', 'active')
+        .eq('category_id', categoryId)
+        .neq('id', productId)
+        .order('created_at', ascending: false)
+        .limit(limit);
+
+    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+  }
+
+  @override
   Future<ProductModel> fetchProductDetail(String productId) async {
     final response = await _client
         .from('products')

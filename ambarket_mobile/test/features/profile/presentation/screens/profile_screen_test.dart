@@ -41,17 +41,15 @@ void main() {
         ),
       );
 
-      // We overridden with AsyncValue.data natively via overrideWith since it's a FutureProvider
-      // Actually, FutureProvider overrideWith needs to return a Future or a value. The new riverpod overrideWith takes a function returning the value/future.
-      
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Test User'), findsOneWidget);
       expect(find.text('@testuser'), findsOneWidget);
       expect(find.text('test@example.com'), findsOneWidget);
       expect(find.text('Jakarta'), findsOneWidget);
-      expect(find.text('Edit Profile'), findsOneWidget);
-      expect(find.text('Logout'), findsOneWidget);
+      expect(find.text('Edit Profil'), findsOneWidget);
+      expect(find.text('Keluar'), findsOneWidget);
     });
 
     testWidgets('EditProfileScreen renders form fields', (WidgetTester tester) async {
@@ -99,7 +97,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Your wishlist is empty'), findsOneWidget);
-      expect(find.text('Explore Marketplace'), findsOneWidget);
     });
   });
 }

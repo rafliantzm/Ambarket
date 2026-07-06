@@ -8,9 +8,24 @@ class OrderModel {
   final String productId;
   final String buyerId;
   final String sellerId;
-  final double totalPrice;
-  final String shippingAddress;
-  final String shippingPhone;
+  final double totalPrice; // legacy
+  
+  // New Phase 8D fields
+  final String? receiverName;
+  final String? receiverPhone;
+  final String? shippingAddress;
+  final String? shippingMethod;
+  final double shippingCost;
+  final String paymentMethod;
+  final String paymentStatus;
+  final DateTime? paymentDueAt;
+  final DateTime? paidAt;
+  final String? invoiceNumber;
+  final String? voucherCode;
+  final double discountAmount;
+  final double serviceFee;
+  final double subtotal;
+
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -28,8 +43,22 @@ class OrderModel {
     required this.buyerId,
     required this.sellerId,
     required this.totalPrice,
-    required this.shippingAddress,
-    required this.shippingPhone,
+    
+    this.receiverName,
+    this.receiverPhone,
+    this.shippingAddress,
+    this.shippingMethod,
+    this.shippingCost = 0,
+    this.paymentMethod = 'cod',
+    this.paymentStatus = 'unpaid',
+    this.paymentDueAt,
+    this.paidAt,
+    this.invoiceNumber,
+    this.voucherCode,
+    this.discountAmount = 0,
+    this.serviceFee = 0,
+    this.subtotal = 0,
+
     required this.status,
     required this.createdAt,
     required this.updatedAt,
@@ -48,8 +77,22 @@ class OrderModel {
       buyerId: json['buyer_id'] as String,
       sellerId: json['seller_id'] as String,
       totalPrice: double.parse(json['total_price'].toString()),
-      shippingAddress: json['shipping_address'] as String,
-      shippingPhone: json['shipping_phone'] as String,
+      
+      receiverName: json['receiver_name'] as String?,
+      receiverPhone: json['receiver_phone'] as String?,
+      shippingAddress: json['shipping_address'] as String?,
+      shippingMethod: json['shipping_method'] as String?,
+      shippingCost: json['shipping_cost'] != null ? double.parse(json['shipping_cost'].toString()) : 0,
+      paymentMethod: json['payment_method'] as String? ?? 'cod',
+      paymentStatus: json['payment_status'] as String? ?? 'unpaid',
+      paymentDueAt: json['payment_due_at'] != null ? DateTime.parse(json['payment_due_at'] as String) : null,
+      paidAt: json['paid_at'] != null ? DateTime.parse(json['paid_at'] as String) : null,
+      invoiceNumber: json['invoice_number'] as String?,
+      voucherCode: json['voucher_code'] as String?,
+      discountAmount: json['discount_amount'] != null ? double.parse(json['discount_amount'].toString()) : 0,
+      serviceFee: json['service_fee'] != null ? double.parse(json['service_fee'].toString()) : 0,
+      subtotal: json['subtotal'] != null ? double.parse(json['subtotal'].toString()) : double.parse(json['total_price'].toString()),
+
       status: json['status'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -69,14 +112,27 @@ class OrderModel {
       'buyer_id': buyerId,
       'seller_id': sellerId,
       'total_price': totalPrice,
+      
+      'receiver_name': receiverName,
+      'receiver_phone': receiverPhone,
       'shipping_address': shippingAddress,
-      'shipping_phone': shippingPhone,
+      'shipping_method': shippingMethod,
+      'shipping_cost': shippingCost,
+      'payment_method': paymentMethod,
+      'payment_status': paymentStatus,
+      'payment_due_at': paymentDueAt?.toIso8601String(),
+      'paid_at': paidAt?.toIso8601String(),
+      'invoice_number': invoiceNumber,
+      'voucher_code': voucherCode,
+      'discount_amount': discountAmount,
+      'service_fee': serviceFee,
+      'subtotal': subtotal,
+
       'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
-
   OrderModel copyWith({
     String? id,
     String? offerId,
@@ -84,8 +140,22 @@ class OrderModel {
     String? buyerId,
     String? sellerId,
     double? totalPrice,
+    
+    String? receiverName,
+    String? receiverPhone,
     String? shippingAddress,
-    String? shippingPhone,
+    String? shippingMethod,
+    double? shippingCost,
+    String? paymentMethod,
+    String? paymentStatus,
+    DateTime? paymentDueAt,
+    DateTime? paidAt,
+    String? invoiceNumber,
+    String? voucherCode,
+    double? discountAmount,
+    double? serviceFee,
+    double? subtotal,
+
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -102,8 +172,22 @@ class OrderModel {
       buyerId: buyerId ?? this.buyerId,
       sellerId: sellerId ?? this.sellerId,
       totalPrice: totalPrice ?? this.totalPrice,
+      
+      receiverName: receiverName ?? this.receiverName,
+      receiverPhone: receiverPhone ?? this.receiverPhone,
       shippingAddress: shippingAddress ?? this.shippingAddress,
-      shippingPhone: shippingPhone ?? this.shippingPhone,
+      shippingMethod: shippingMethod ?? this.shippingMethod,
+      shippingCost: shippingCost ?? this.shippingCost,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentDueAt: paymentDueAt ?? this.paymentDueAt,
+      paidAt: paidAt ?? this.paidAt,
+      invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      voucherCode: voucherCode ?? this.voucherCode,
+      discountAmount: discountAmount ?? this.discountAmount,
+      serviceFee: serviceFee ?? this.serviceFee,
+      subtotal: subtotal ?? this.subtotal,
+
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -5,6 +5,7 @@ import 'package:ambarket_mobile/core/theme/app_spacing.dart';
 import 'package:ambarket_mobile/features/order/presentation/providers/order_provider.dart';
 import 'package:ambarket_mobile/features/order/domain/models/order_model.dart';
 import 'package:ambarket_mobile/features/review/presentation/widgets/create_review_dialog.dart';
+import 'package:go_router/go_router.dart';
 
 class BuyerOrdersScreen extends ConsumerWidget {
   const BuyerOrdersScreen({super.key});
@@ -47,46 +48,6 @@ class BuyerOrdersScreen extends ConsumerWidget {
   }
 }
 
-class SellerOrdersScreen extends ConsumerWidget {
-  const SellerOrdersScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ordersAsync = ref.watch(sellerOrdersProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pesanan Masuk'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.refresh(sellerOrdersProvider.future),
-        child: ordersAsync.when(
-          data: (orders) {
-            if (orders.isEmpty) {
-              return ListView(
-                children: const [
-                  SizedBox(height: 100),
-                  Center(child: Text('Belum ada pesanan masuk.')),
-                ],
-              );
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                final order = orders[index];
-                return _OrderCard(order: order, isBuyer: false);
-              },
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, st) => Center(child: Text('Error: $err')),
-        ),
-      ),
-    );
-  }
-}
 
 class _OrderCard extends ConsumerWidget {
   final OrderModel order;
@@ -175,8 +136,28 @@ class _OrderCard extends ConsumerWidget {
             Text('Total: ${currencyFormat.format(order.totalPrice)}', style: const TextStyle(fontWeight: FontWeight.bold)),
             const Divider(),
             Text('Kirim ke:', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
-            Text(order.shippingAddress, style: theme.textTheme.bodySmall),
-            Text('Telp: ${order.shippingPhone}', style: theme.textTheme.bodySmall),
+            Text(order.shippingAddress ?? '-', style: theme.textTheme.bodySmall),
+            Text('Telp: ${order.receiverPhone ?? order.buyer?.phone ?? "-"}', style: theme.textTheme.bodySmall),
+            
+            // Common Actions (Invoice & Tracking)
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                if (order.status != 'pending_payment' && order.status != 'cancelled')
+                  TextButton.icon(
+                    onPressed: () => context.push('/orders/${order.id}/invoice'),
+                    icon: const Icon(Icons.receipt_long, size: 16),
+                    label: const Text('Invoice'),
+                  ),
+                const Spacer(),
+                if (order.status != 'pending_payment' && order.status != 'cancelled' && order.status != 'completed')
+                  TextButton.icon(
+                    onPressed: () => context.push('/orders/${order.id}/tracking'),
+                    icon: const Icon(Icons.local_shipping, size: 16),
+                    label: const Text('Lacak'),
+                  ),
+              ],
+            ),
             
             // Actions
             if (order.status != 'completed' && order.status != 'cancelled') ...[
@@ -203,14 +184,9 @@ class _OrderCard extends ConsumerWidget {
                   if (isBuyer && order.status == 'pending_payment')
                     ElevatedButton(
                       onPressed: actionState.isLoading ? null : () {
-                        _showConfirmation(
-                          context,
-                          'Simulasi Pembayaran',
-                          'Lanjutkan pembayaran untuk pesanan ini?',
-                          () => ref.read(orderActionControllerProvider.notifier).updateStatus(order.id, 'paid'),
-                        );
+                        context.push('/payment/${order.id}');
                       },
-                      child: const Text('Simulasi Bayar'),
+                      child: const Text('Bayar Sekarang'),
                     ),
                   if (!isBuyer && order.status == 'paid')
                     ElevatedButton(

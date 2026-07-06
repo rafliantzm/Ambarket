@@ -33,9 +33,14 @@ void main() {
         buyerId: 'b1',
         sellerId: 's1',
         totalPrice: 100,
+        subtotal: 100,
+        shippingCost: 12000,
+        serviceFee: 2000,
         shippingAddress: 'Address',
-        shippingPhone: '0800',
+        receiverPhone: '0800',
         status: 'pending_payment',
+        paymentStatus: 'unpaid',
+        paymentMethod: 'bca',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         product: mockProduct,
@@ -48,9 +53,14 @@ void main() {
         buyerId: 'b1',
         sellerId: 's1',
         totalPrice: 100,
+        subtotal: 100,
+        shippingCost: 12000,
+        serviceFee: 2000,
         shippingAddress: 'Address',
-        shippingPhone: '0800',
+        receiverPhone: '0800',
         status: 'shipped',
+        paymentStatus: 'paid',
+        paymentMethod: 'bca',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         product: mockProduct,
@@ -76,31 +86,16 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    
-    // Debug print
-    // final texts = find.byType(Text).evaluate().map((e) => (e.widget as Text).data).toList();
-    // print('Rendered texts: $texts');
 
     expect(find.text('Pesanan Saya'), findsOneWidget);
     
-    // Status text
     expect(find.text('Belum Dibayar'), findsOneWidget);
     expect(find.text('Dikirim'), findsOneWidget);
     
-    // Actions for pending_payment (Buyer)
-    expect(find.text('Batalkan'), findsOneWidget);
-    expect(find.text('Simulasi Bayar'), findsOneWidget);
-    
-    // Actions for shipped (Buyer)
+    // Check buttons
+    expect(find.text('Bayar Sekarang'), findsOneWidget);
+    expect(find.text('Lacak'), findsWidgets);
+    expect(find.text('Invoice'), findsWidgets);
     expect(find.text('Pesanan Diterima'), findsOneWidget);
-    
-    // Dialog check
-    await tester.tap(find.text('Simulasi Bayar'));
-    await tester.pumpAndSettle();
-    expect(find.text('Simulasi Pembayaran'), findsOneWidget);
-    
-    // Cancel dialog
-    await tester.tap(find.text('Batal'));
-    await tester.pumpAndSettle();
   });
 }

@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../providers/marketplace_provider.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_animated_background.dart';
+import '../../../../core/widgets/app_error_state.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'package:ambarket_mobile/features/offer/presentation/widgets/make_offer_dialog.dart';
+
+import 'package:ambarket_mobile/features/cart/presentation/providers/cart_provider.dart';
 import 'package:ambarket_mobile/features/chat/presentation/providers/chat_provider.dart';
-import 'package:ambarket_mobile/features/review/presentation/providers/review_provider.dart';
-import 'package:ambarket_mobile/features/review/presentation/widgets/rating_stars.dart';
-import 'package:ambarket_mobile/features/report/presentation/widgets/report_dialog.dart';
+import '../../../report/presentation/widgets/report_dialog.dart';
+import '../providers/marketplace_provider.dart';
+import '../widgets/product_detail/product_image_gallery.dart';
+import '../widgets/product_detail/product_purchase_panel.dart';
+import '../widgets/product_detail/product_seller_card.dart';
+import '../widgets/product_detail/product_info_section.dart';
+import '../widgets/product_detail/product_condition_section.dart';
+import '../widgets/product_detail/product_safety_section.dart';
+import '../widgets/product_detail/product_related_section.dart';
+import '../../domain/models/product_model.dart';
 
 class ProductDetailScreen extends ConsumerWidget {
   final String productId;
@@ -19,365 +28,462 @@ class ProductDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final productAsync = ref.watch(productDetailProvider(productId));
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
     final user = ref.watch(currentUserProvider);
+    final isDesktop = MediaQuery.of(context).size.width >= 768;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail Produk'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Share feature coming soon')));
-            },
-          ),
-          if (user != null) 
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'report_product') {
-                  showDialog(
-                    context: context,
-                    builder: (context) => ReportDialog(
-                      targetType: 'product',
-                      targetId: productId,
-                      title: 'Produk',
-                    ),
-                  );
-                }
+    return AppAnimatedBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: const Text('Detail Produk'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.share, color: AppColors.textPrimary),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur bagikan segera hadir!')));
               },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'report_product',
-                  child: Text('Laporkan Produk'),
-                ),
-              ],
             ),
-        ],
-      ),
-      body: productAsync.when(
-        data: (product) {
-          final wishlistsState = ref.watch(wishlistProductIdsProvider);
-          final isWishlisted = wishlistsState.maybeWhen(
-            data: (wishlists) => wishlists.contains(product.id),
-            orElse: () => false,
-          );
-          final primaryImage = product.images.where((img) => img.isPrimary).firstOrNull ?? product.images.firstOrNull;
-
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Image Section
-                AspectRatio(
-                  aspectRatio: 4 / 3,
-                  child: primaryImage != null
-                      ? CachedNetworkImage(
-                          imageUrl: primaryImage.imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            child: const Center(child: Icon(Icons.broken_image, size: 64)),
-                          ),
-                        )
-                      : Container(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          child: const Center(child: Icon(Icons.image, size: 64)),
-                        ),
-                ),
-                
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              product.title,
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                color: theme.colorScheme.onSurface,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              isWishlisted ? Icons.favorite : Icons.favorite_border,
-                              color: isWishlisted ? Colors.red : theme.colorScheme.onSurface,
-                            ),
-                            onPressed: () async {
-                              try {
-                                await ref.read(wishlistProductIdsProvider.notifier).toggleWishlist(product.id);
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-                                  );
-                                }
-                              }
-                            },
-                          ),
-                        ],
+            if (user != null)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
+                onSelected: (value) {
+                  if (value == 'report') {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ReportDialog(
+                        targetType: 'product',
+                        targetId: productId,
+                        title: 'Produk',
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        currencyFormatter.format(product.price),
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          _buildChip(theme, 'Kondisi: ${_mapCondition(product.condition)}'),
-                          if (product.isNegotiable) ...[
-                            const SizedBox(width: AppSpacing.sm),
-                            _buildChip(theme, 'Bisa Nego'),
-                          ]
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      
-                      // Detail Section
-                      Text(
-                        'Deskripsi', 
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        product.description, 
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // Info List
-                      if ((product.brand?.isNotEmpty ?? false))
-                        _buildInfoRow(theme, 'Merek', product.brand!),
-                      _buildInfoRow(theme, 'Lokasi', product.location),
-                      if ((product.defects?.isNotEmpty ?? false))
-                        _buildInfoRow(theme, 'Minus/Cacat', product.defects!),
-                      if ((product.completeness?.isNotEmpty ?? false))
-                        _buildInfoRow(theme, 'Kelengkapan', product.completeness!),
-                      if ((product.usageDuration?.isNotEmpty ?? false))
-                        _buildInfoRow(theme, 'Lama Pemakaian', product.usageDuration!),
-
-                      const SizedBox(height: AppSpacing.xl),
-                      // Seller Placeholder
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final ratingAsync = ref.watch(sellerRatingSummaryProvider(product.sellerId));
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.primaryContainer,
-                              child: Icon(Icons.person, color: theme.colorScheme.onPrimaryContainer),
-                            ),
-                            title: const Text('Penjual'),
-                            subtitle: ratingAsync.when(
-                              data: (summary) {
-                                if (summary.totalReviews == 0) return const Text('Belum ada ulasan');
-                                return Row(
-                                  children: [
-                                    RatingStars(rating: summary.averageRating.round(), size: 14),
-                                    const SizedBox(width: AppSpacing.xs),
-                                    Text('${summary.averageRating.toStringAsFixed(1)} (${summary.totalReviews})', style: const TextStyle(fontSize: 12)),
-                                  ],
-                                );
-                              },
-                              loading: () => const Text('Memuat ulasan...'),
-                              error: (e, st) => const Text('Gagal memuat ulasan'),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                OutlinedButton(
-                                  onPressed: () {},
-                                  child: const Text('Profil'),
-                                ),
-                                if (user != null && user.id != product.sellerId) ...[
-                                  const SizedBox(width: AppSpacing.sm),
-                                  IconButton(
-                                    icon: const Icon(Icons.report_problem_outlined, size: 20, color: Colors.grey),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => ReportDialog(
-                                          targetType: 'user',
-                                          targetId: product.sellerId,
-                                          title: 'Penjual',
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ]
-                              ],
-                            ),
-                          );
-                        }
-                      ),
-                      const SizedBox(height: AppSpacing.xxl * 2), // Spacing for bottom bar
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Error: $e')),
-      ),
-      bottomNavigationBar: productAsync.hasValue ? SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            children: [
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    final product = productAsync.value;
-                    if (product == null) return const SizedBox.shrink();
-                    
-                    bool isOwner = user?.id == product.sellerId;
-                    
-                    return OutlinedButton(
-                      onPressed: isOwner ? null : () async {
-                        if (user == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
-                          return;
-                        }
-                        try {
-                          final chat = await ref.read(chatActionControllerProvider.notifier)
-                              .createOrGetConversation(product.id, user.id, product.sellerId);
-                          if (context.mounted) {
-                            context.push('/chats/${chat.id}');
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membuat chat: $e')));
-                          }
-                        }
-                      },
-                      child: const Text('Chat Penjual'),
                     );
                   }
-                ),
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'report',
+                    child: Text('Laporkan Produk'),
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.md),
+          ],
+        ),
+        body: productAsync.when(
+          data: (product) {
+            final wishlistsState = ref.watch(wishlistProductIdsProvider);
+            final isWishlisted = wishlistsState.maybeWhen(
+              data: (wishlists) => wishlists.contains(product.id),
+              orElse: () => false,
+            );
+            final isOwner = user?.id == product.sellerId;
+
+            void handleToggleWishlist() async {
+              try {
+                await ref.read(wishlistProductIdsProvider.notifier).toggleWishlist(product.id);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                  );
+                }
+              }
+            }
+
+            void handleChat() async {
+              if (user == null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+                return;
+              }
+              try {
+                final chat = await ref.read(chatActionControllerProvider.notifier)
+                    .createOrGetConversation(product.id, user.id, product.sellerId);
+                if (context.mounted) {
+                  context.push('/chats/${chat.id}');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membuat chat: $e')));
+                }
+              }
+            }
+
+            void handleOffer() {
+              if (user == null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+                return;
+              }
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => MakeOfferDialog(
+                  productId: product.id,
+                  sellerId: product.sellerId,
+                  originalPrice: product.price,
+                  productName: product.title,
+                ),
+              );
+            }
+
+            void handleAddToCart() {
+              if (user == null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+                return;
+              }
+              ref.read(cartActionControllerProvider.notifier).addToCart(product.id, 1).then((_) {
+                if (context.mounted && !ref.read(cartActionControllerProvider).hasError) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Produk ditambahkan ke keranjang.'),
+                    backgroundColor: Colors.green,
+                  ));
+                }
+              });
+            }
+
+            void handleBuy() {
+              if (user == null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+                return;
+              }
+              context.push('/checkout/product/${product.id}');
+            }
+
+            if (isDesktop) {
+              return _buildDesktopLayout(
+                context,
+                product: product,
+                isOwner: isOwner,
+                isWishlisted: isWishlisted,
+                onToggleWishlist: handleToggleWishlist,
+                onChatPressed: handleChat,
+                onOfferPressed: handleOffer,
+                onCartPressed: handleAddToCart,
+                onBuyPressed: handleBuy,
+              );
+            }
+
+              return _buildMobileLayout(
+                context,
+                product: product,
+                isOwner: isOwner,
+                isWishlisted: isWishlisted,
+                onToggleWishlist: handleToggleWishlist,
+                onChatPressed: handleChat,
+                onOfferPressed: handleOffer,
+                onCartPressed: handleAddToCart,
+                onBuyPressed: handleBuy,
+              );
+          },
+          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          error: (e, st) => Center(
+            child: AppErrorState(
+              message: e.toString(),
+              onRetry: () => ref.invalidate(productDetailProvider(productId)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(
+    BuildContext context, {
+    required ProductModel product,
+    required bool isOwner,
+    required bool isWishlisted,
+    required VoidCallback onToggleWishlist,
+    required VoidCallback onChatPressed,
+    required VoidCallback onOfferPressed,
+    required VoidCallback onCartPressed,
+    required VoidCallback onBuyPressed,
+  }) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 64, vertical: AppSpacing.xl),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column: Image Gallery
               Expanded(
-                child: Builder(
-                  builder: (context) {
-                    final product = productAsync.value;
-                    if (product == null) return const SizedBox.shrink();
-
-                    bool isOwner = user?.id == product.sellerId;
-                    bool isActive = product.status == 'active';
-                    bool isNegotiable = product.isNegotiable;
-
-                    String? disabledReason;
-                    if (isOwner) {
-                      disabledReason = 'Produk milik Anda';
-                    } else if (!isActive) {
-                      disabledReason = 'Produk tidak aktif';
-                    } else if (!isNegotiable) {
-                      disabledReason = 'Harga pas / tidak bisa ditawar';
-                    }
-
-                    return ElevatedButton(
-                      onPressed: disabledReason != null ? () {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(disabledReason!)));
-                      } : () {
-                        if (user == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
-                          return;
-                        }
-                        showModalBottomSheet(
+                flex: 5,
+                child: ProductImageGallery(images: product.images),
+              ),
+              const SizedBox(width: AppSpacing.xxl),
+              // Right Column: Details & Actions
+              Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ProductPurchasePanel(
+                      product: product,
+                      isOwner: isOwner,
+                      isWishlisted: isWishlisted,
+                      onToggleWishlist: onToggleWishlist,
+                      onChatPressed: onChatPressed,
+                      onOfferPressed: onOfferPressed,
+                      onCartPressed: onCartPressed,
+                      onBuyPressed: onBuyPressed,
+                      isMobile: false,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    ProductSellerCard(
+                      sellerId: product.sellerId,
+                      isOwner: isOwner,
+                      onVisitProfile: () {},
+                      onReport: () {
+                        showDialog(
                           context: context,
-                          isScrollControlled: true,
-                          builder: (ctx) => MakeOfferDialog(
-                            productId: product.id,
-                            sellerId: product.sellerId,
-                            originalPrice: product.price,
-                            productName: product.title,
+                          builder: (context) => ReportDialog(
+                            targetType: 'user',
+                            targetId: product.sellerId,
+                            title: 'Penjual',
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: disabledReason != null ? Colors.grey : theme.colorScheme.primary,
-                      ),
-                      child: const Text('Tawar Harga'),
-                    );
-                  }
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildDescription(context, product.description),
+                    const SizedBox(height: AppSpacing.xl),
+                    ProductInfoSection(product: product),
+                    const SizedBox(height: AppSpacing.xl),
+                    ProductConditionSection(product: product),
+                    const SizedBox(height: AppSpacing.xl),
+                    const ProductSafetySection(),
+                    const SizedBox(height: AppSpacing.xxl),
+                    ProductRelatedSection(product: product),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-      ) : null,
+      ),
     );
   }
 
-  Widget _buildChip(ThemeData theme, String label) {
+  Widget _buildMobileLayout(
+    BuildContext context, {
+    required ProductModel product,
+    required bool isOwner,
+    required bool isWishlisted,
+    required VoidCallback onToggleWishlist,
+    required VoidCallback onChatPressed,
+    required VoidCallback onOfferPressed,
+    required VoidCallback onCartPressed,
+    required VoidCallback onBuyPressed,
+  }) {
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 120), // Space for sticky bottom bar
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ProductImageGallery(images: product.images),
+              ProductPurchasePanel(
+                product: product,
+                isOwner: isOwner,
+                isWishlisted: isWishlisted,
+                onToggleWishlist: onToggleWishlist,
+                onChatPressed: onChatPressed,
+                onOfferPressed: onOfferPressed,
+                onCartPressed: onCartPressed,
+                onBuyPressed: onBuyPressed,
+                isMobile: true,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: ProductSellerCard(
+                  sellerId: product.sellerId,
+                  isOwner: isOwner,
+                  onVisitProfile: () {},
+                  onReport: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ReportDialog(
+                        targetType: 'user',
+                        targetId: product.sellerId,
+                        title: 'Penjual',
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: _buildDescription(context, product.description),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: ProductInfoSection(product: product),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: ProductConditionSection(product: product),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: ProductSafetySection(),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.md),
+                child: ProductRelatedSection(product: product),
+              ),
+            ],
+          ),
+        ),
+        // Sticky Bottom Bar
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: _buildMobileBottomBar(
+            context,
+            product: product,
+            isOwner: isOwner,
+            onChatPressed: onChatPressed,
+            onOfferPressed: onOfferPressed,
+            onCartPressed: onCartPressed,
+            onBuyPressed: onBuyPressed,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescription(BuildContext context, String description) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Deskripsi Produk',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          description.trim().isEmpty ? 'Penjual belum menambahkan deskripsi detail.' : description,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: description.trim().isEmpty ? AppColors.textSecondary : AppColors.textPrimary,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileBottomBar(
+    BuildContext context, {
+    required ProductModel product,
+    required bool isOwner,
+    required VoidCallback onChatPressed,
+    required VoidCallback onOfferPressed,
+    required VoidCallback onCartPressed,
+    required VoidCallback onBuyPressed,
+  }) {
+    bool isActive = product.status == 'active';
+    bool isNegotiable = product.isNegotiable;
+
+    String? offerDisabledReason;
+    if (isOwner) {
+      offerDisabledReason = 'Produk milik Anda';
+    } else if (!isActive) {
+      offerDisabledReason = 'Produk tidak aktif';
+    } else if (!isNegotiable) {
+      offerDisabledReason = 'Harga pas / tidak bisa ditawar';
+    }
+
+    String? buyDisabledReason;
+    if (isOwner) {
+      buyDisabledReason = 'Produk milik Anda';
+    } else if (!isActive) {
+      buyDisabledReason = 'Produk tidak aktif';
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.backgroundDarker.withValues(alpha: 0.9),
+        border: const Border(top: BorderSide(color: AppColors.border)),
       ),
-      child: Text(
-        label,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSecondaryContainer,
-          fontWeight: FontWeight.w600,
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              flex: 1,
+              child: OutlinedButton(
+                onPressed: isOwner ? null : onChatPressed,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: AppColors.borderStrong),
+                  foregroundColor: AppColors.textPrimary,
+                ),
+                child: const Icon(Icons.chat_bubble_outline),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: 1,
+              child: OutlinedButton(
+                onPressed: buyDisabledReason != null
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(buyDisabledReason!)))
+                    : onCartPressed,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: AppColors.borderStrong),
+                  foregroundColor: AppColors.textPrimary,
+                ),
+                child: const Icon(Icons.add_shopping_cart),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: offerDisabledReason != null
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(offerDisabledReason!)))
+                    : onOfferPressed,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: offerDisabledReason != null ? AppColors.surfaceHighlight : AppColors.primary,
+                  foregroundColor: offerDisabledReason != null ? AppColors.textMuted : AppColors.background,
+                ),
+                child: const Text('Tawar', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: buyDisabledReason != null
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(buyDisabledReason!)))
+                    : onBuyPressed,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor: buyDisabledReason != null ? AppColors.surfaceHighlight : AppColors.accent,
+                  foregroundColor: buyDisabledReason != null ? AppColors.textMuted : Colors.white,
+                ),
+                child: const Text('Beli', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-
-  Widget _buildInfoRow(ThemeData theme, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _mapCondition(String condition) {
-    switch (condition) {
-      case 'like_new': return 'Like New / Seperti Baru';
-      case 'good': return 'Good / Baik';
-      case 'fair': return 'Fair / Cukup';
-      case 'need_repair': return 'Need Repair / Perlu Perbaikan';
-      default: return condition;
-    }
-  }
 }
+
+
+

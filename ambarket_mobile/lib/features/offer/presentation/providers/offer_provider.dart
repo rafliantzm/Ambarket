@@ -25,6 +25,25 @@ final myReceivedOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((r
   return repo.fetchMyReceivedOffers(user.id);
 });
 
+// Filter provider for seller offers
+class SellerOfferStatusFilter extends Notifier<String> {
+  @override
+  String build() => 'all';
+  
+  void setFilter(String val) => state = val;
+}
+final sellerOfferStatusFilterProvider = NotifierProvider<SellerOfferStatusFilter, String>(() => SellerOfferStatusFilter());
+
+final filteredReceivedOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return [];
+  
+  final statusFilter = ref.watch(sellerOfferStatusFilterProvider);
+  
+  final repo = ref.watch(offerRepositoryProvider);
+  return repo.fetchReceivedOffersFiltered(user.id, status: statusFilter);
+});
+
 final createOfferControllerProvider = AsyncNotifierProvider<CreateOfferController, void>(() {
   return CreateOfferController();
 });
@@ -86,6 +105,7 @@ class OfferActionController extends AsyncNotifier<void> {
 
       await _repo.acceptOffer(offerId, user.id);
       ref.invalidate(myReceivedOffersProvider);
+      ref.invalidate(filteredReceivedOffersProvider);
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -100,6 +120,7 @@ class OfferActionController extends AsyncNotifier<void> {
 
       await _repo.rejectOffer(offerId, user.id);
       ref.invalidate(myReceivedOffersProvider);
+      ref.invalidate(filteredReceivedOffersProvider);
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);

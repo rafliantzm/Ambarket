@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/offer_model.dart';
+import '../../../../features/order/domain/models/order_model.dart';
 import '../../domain/repositories/offer_repository.dart';
 
 class SupabaseOfferRepository implements OfferRepository {
@@ -59,13 +60,34 @@ class SupabaseOfferRepository implements OfferRepository {
 
   @override
   Future<List<OfferModel>> fetchMyReceivedOffers(String sellerId) async {
-    final response = await _client
+    return fetchReceivedOffersFiltered(sellerId);
+  }
+
+  @override
+  Future<List<OfferModel>> fetchReceivedOffersFiltered(String sellerId, {String? status}) async {
+    var query = _client
         .from('offers')
         .select('*, products(*, product_images(*)), buyer:profiles!buyer_id(*)')
-        .eq('seller_id', sellerId)
-        .order('created_at', ascending: false);
+        .eq('seller_id', sellerId);
 
+    if (status != null && status != 'all') {
+      query = query.eq('status', status);
+    }
+
+    final response = await query.order('created_at', ascending: false);
     return (response as List).map((json) => OfferModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<OrderModel?> findOrderByOfferId(String offerId) async {
+    final response = await _client
+        .from('orders')
+        .select('*, product:products(*, category:categories(*), images:product_images(*)), buyer:profiles!orders_buyer_id_fkey(*), seller:profiles!orders_seller_id_fkey(*)')
+        .eq('offer_id', offerId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return OrderModel.fromJson(response);
   }
 
   @override

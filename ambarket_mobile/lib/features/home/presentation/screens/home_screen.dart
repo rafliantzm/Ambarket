@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_animated_background.dart';
+import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/app_error_state.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../../../marketplace/presentation/providers/home_providers.dart';
 import '../../../marketplace/presentation/widgets/product_card.dart';
+
+import '../widgets/home_search_header.dart';
+import '../widgets/home_hero_carousel.dart';
+import '../widgets/home_quick_actions.dart';
+import '../widgets/home_category_strip.dart';
+import '../widgets/home_promo_banner.dart';
+import '../widgets/home_product_section.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -36,338 +47,185 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final categoriesAsync = ref.watch(categoriesProvider);
     final productsAsync = ref.watch(productsProvider);
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
     final selectedCondition = ref.watch(selectedConditionProvider);
+    final searchQuery = ref.watch(searchQueryProvider);
     
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ambarket'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              context.push('/profile');
+    final isDesktop = MediaQuery.of(context).size.width >= 768;
+
+    final isSearching = searchQuery.isNotEmpty || selectedCategoryId != null || selectedCondition != null;
+
+    return AppAnimatedBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            backgroundColor: AppColors.surface,
+            onRefresh: () async {
+              ref.invalidate(categoriesProvider);
+              ref.invalidate(productsProvider);
+              ref.invalidate(wishlistProductIdsProvider);
+              ref.invalidate(homeRecommendedProvider);
+              ref.invalidate(homeLatestProductsProvider);
+              ref.invalidate(homeBestDealsProvider);
+              ref.invalidate(homeNearbyProductsProvider);
             },
-          )
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(categoriesProvider);
-          ref.invalidate(productsProvider);
-          ref.invalidate(wishlistProductIdsProvider);
-        },
-        child: CustomScrollView(
-          slivers: [
-            // Search Bar
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Cari barang bekas...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  ),
-                  onChanged: (value) {
-                    ref.read(searchQueryProvider.notifier).updateQuery(value);
-                  },
-                ),
-              ),
-            ),
-            
-            // Hero Section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: theme.colorScheme.outlineVariant),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Temukan Barang Impianmu!',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                color: theme.colorScheme.onSurface,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'Barang bekas berkualitas dengan harga terbaik.',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.shopping_bag, size: 64, color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
-                    ],
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: HomeSearchHeader(
+                    searchController: _searchController,
+                    isDesktop: isDesktop,
                   ),
                 ),
-              ),
-            ),
-            
-            // Filters Section
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xl, AppSpacing.md, AppSpacing.sm),
-                    child: Text('Kategori', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ),
-                  SizedBox(
-                    height: 40,
-                    child: categoriesAsync.when(
-                      data: (categories) => ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                        itemCount: categories.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return Padding(
-                              padding: const EdgeInsets.only(right: AppSpacing.sm),
-                              child: FilterChip(
-                                label: const Text('Semua'),
-                                selected: selectedCategoryId == null,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    ref.read(selectedCategoryIdProvider.notifier).updateCategory(null);
-                                  }
-                                },
-                              ),
-                            );
-                          }
-                          final category = categories[index - 1];
-                          return Padding(
-                            padding: const EdgeInsets.only(right: AppSpacing.sm),
-                            child: FilterChip(
-                              label: Text(category.name),
-                              selected: selectedCategoryId == category.id,
-                              onSelected: (selected) {
-                                ref.read(selectedCategoryIdProvider.notifier).updateCategory(selected ? category.id : null);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, st) => const Center(child: Text('Gagal memuat kategori')),
+                if (!isSearching) ...[
+                  // Discovery Mode
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
+                  const SliverToBoxAdapter(child: HomeHeroCarousel()),
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+                  const SliverToBoxAdapter(child: HomeQuickActions()),
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+                  const SliverToBoxAdapter(child: HomeCategoryStrip()),
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+                  
+                  SliverToBoxAdapter(
+                    child: HomeProductSection(
+                      title: 'Rekomendasi Untukmu',
+                      subtitle: 'Barang preloved pilihan yang mungkin kamu suka',
+                      providerState: ref.watch(homeRecommendedProvider),
+                      onSeeAll: () {
+                        // For now just scroll or reset filter to see all active
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Menampilkan semua rekomendasi')),
+                        );
+                      },
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    child: Row(
-                      children: [
-                        _buildConditionChip(context, ref, 'Semua Kondisi', null, selectedCondition),
-                        _buildConditionChip(context, ref, 'Like New', 'like_new', selectedCondition),
-                        _buildConditionChip(context, ref, 'Good', 'good', selectedCondition),
-                        _buildConditionChip(context, ref, 'Fair', 'fair', selectedCondition),
-                        _buildConditionChip(context, ref, 'Need Repair', 'need_repair', selectedCondition),
-                        if (selectedCategoryId != null || selectedCondition != null || _searchController.text.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(left: AppSpacing.sm),
-                            child: ActionChip(
-                              label: Text('Reset Filter', style: TextStyle(color: theme.colorScheme.error)),
-                              onPressed: _resetFilters,
-                            ),
-                          ),
-                      ],
+                  
+                  const SliverToBoxAdapter(child: HomePromoBanner()),
+                  
+                  SliverToBoxAdapter(
+                    child: HomeProductSection(
+                      title: 'Terbaru',
+                      subtitle: 'Barang yang baru saja ditambahkan',
+                      providerState: ref.watch(homeLatestProductsProvider),
+                      onSeeAll: () {},
                     ),
                   ),
-                ],
-              ),
-            ),
-            
-            // Products Title
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xl, AppSpacing.md, AppSpacing.sm),
-                child: Text('Rekomendasi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            
-            // Products Grid
-            productsAsync.when(
-              data: (paginatedState) {
-                final products = paginatedState.products;
-                if (products.isEmpty) {
-                  return SliverToBoxAdapter(
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+                  
+                  SliverToBoxAdapter(
+                    child: HomeProductSection(
+                      title: 'Harga Terbaik',
+                      subtitle: 'Penawaran dengan harga paling bersahabat',
+                      providerState: ref.watch(homeBestDealsProvider),
+                      onSeeAll: () {},
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+
+                  SliverToBoxAdapter(
+                    child: HomeProductSection(
+                      title: 'Dekat Lokasimu',
+                      subtitle: 'Barang dari penjual di sekitarmu',
+                      providerState: ref.watch(homeNearbyProductsProvider),
+                      onSeeAll: () {},
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+
+                ] else ...[
+                  // Search Mode
+                  SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xxl),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                      child: Row(
                         children: [
-                          Icon(Icons.search_off, size: 64, color: theme.colorScheme.onSurfaceVariant),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            'Tidak ada produk yang ditemukan.',
-                            style: theme.textTheme.titleMedium,
+                          const Icon(Icons.filter_list, size: 20, color: AppColors.textMuted),
+                          const SizedBox(width: AppSpacing.sm),
+                          DropdownButton<String>(
+                            value: selectedCondition,
+                            hint: const Text('Semua Kondisi', style: TextStyle(color: AppColors.textSecondary)),
+                            dropdownColor: AppColors.backgroundDarker,
+                            underline: const SizedBox(),
+                            style: const TextStyle(color: AppColors.textPrimary),
+                            icon: const Icon(Icons.arrow_drop_down, color: AppColors.textMuted),
+                            items: const [
+                              DropdownMenuItem(value: null, child: Text('Semua Kondisi')),
+                              DropdownMenuItem(value: 'new', child: Text('Baru')),
+                              DropdownMenuItem(value: 'like_new', child: Text('Seperti Baru')),
+                              DropdownMenuItem(value: 'good', child: Text('Baik')),
+                              DropdownMenuItem(value: 'fair', child: Text('Cukup')),
+                            ],
+                            onChanged: (val) {
+                              ref.read(selectedConditionProvider.notifier).updateCondition(val);
+                            },
                           ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            'Coba ubah kata kunci atau filter.',
-                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          ElevatedButton.icon(
+                          const Spacer(),
+                          TextButton.icon(
                             onPressed: _resetFilters,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Reset Pencarian dan Filter'),
-                          )
+                            icon: const Icon(Icons.clear, size: 16, color: AppColors.accent),
+                            label: const Text('Reset', style: TextStyle(color: AppColors.accent)),
+                          ),
                         ],
                       ),
                     ),
-                  );
-                }
-                return SliverMainAxisGroup(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 220,
-                          childAspectRatio: 0.65,
-                          crossAxisSpacing: AppSpacing.md,
-                          mainAxisSpacing: AppSpacing.md,
+                  ),
+                  
+                  productsAsync.when(
+                    data: (products) {
+                      if (products.products.isEmpty) {
+                        return SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: AppEmptyState(
+                            icon: Icons.search_off,
+                            title: 'Tidak Ada Produk',
+                            message: 'Kami tidak dapat menemukan produk yang sesuai dengan pencarian Anda.',
+                            buttonText: 'Hapus Filter',
+                            onButtonPressed: _resetFilters,
+                          ),
+                        );
+                      }
+                      
+                      return SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isDesktop ? MediaQuery.of(context).size.width * 0.1 : AppSpacing.md,
+                          vertical: AppSpacing.md,
                         ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => ProductCard(product: products[index]),
-                          childCount: products.length,
-                        ),
-                      ),
-                    ),
-                    if (paginatedState.hasMore)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                          child: Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                ref.read(productsProvider.notifier).fetchMore();
-                              },
-                              child: const Text('Muat Lebih Banyak'),
-                            ),
+                        sliver: SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: isDesktop ? 4 : 2,
+                            childAspectRatio: 0.7,
+                            crossAxisSpacing: AppSpacing.md,
+                            mainAxisSpacing: AppSpacing.md,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              return ProductCard(product: products.products[index]);
+                            },
+                            childCount: products.products.length,
                           ),
                         ),
+                      );
+                    },
+                    loading: () => const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                    ),
+                    error: (error, stack) => SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: AppErrorState(
+                        message: error.toString(),
+                        onRetry: () => ref.invalidate(productsProvider),
                       ),
-                  ],
-                );
-              },
-              loading: () => SliverPadding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 220,
-                    childAspectRatio: 0.65,
-                    crossAxisSpacing: AppSpacing.md,
-                    mainAxisSpacing: AppSpacing.md,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildLoadingSkeleton(theme),
-                    childCount: 4,
-                  ),
-                ),
-              ),
-              error: (e, st) => SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-                        const SizedBox(height: AppSpacing.md),
-                        Text('Gagal memuat produk', style: theme.textTheme.titleMedium),
-                        const SizedBox(height: AppSpacing.md),
-                        ElevatedButton(
-                          onPressed: () {
-                            ref.invalidate(productsProvider);
-                          },
-                          child: const Text('Coba Lagi'),
-                        )
-                      ],
                     ),
                   ),
-                ),
-              ),
-            ),
-            
-            const SliverToBoxAdapter(
-              child: SizedBox(height: AppSpacing.xxl),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildConditionChip(BuildContext context, WidgetRef ref, String label, String? value, String? selectedValue) {
-    return Padding(
-      padding: const EdgeInsets.only(right: AppSpacing.sm),
-      child: FilterChip(
-        label: Text(label, style: const TextStyle(fontSize: 12)),
-        selected: selectedValue == value,
-        onSelected: (selected) {
-          if (selected) {
-            ref.read(selectedConditionProvider.notifier).updateCondition(value);
-          } else if (value != null) {
-            ref.read(selectedConditionProvider.notifier).updateCondition(null);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildLoadingSkeleton(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(height: 16, width: double.infinity, color: theme.colorScheme.surfaceContainerHighest),
-                const SizedBox(height: AppSpacing.sm),
-                Container(height: 16, width: 80, color: theme.colorScheme.surfaceContainerHighest),
-                const SizedBox(height: AppSpacing.sm),
-                Container(height: 20, width: 100, color: theme.colorScheme.surfaceContainerHighest),
+                ],
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
