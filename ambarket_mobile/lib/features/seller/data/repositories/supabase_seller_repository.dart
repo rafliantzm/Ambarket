@@ -4,6 +4,7 @@ import '../../../marketplace/domain/models/product_model.dart';
 import '../../domain/models/create_product_input.dart';
 import '../../domain/repositories/seller_repository.dart';
 import '../../domain/models/seller_dashboard_stats.dart';
+import '../../domain/models/seller_product_stats.dart';
 import '../../../order/domain/models/order_model.dart';
 import '../../../offer/domain/models/offer_model.dart';
 
@@ -26,6 +27,72 @@ class SupabaseSellerRepository implements SellerRepository {
         .range(offset, offset + limit - 1);
 
     return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<List<ProductModel>> fetchSellerProductsFiltered(
+    String sellerId, {
+    String status = 'all',
+    String searchQuery = '',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    var query = _client
+        .from('products')
+        .select('''
+          *,
+          categories (*),
+          product_images (*)
+        ''')
+        .eq('seller_id', sellerId);
+
+    if (status != 'all') {
+      query = query.eq('status', status);
+    }
+
+    if (searchQuery.isNotEmpty) {
+      query = query.ilike('title', '%$searchQuery%');
+    }
+
+    final response = await query
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
+
+    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<SellerProductStats> fetchSellerProductStats(String sellerId) async {
+    // Perform concurrent count queries for different statuses
+    final results = await Future.wait([
+      _client.from('products').select('id').eq('seller_id', sellerId).count(CountOption.exact),
+      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'active').count(CountOption.exact),
+      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'reserved').count(CountOption.exact),
+      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'sold').count(CountOption.exact),
+      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'archived').count(CountOption.exact),
+      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'hidden').count(CountOption.exact),
+      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'rejected').count(CountOption.exact),
+    ]);
+
+    return SellerProductStats(
+      totalProducts: results[0].count,
+      activeProducts: results[1].count,
+      reservedProducts: results[2].count,
+      soldProducts: results[3].count,
+      archivedProducts: results[4].count,
+      hiddenProducts: results[5].count,
+      rejectedProducts: results[6].count,
+    );
+  }
+
+  @override
+  Future<void> archiveProduct(String productId, String sellerId) async {
+    await updateProductStatus(productId, sellerId, 'archived');
+  }
+
+  @override
+  Future<void> reactivateArchivedProduct(String productId, String sellerId) async {
+    await updateProductStatus(productId, sellerId, 'active');
   }
 
   @override

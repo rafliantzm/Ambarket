@@ -14,6 +14,7 @@ import '../../features/profile/presentation/screens/wishlist_screen.dart';
 import '../../features/seller/presentation/screens/seller_dashboard_screen.dart';
 import '../../features/seller/presentation/screens/add_product_screen.dart';
 import '../../features/seller/presentation/screens/edit_product_screen.dart';
+import '../../features/seller/presentation/screens/seller_products_screen.dart';
 
 import 'package:ambarket_mobile/features/offer/presentation/screens/my_offers_screen.dart';
 import 'package:ambarket_mobile/features/offer/presentation/screens/seller_offers_screen.dart';
@@ -102,6 +103,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id']!;
           return ChatDetailScreen(conversationId: id);
         },
+      ),
+      GoRoute(
+        path: '/seller/products',
+        builder: (context, state) => const SellerProductsScreen(),
       ),
       GoRoute(
         path: '/seller/products/new',

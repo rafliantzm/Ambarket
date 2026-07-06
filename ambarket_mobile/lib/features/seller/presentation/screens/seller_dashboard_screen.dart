@@ -15,6 +15,7 @@ import '../../../../core/widgets/app_loading_skeleton.dart';
 import '../../../../core/error/error_mapper.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../providers/seller_provider.dart';
+import '../widgets/seller_review_insights.dart';
 
 class SellerDashboardScreen extends ConsumerWidget {
   const SellerDashboardScreen({super.key});
@@ -74,6 +75,8 @@ class SellerDashboardScreen extends ConsumerWidget {
           _buildRecentOrders(context, ref),
           const SizedBox(height: AppSpacing.lg),
           _buildProductPerformance(context, ref),
+          const SizedBox(height: AppSpacing.lg),
+          const SellerReviewInsights(),
           const SizedBox(height: 100),
         ],
       ),
@@ -87,40 +90,34 @@ class SellerDashboardScreen extends ConsumerWidget {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSellerHeader(context, ref),
-              const SizedBox(height: AppSpacing.lg),
-              _buildQuickActions(context),
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      children: [
-                        _buildStatsOverview(context, ref, crossAxisCount: 4),
-                        const SizedBox(height: AppSpacing.lg),
-                        _buildProductPerformance(context, ref),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      children: [
-                        _buildRecentOffers(context, ref),
-                        const SizedBox(height: AppSpacing.lg),
-                        _buildRecentOrders(context, ref),
-                      ],
-                    ),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildSellerHeader(context, ref),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildQuickActions(context),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildStatsOverview(context, ref, crossAxisCount: 3),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildProductPerformance(context, ref),
+                  ],
+                ),
               ),
-              const SizedBox(height: 100),
+              const SizedBox(width: AppSpacing.xl),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildRecentOffers(context, ref),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildRecentOrders(context, ref),
+                    const SizedBox(height: AppSpacing.lg),
+                    const SellerReviewInsights(),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -178,10 +175,10 @@ class SellerDashboardScreen extends ConsumerWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
+              _buildActionChip(context, 'Kelola Produk', Icons.inventory_2, () => context.push('/seller/products')),
               _buildActionChip(context, 'Tambah Produk', Icons.add_box, () => context.push('/seller/products/new')),
               _buildActionChip(context, 'Pesanan', Icons.shopping_bag, () => context.push('/seller/orders')),
               _buildActionChip(context, 'Tawaran', Icons.local_offer, () => context.push('/seller/offers')),
-              _buildActionChip(context, 'Ulasan', Icons.star, () {}),
             ],
           ),
         ),
