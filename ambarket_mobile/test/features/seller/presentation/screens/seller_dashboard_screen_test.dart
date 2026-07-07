@@ -8,6 +8,8 @@ import 'package:ambarket_mobile/features/marketplace/domain/models/product_model
 import 'package:ambarket_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:ambarket_mobile/features/profile/domain/models/profile_model.dart';
 import 'package:ambarket_mobile/features/seller/domain/models/seller_dashboard_stats.dart';
+import 'package:ambarket_mobile/features/wallet/presentation/providers/seller_wallet_provider.dart';
+import 'package:ambarket_mobile/features/wallet/domain/models/seller_wallet_summary.dart';
 
 class MockMyProductsNotifier extends MyProductsNotifier {
   final List<ProductModel> _products;
@@ -37,6 +39,15 @@ void main() {
     averageRating: 4.8,
   );
 
+  final mockWalletSummary = SellerWalletSummary(
+    availableBalance: 1200000,
+    pendingBalance: 300000,
+    totalEarning: 1500000,
+    completedOrderRevenue: 1500000,
+    withdrawalCount: 1,
+    pendingWithdrawalCount: 0,
+  );
+
   group('SellerDashboardScreen Tests', () {
     testWidgets('renders header, stats, and quick actions', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -47,6 +58,7 @@ void main() {
             sellerRecentOrdersProvider.overrideWith((ref) => []),
             sellerRecentOffersProvider.overrideWith((ref) => []),
             myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
+            sellerWalletSummaryProvider.overrideWith((ref) => mockWalletSummary),
           ],
           child: const MaterialApp(
             home: SellerDashboardScreen(),
@@ -64,6 +76,7 @@ void main() {
 
       // Quick Actions
       expect(find.text('Aksi Cepat'), findsOneWidget);
+      expect(find.text('Wallet'), findsOneWidget);
       expect(find.text('Tambah Produk'), findsWidgets); // Header button + quick action
       expect(find.text('Pesanan'), findsOneWidget);
 
@@ -73,7 +86,8 @@ void main() {
       expect(find.text('10'), findsOneWidget);
       expect(find.text('Pesanan Baru'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
-      expect(find.text('Rp1.500.000'), findsOneWidget);
+      expect(find.text('Rp1.500.000'), findsWidgets); // Pendapatan
+      expect(find.text('Rp1.200.000'), findsOneWidget); // Saldo Dummy
       expect(find.text('4.8'), findsOneWidget);
     });
 
@@ -86,6 +100,7 @@ void main() {
             sellerRecentOrdersProvider.overrideWith((ref) => []),
             sellerRecentOffersProvider.overrideWith((ref) => []),
             myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
+            sellerWalletSummaryProvider.overrideWith((ref) => mockWalletSummary),
           ],
           child: const MaterialApp(
             home: SellerDashboardScreen(),
@@ -113,6 +128,7 @@ void main() {
             sellerRecentOrdersProvider.overrideWith((ref) => []),
             sellerRecentOffersProvider.overrideWith((ref) => []),
             myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
+            sellerWalletSummaryProvider.overrideWith((ref) => mockWalletSummary),
           ],
           child: const MaterialApp(
             home: SellerDashboardScreen(),
@@ -128,3 +144,4 @@ void main() {
     });
   });
 }
+

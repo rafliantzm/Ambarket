@@ -15,6 +15,7 @@ import '../../features/seller/presentation/screens/seller_dashboard_screen.dart'
 import '../../features/seller/presentation/screens/add_product_screen.dart';
 import '../../features/seller/presentation/screens/edit_product_screen.dart';
 import '../../features/seller/presentation/screens/seller_products_screen.dart';
+import '../../features/wallet/presentation/screens/seller_wallet_screen.dart';
 
 import 'package:ambarket_mobile/features/offer/presentation/screens/my_offers_screen.dart';
 import 'package:ambarket_mobile/features/offer/presentation/screens/seller_offers_screen.dart';
@@ -136,6 +137,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/seller/offers',
         builder: (context, state) => const SellerOffersScreen(),
+      ),
+      GoRoute(
+        path: '/seller/wallet',
+        builder: (context, state) => const SellerWalletScreen(),
       ),
       GoRoute(
         path: '/admin',

@@ -15,6 +15,7 @@ import '../../../../core/widgets/app_loading_skeleton.dart';
 import '../../../../core/error/error_mapper.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../providers/seller_provider.dart';
+import 'package:ambarket_mobile/features/wallet/presentation/providers/seller_wallet_provider.dart';
 import '../widgets/seller_review_insights.dart';
 
 class SellerDashboardScreen extends ConsumerWidget {
@@ -175,6 +176,7 @@ class SellerDashboardScreen extends ConsumerWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
+              _buildActionChip(context, 'Wallet', Icons.account_balance_wallet, () => context.push('/seller/wallet')),
               _buildActionChip(context, 'Kelola Produk', Icons.inventory_2, () => context.push('/seller/products')),
               _buildActionChip(context, 'Tambah Produk', Icons.add_box, () => context.push('/seller/products/new')),
               _buildActionChip(context, 'Pesanan', Icons.shopping_bag, () => context.push('/seller/orders')),
@@ -216,6 +218,7 @@ class SellerDashboardScreen extends ConsumerWidget {
 
   Widget _buildStatsOverview(BuildContext context, WidgetRef ref, {required int crossAxisCount}) {
     final statsAsync = ref.watch(sellerDashboardStatsProvider);
+    final walletAsync = ref.watch(sellerWalletSummaryProvider);
     final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
 
     return Column(
@@ -239,6 +242,11 @@ class SellerDashboardScreen extends ConsumerWidget {
             onRetry: () => ref.invalidate(sellerDashboardStatsProvider),
           ),
           data: (stats) {
+            final walletBalance = walletAsync.maybeWhen(
+              data: (summary) => summary.availableBalance,
+              orElse: () => 0.0,
+            );
+
             return GridView.count(
               crossAxisCount: crossAxisCount,
               shrinkWrap: true,
@@ -247,14 +255,14 @@ class SellerDashboardScreen extends ConsumerWidget {
               crossAxisSpacing: AppSpacing.sm,
               childAspectRatio: 1.8,
               children: [
-                _buildStatCard(context, 'Produk Aktif', '${stats.activeProductsCount}', Icons.inventory_2),
+                _buildStatCard(context, 'Saldo (Dummy)', currencyFormatter.format(walletBalance), Icons.account_balance_wallet, color: Colors.teal),
+                _buildStatCard(context, 'Pendapatan', currencyFormatter.format(stats.totalRevenueDummy), Icons.payments, color: AppColors.primary),
                 _buildStatCard(context, 'Pesanan Baru', '${stats.pendingOrdersCount + stats.paidOrdersCount}', Icons.shopping_cart, color: AppColors.primary),
                 _buildStatCard(context, 'Perlu Dikirim', '${stats.packedOrdersCount}', Icons.local_shipping, color: AppColors.accent),
                 _buildStatCard(context, 'Tawaran Masuk', '${stats.pendingOffersCount}', Icons.local_offer, color: Colors.orange),
                 _buildStatCard(context, 'Pesanan Selesai', '${stats.completedOrdersCount}', Icons.check_circle, color: Colors.green),
                 _buildStatCard(context, 'Rating Toko', stats.averageRating > 0 ? stats.averageRating.toStringAsFixed(1) : '-', Icons.star, color: Colors.amber),
-                _buildStatCard(context, 'Total Ulasan', '${stats.totalReviews}', Icons.rate_review),
-                _buildStatCard(context, 'Pendapatan (Dummy)', currencyFormatter.format(stats.totalRevenueDummy), Icons.account_balance_wallet, color: AppColors.primary),
+                _buildStatCard(context, 'Produk Aktif', '${stats.activeProductsCount}', Icons.inventory_2),
               ],
             );
           },
