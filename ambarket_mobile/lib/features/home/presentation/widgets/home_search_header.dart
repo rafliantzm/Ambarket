@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_glass_card.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../../../notification/presentation/providers/notification_provider.dart';
 
 class HomeSearchHeader extends ConsumerWidget {
   final TextEditingController searchController;
@@ -62,33 +63,47 @@ class HomeSearchHeader extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.md),
-          // Dummy Notification Badge
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none, color: AppColors.textPrimary),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Belum ada notifikasi baru.')),
-                  );
-                },
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    borderRadius: BorderRadius.circular(6),
+          // Notification Badge
+          Consumer(
+            builder: (context, ref, child) {
+              final unreadCountAsync = ref.watch(unreadNotificationCountProvider);
+              final unreadCount = unreadCountAsync.value ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none, color: AppColors.textPrimary),
+                    onPressed: () {
+                      context.push('/notifications');
+                    },
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 12,
-                    minHeight: 12,
-                  ),
-                ),
-              )
-            ],
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: AppColors.error,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                ],
+              );
+            },
           ),
           const SizedBox(width: AppSpacing.sm),
           IconButton(

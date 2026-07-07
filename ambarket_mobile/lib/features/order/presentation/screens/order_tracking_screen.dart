@@ -147,23 +147,41 @@ class OrderTrackingScreen extends ConsumerWidget {
         Column(
           children: [
             Container(
-              width: 24,
-              height: 24,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isActive ? AppColors.accent : AppColors.surface,
+                color: isActive ? AppColors.accent : Colors.transparent,
                 border: Border.all(
                   color: isActive ? AppColors.accent : Colors.white24,
                   width: 2,
                 ),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.5),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        )
+                      ]
+                    : null,
               ),
-              child: isActive ? const Icon(Icons.check, size: 14, color: Colors.black) : null,
+              child: isActive ? const Icon(Icons.check, size: 16, color: Colors.black) : null,
             ),
             if (!isLast)
               Container(
                 width: 2,
-                height: 50,
-                color: isActive ? AppColors.accent : Colors.white24,
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: isActive
+                      ? const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [AppColors.accent, AppColors.accent],
+                        )
+                      : null,
+                  color: isActive ? null : Colors.white24,
+                ),
               ),
           ],
         ),

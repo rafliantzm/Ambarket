@@ -4,6 +4,8 @@ import '../../domain/models/offer_model.dart';
 import '../../domain/repositories/offer_repository.dart';
 import '../../data/repositories/supabase_offer_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../features/notification/presentation/providers/notification_provider.dart';
+import '../../../../features/marketplace/presentation/providers/marketplace_provider.dart';
 
 final offerRepositoryProvider = Provider<OfferRepository>((ref) {
   return SupabaseOfferRepository(ref.watch(supabaseClientProvider));
@@ -63,6 +65,19 @@ class CreateOfferController extends AsyncNotifier<void> {
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
       await _repo.createOffer(user.id, input);
+      
+      // Notify seller
+      final productState = ref.read(productDetailProvider(input.productId)).value;
+      if (productState != null) {
+        ref.read(notificationRepositoryProvider).createDummyNotification(
+          userId: productState.sellerId,
+          type: 'offer_received',
+          title: 'Tawaran Baru',
+          body: 'Anda mendapat tawaran baru untuk produk ${productState.title}',
+          relatedType: 'offer',
+        );
+      }
+
       ref.invalidate(mySentOffersProvider);
       state = const AsyncData(null);
     } catch (e, st) {
@@ -104,6 +119,21 @@ class OfferActionController extends AsyncNotifier<void> {
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
       await _repo.acceptOffer(offerId, user.id);
+      
+      // Notify buyer
+      final offers = ref.read(myReceivedOffersProvider).value ?? [];
+      final offer = offers.where((o) => o.id == offerId).firstOrNull;
+      if (offer != null) {
+        ref.read(notificationRepositoryProvider).createDummyNotification(
+          userId: offer.buyerId,
+          type: 'offer_accepted',
+          title: 'Tawaran Diterima!',
+          body: 'Tawaran Anda telah diterima oleh penjual. Segera lakukan pembayaran.',
+          relatedType: 'offer',
+          relatedId: offer.id,
+        );
+      }
+
       ref.invalidate(myReceivedOffersProvider);
       ref.invalidate(filteredReceivedOffersProvider);
       state = const AsyncData(null);
@@ -119,6 +149,21 @@ class OfferActionController extends AsyncNotifier<void> {
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
       await _repo.rejectOffer(offerId, user.id);
+      
+      // Notify buyer
+      final offers = ref.read(myReceivedOffersProvider).value ?? [];
+      final offer = offers.where((o) => o.id == offerId).firstOrNull;
+      if (offer != null) {
+        ref.read(notificationRepositoryProvider).createDummyNotification(
+          userId: offer.buyerId,
+          type: 'offer_rejected',
+          title: 'Tawaran Ditolak',
+          body: 'Maaf, tawaran Anda ditolak oleh penjual.',
+          relatedType: 'offer',
+          relatedId: offer.id,
+        );
+      }
+
       ref.invalidate(myReceivedOffersProvider);
       ref.invalidate(filteredReceivedOffersProvider);
       state = const AsyncData(null);

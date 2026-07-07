@@ -6,6 +6,7 @@ import '../../domain/models/dummy_withdrawal_input.dart';
 import '../../domain/repositories/seller_wallet_repository.dart';
 import '../../data/repositories/supabase_seller_wallet_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../features/notification/presentation/providers/notification_provider.dart';
 
 // 1. Repository Provider
 final sellerWalletRepositoryProvider = Provider<SellerWalletRepository>((ref) {
@@ -48,6 +49,15 @@ class SellerWithdrawalActionController extends AsyncNotifier<void> {
       if (user == null) throw Exception('User not logged in');
 
       await ref.read(sellerWalletRepositoryProvider).requestDummyWithdrawal(user.id, input);
+      
+      // Notify seller
+      ref.read(notificationRepositoryProvider).createDummyNotification(
+        userId: user.id,
+        type: 'withdrawal_requested',
+        title: 'Penarikan Diproses',
+        body: 'Permintaan penarikan saldo sedang diproses (Dummy).',
+        relatedType: 'withdrawal',
+      );
       
       // Invalidate to refresh lists and summary
       ref.invalidate(sellerWalletSummaryProvider);

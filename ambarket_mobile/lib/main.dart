@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,8 @@ void main() async {
     url: supabaseUrl,
     publishableKey: supabasePublishableKey,
   );
+
+  timeago.setLocaleMessages('id', timeago.IdMessages());
 
   runApp(const ProviderScope(child: AmbarketApp()));
 }
