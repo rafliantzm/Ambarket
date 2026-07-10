@@ -14,7 +14,11 @@ class SupabaseSellerRepository implements SellerRepository {
   SupabaseSellerRepository(this._client);
 
   @override
-  Future<List<ProductModel>> fetchMyProducts(String sellerId, {int offset = 0, int limit = 20}) async {
+  Future<List<ProductModel>> fetchMyProducts(
+    String sellerId, {
+    int offset = 0,
+    int limit = 20,
+  }) async {
     final response = await _client
         .from('products')
         .select('''
@@ -26,7 +30,9 @@ class SupabaseSellerRepository implements SellerRepository {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
   }
 
   @override
@@ -58,20 +64,56 @@ class SupabaseSellerRepository implements SellerRepository {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
   }
 
   @override
   Future<SellerProductStats> fetchSellerProductStats(String sellerId) async {
     // Perform concurrent count queries for different statuses
     final results = await Future.wait([
-      _client.from('products').select('id').eq('seller_id', sellerId).count(CountOption.exact),
-      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'active').count(CountOption.exact),
-      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'reserved').count(CountOption.exact),
-      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'sold').count(CountOption.exact),
-      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'archived').count(CountOption.exact),
-      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'hidden').count(CountOption.exact),
-      _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'rejected').count(CountOption.exact),
+      _client
+          .from('products')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .count(CountOption.exact),
+      _client
+          .from('products')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .eq('status', 'active')
+          .count(CountOption.exact),
+      _client
+          .from('products')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .eq('status', 'reserved')
+          .count(CountOption.exact),
+      _client
+          .from('products')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .eq('status', 'sold')
+          .count(CountOption.exact),
+      _client
+          .from('products')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .eq('status', 'archived')
+          .count(CountOption.exact),
+      _client
+          .from('products')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .eq('status', 'hidden')
+          .count(CountOption.exact),
+      _client
+          .from('products')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .eq('status', 'rejected')
+          .count(CountOption.exact),
     ]);
 
     return SellerProductStats(
@@ -91,12 +133,18 @@ class SupabaseSellerRepository implements SellerRepository {
   }
 
   @override
-  Future<void> reactivateArchivedProduct(String productId, String sellerId) async {
+  Future<void> reactivateArchivedProduct(
+    String productId,
+    String sellerId,
+  ) async {
     await updateProductStatus(productId, sellerId, 'active');
   }
 
   @override
-  Future<ProductModel> fetchMyProductDetail(String productId, String sellerId) async {
+  Future<ProductModel> fetchMyProductDetail(
+    String productId,
+    String sellerId,
+  ) async {
     final response = await _client
         .from('products')
         .select('''
@@ -112,14 +160,17 @@ class SupabaseSellerRepository implements SellerRepository {
   }
 
   @override
-  Future<ProductModel> createProduct(String sellerId, CreateProductInput input) async {
+  Future<ProductModel> createProduct(
+    String sellerId,
+    CreateProductInput input,
+  ) async {
     // 1. Insert product
     final productResponse = await _client
         .from('products')
         .insert(input.toJson(sellerId))
         .select()
         .single();
-        
+
     final productId = productResponse['id'] as String;
 
     // 2. Upload images with rollback
@@ -142,21 +193,61 @@ class SupabaseSellerRepository implements SellerRepository {
   }
 
   @override
-  Future<void> updateProduct(String productId, String sellerId, UpdateProductInput input) async {
+  Future<void> updateProduct(
+    String productId,
+    String sellerId,
+    UpdateProductInput input,
+  ) async {
     await _client
         .from('products')
         .update(input.toJson())
         .eq('id', productId)
         .eq('seller_id', sellerId);
+
+    if (input.newImageBytesList.isNotEmpty) {
+      // 1. Fetch old images
+      final oldImages = await _client
+          .from('product_images')
+          .select('id, image_url')
+          .eq('product_id', productId);
+
+      // 2. Delete old images from storage (best effort)
+      for (var row in oldImages) {
+        try {
+          final imageUrl = row['image_url'] as String;
+          final urlParts = imageUrl.split('product-images/');
+          if (urlParts.length > 1) {
+            await _client.storage.from('product-images').remove([urlParts[1]]);
+          }
+        } catch (_) {}
+      }
+
+      // 3. Delete old images from DB
+      await _client.from('product_images').delete().eq('product_id', productId);
+
+      // 4. Upload new images
+      for (var i = 0; i < input.newImageBytesList.length; i++) {
+        await uploadProductImage(
+          productId,
+          sellerId,
+          input.newImageBytesList[i],
+          i == 0,
+        );
+      }
+    }
   }
 
   @override
-  Future<void> updateProductStatus(String productId, String sellerId, String status) async {
+  Future<void> updateProductStatus(
+    String productId,
+    String sellerId,
+    String status,
+  ) async {
     final updateData = <String, dynamic>{'status': status};
     if (status == 'sold') {
       updateData['sold_at'] = DateTime.now().toIso8601String();
     }
-    
+
     await _client
         .from('products')
         .update(updateData)
@@ -165,20 +256,29 @@ class SupabaseSellerRepository implements SellerRepository {
   }
 
   @override
-  Future<void> uploadProductImage(String productId, String sellerId, Uint8List imageBytes, bool isPrimary) async {
+  Future<void> uploadProductImage(
+    String productId,
+    String sellerId,
+    Uint8List imageBytes,
+    bool isPrimary,
+  ) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     // Path format: {seller_id}/{product_id}/{timestamp}.jpg
     final imagePath = '$sellerId/$productId/$timestamp.jpg';
 
     // Upload to Storage
-    await _client.storage.from('product-images').uploadBinary(
-      imagePath,
-      imageBytes,
-      fileOptions: const FileOptions(contentType: 'image/jpeg'),
-    );
+    await _client.storage
+        .from('product-images')
+        .uploadBinary(
+          imagePath,
+          imageBytes,
+          fileOptions: const FileOptions(contentType: 'image/jpeg'),
+        );
 
     // Get public URL
-    final imageUrl = _client.storage.from('product-images').getPublicUrl(imagePath);
+    final imageUrl = _client.storage
+        .from('product-images')
+        .getPublicUrl(imagePath);
 
     // Insert into product_images table
     try {
@@ -202,9 +302,9 @@ class SupabaseSellerRepository implements SellerRepository {
         .select('image_url, product_id')
         .eq('id', imageId)
         .single();
-        
+
     final productId = imageResponse['product_id'] as String;
-    
+
     // Verify seller owns this product
     final productCheck = await _client
         .from('products')
@@ -212,12 +312,12 @@ class SupabaseSellerRepository implements SellerRepository {
         .eq('id', productId)
         .eq('seller_id', sellerId)
         .maybeSingle();
-        
+
     if (productCheck == null) {
       throw Exception('Unauthorized to delete this image');
     }
 
-    // Note: Due to RLS we could technically just attempt delete, 
+    // Note: Due to RLS we could technically just attempt delete,
     // but the actual storage bucket object should ideally be deleted too.
     // For now we'll delete the db record, which removes it from UI.
     // To delete from storage, we'd need to parse the URL.
@@ -232,67 +332,74 @@ class SupabaseSellerRepository implements SellerRepository {
       }
     }
 
-    await _client
-        .from('product_images')
-        .delete()
-        .eq('id', imageId);
+    await _client.from('product_images').delete().eq('id', imageId);
   }
 
   @override
-  Future<SellerDashboardStats> fetchSellerDashboardStats(String sellerId) async {
-    // Products counts
-    final activeProductsRes = await _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'available').count(CountOption.exact);
-    final soldProductsRes = await _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'sold').count(CountOption.exact);
-    final reservedProductsRes = await _client.from('products').select('id').eq('seller_id', sellerId).eq('status', 'reserved').count(CountOption.exact);
+  Future<SellerDashboardStats> fetchSellerDashboardStats(
+    String sellerId,
+  ) async {
+    final results = await Future.wait<dynamic>([
+      _client.from('products').select('status').eq('seller_id', sellerId),
+      _client
+          .from('orders')
+          .select('status, total_price')
+          .eq('seller_id', sellerId),
+      _client
+          .from('offers')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .eq('status', 'pending'),
+    ]);
 
-    // Orders counts
-    final pendingOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'pending_payment').count(CountOption.exact);
-    final paidOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'paid').count(CountOption.exact);
-    final packedOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'packed').count(CountOption.exact);
-    final shippedOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'shipped').count(CountOption.exact);
-    final completedOrdersRes = await _client.from('orders').select('id').eq('seller_id', sellerId).eq('status', 'completed').count(CountOption.exact);
+    final products = List<Map<String, dynamic>>.from(results[0] as List);
+    final orders = List<Map<String, dynamic>>.from(results[1] as List);
+    final pendingOffers = List<Map<String, dynamic>>.from(results[2] as List);
 
-    // Offers counts
-    final pendingOffersRes = await _client.from('offers').select('id').eq('seller_id', sellerId).eq('status', 'pending').count(CountOption.exact);
+    int countProductsByStatus(String status) {
+      return products.where((row) => row['status'] == status).length;
+    }
 
-    // Total revenue from completed orders
-    final completedOrdersData = await _client.from('orders').select('total_price').eq('seller_id', sellerId).eq('status', 'completed');
+    int countOrdersByStatus(String status) {
+      return orders.where((row) => row['status'] == status).length;
+    }
+
     double revenue = 0.0;
-    for (var row in completedOrdersData) {
-      if (row['total_price'] != null) {
+    for (final row in orders) {
+      if (row['status'] == 'completed' && row['total_price'] != null) {
         revenue += (row['total_price'] as num).toDouble();
       }
     }
 
-    // Rating
-    // If we have reviews table we could query it. Assuming we don't have direct access or it's heavy, we default to 0 for now
-    // If we have a 'profiles' or 'seller_profiles' rating, we could fetch it.
-    final profileData = await _client.from('profiles').select('rating, total_reviews').eq('id', sellerId).maybeSingle();
+    // Rating and Reviews
+    // Note: The profiles table does not have rating and total_reviews columns in the current schema.
+    // If you need them, they should be queried from a reviews table or added to profiles.
     double avgRating = 0.0;
     int reviewsCount = 0;
-    if (profileData != null) {
-      if (profileData['rating'] != null) avgRating = (profileData['rating'] as num).toDouble();
-      if (profileData['total_reviews'] != null) reviewsCount = profileData['total_reviews'] as int;
-    }
 
     return SellerDashboardStats(
-      activeProductsCount: activeProductsRes.count,
-      soldProductsCount: soldProductsRes.count,
-      reservedProductsCount: reservedProductsRes.count,
-      pendingOrdersCount: pendingOrdersRes.count,
-      paidOrdersCount: paidOrdersRes.count,
-      packedOrdersCount: packedOrdersRes.count,
-      shippedOrdersCount: shippedOrdersRes.count,
-      completedOrdersCount: completedOrdersRes.count,
-      pendingOffersCount: pendingOffersRes.count,
+      activeProductsCount: countProductsByStatus('active'),
+      soldProductsCount: countProductsByStatus('sold'),
+      reservedProductsCount: countProductsByStatus('reserved'),
+      pendingOrdersCount: countOrdersByStatus('pending_payment'),
+      paidOrdersCount: countOrdersByStatus('paid'),
+      packedOrdersCount: countOrdersByStatus('packed'),
+      shippedOrdersCount: countOrdersByStatus('shipped'),
+      completedOrdersCount: countOrdersByStatus('completed'),
+      pendingOffersCount: pendingOffers.length,
       averageRating: avgRating,
       totalReviews: reviewsCount,
       totalRevenueDummy: revenue,
+      cancelledOrdersCount: countOrdersByStatus('cancelled'),
+      returnedOrdersCount: countOrdersByStatus('returned'),
     );
   }
 
   @override
-  Future<List<OrderModel>> fetchRecentSellerOrders(String sellerId, {int limit = 5}) async {
+  Future<List<OrderModel>> fetchRecentSellerOrders(
+    String sellerId, {
+    int limit = 5,
+  }) async {
     final response = await _client
         .from('orders')
         .select()
@@ -303,12 +410,18 @@ class SupabaseSellerRepository implements SellerRepository {
   }
 
   @override
-  Future<List<OfferModel>> fetchRecentSellerOffers(String sellerId, {int limit = 5}) async {
+  Future<List<OfferModel>> fetchRecentSellerOffers(
+    String sellerId, {
+    int limit = 5,
+  }) async {
     final response = await _client
         .from('offers')
         .select()
         .eq('seller_id', sellerId)
-        .eq('status', 'pending') // Usually recent offers are pending offers that need action
+        .eq(
+          'status',
+          'pending',
+        ) // Usually recent offers are pending offers that need action
         .order('created_at', ascending: false)
         .limit(limit);
     return (response as List).map((json) => OfferModel.fromJson(json)).toList();

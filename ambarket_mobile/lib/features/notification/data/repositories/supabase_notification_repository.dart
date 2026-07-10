@@ -20,7 +20,14 @@ class SupabaseNotificationRepository implements NotificationRepository {
           .eq('user_id', uid)
           .order('created_at', ascending: false);
 
-      return (response as List).map((json) => NotificationModel.fromJson(json)).toList();
+      return (response as List)
+          .map((json) => NotificationModel.fromJson(json))
+          .toList();
+    } on PostgrestException catch (e) {
+      if (e.code == '42P01' || e.code == '404') {
+        return [];
+      }
+      throw Exception(ErrorMapper.getFriendlyMessage(e));
     } catch (e) {
       throw Exception(ErrorMapper.getFriendlyMessage(e));
     }
@@ -39,6 +46,11 @@ class SupabaseNotificationRepository implements NotificationRepository {
           .eq('is_read', false);
 
       return (response as List).length;
+    } on PostgrestException catch (e) {
+      if (e.code == '42P01' || e.code == '404') {
+        return 0;
+      }
+      throw Exception(ErrorMapper.getFriendlyMessage(e));
     } catch (e) {
       throw Exception(ErrorMapper.getFriendlyMessage(e));
     }
@@ -51,6 +63,9 @@ class SupabaseNotificationRepository implements NotificationRepository {
           .from('notifications')
           .update({'is_read': true})
           .eq('id', id);
+    } on PostgrestException catch (e) {
+      if (e.code == '42P01' || e.code == '404') return;
+      throw Exception(ErrorMapper.getFriendlyMessage(e));
     } catch (e) {
       throw Exception(ErrorMapper.getFriendlyMessage(e));
     }
@@ -67,6 +82,9 @@ class SupabaseNotificationRepository implements NotificationRepository {
           .update({'is_read': true})
           .eq('user_id', uid)
           .eq('is_read', false);
+    } on PostgrestException catch (e) {
+      if (e.code == '42P01' || e.code == '404') return;
+      throw Exception(ErrorMapper.getFriendlyMessage(e));
     } catch (e) {
       throw Exception(ErrorMapper.getFriendlyMessage(e));
     }
@@ -82,14 +100,17 @@ class SupabaseNotificationRepository implements NotificationRepository {
     String? relatedId,
   }) async {
     try {
-      await _client.rpc('create_dummy_notification', params: {
-        'p_user_id': userId,
-        'p_type': type,
-        'p_title': title,
-        'p_body': body,
-        'p_related_type': relatedType,
-        'p_related_id': relatedId,
-      });
+      await _client.rpc(
+        'create_dummy_notification',
+        params: {
+          'p_user_id': userId,
+          'p_type': type,
+          'p_title': title,
+          'p_body': body,
+          'p_related_type': relatedType,
+          'p_related_id': relatedId,
+        },
+      );
     } catch (e) {
       throw Exception(ErrorMapper.getFriendlyMessage(e));
     }

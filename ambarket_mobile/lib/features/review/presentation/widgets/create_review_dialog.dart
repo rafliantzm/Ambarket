@@ -34,30 +34,36 @@ class _CreateReviewDialogState extends ConsumerState<CreateReviewDialog> {
   void _submit() async {
     final currentProfile = ref.read(currentProfileProvider).value;
     if (currentProfile?.isSuspended == true) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Akun Anda sedang ditangguhkan.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Akun Anda sedang ditangguhkan.')),
+      );
       return;
     }
 
-    final success = await ref.read(createReviewControllerProvider.notifier).submitReview(
-      orderId: widget.orderId,
-      productId: widget.productId,
-      reviewedUserId: widget.reviewedUserId,
-      rating: _rating,
-      comment: _commentController.text.trim().isEmpty ? null : _commentController.text.trim(),
-    );
+    final success = await ref
+        .read(createReviewControllerProvider.notifier)
+        .submitReview(
+          orderId: widget.orderId,
+          productId: widget.productId,
+          reviewedUserId: widget.reviewedUserId,
+          rating: _rating,
+          comment: _commentController.text.trim().isEmpty
+              ? null
+              : _commentController.text.trim(),
+        );
 
     if (!mounted) return;
-    
+
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ulasan berhasil dikirim!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Ulasan berhasil dikirim!')));
       Navigator.of(context).pop();
     } else {
       final error = ref.read(createReviewControllerProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Gagal mengirim ulasan')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error ?? 'Gagal mengirim ulasan')));
     }
   }
 
@@ -108,7 +114,11 @@ class _CreateReviewDialogState extends ConsumerState<CreateReviewDialog> {
         ElevatedButton(
           onPressed: state.isLoading ? null : _submit,
           child: state.isLoading
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Kirim Ulasan'),
         ),
       ],

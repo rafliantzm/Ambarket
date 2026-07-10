@@ -15,9 +15,7 @@ class BuyerOrdersScreen extends ConsumerWidget {
     final ordersAsync = ref.watch(buyerOrdersProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pesanan Saya'),
-      ),
+      appBar: AppBar(title: const Text('Pesanan Saya')),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(buyerOrdersProvider.future),
         child: ordersAsync.when(
@@ -33,6 +31,10 @@ class BuyerOrdersScreen extends ConsumerWidget {
 
             return ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
+              cacheExtent: 800,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: true,
               itemCount: orders.length,
               itemBuilder: (context, index) {
                 final order = orders[index];
@@ -48,7 +50,6 @@ class BuyerOrdersScreen extends ConsumerWidget {
   }
 }
 
-
 class _OrderCard extends ConsumerWidget {
   final OrderModel order;
   final bool isBuyer;
@@ -58,7 +59,11 @@ class _OrderCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
     Color statusColor;
@@ -90,7 +95,9 @@ class _OrderCard extends ConsumerWidget {
         statusText = order.status;
     }
 
-    final actionState = ref.watch(orderActionControllerProvider);
+    final isLoading = ref.watch(
+      orderActionControllerProvider.select((state) => state.isLoading),
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -105,13 +112,18 @@ class _OrderCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     order.product?.title ?? 'Produk',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -119,46 +131,75 @@ class _OrderCard extends ConsumerWidget {
                   ),
                   child: Text(
                     statusText,
-                    style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text('ID Pesanan: ${order.id.substring(0, 8).toUpperCase()}', style: theme.textTheme.bodySmall),
-            Text('Tanggal: ${dateFormat.format(order.createdAt)}', style: theme.textTheme.bodySmall),
+            Text(
+              'ID Pesanan: ${order.id.substring(0, 8).toUpperCase()}',
+              style: theme.textTheme.bodySmall,
+            ),
+            Text(
+              'Tanggal: ${dateFormat.format(order.createdAt)}',
+              style: theme.textTheme.bodySmall,
+            ),
             const Divider(),
             if (isBuyer)
               Text('Toko: ${order.seller?.name ?? "Penjual"}')
             else
               Text('Pembeli: ${order.buyer?.name ?? "Pembeli"}'),
             const SizedBox(height: AppSpacing.xs),
-            Text('Total: ${currencyFormat.format(order.totalPrice)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'Total: ${currencyFormat.format(order.totalPrice)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const Divider(),
-            Text('Kirim ke:', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
-            Text(order.shippingAddress ?? '-', style: theme.textTheme.bodySmall),
-            Text('Telp: ${order.receiverPhone ?? order.buyer?.phone ?? "-"}', style: theme.textTheme.bodySmall),
-            
+            Text(
+              'Kirim ke:',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              order.shippingAddress ?? '-',
+              style: theme.textTheme.bodySmall,
+            ),
+            Text(
+              'Telp: ${order.receiverPhone ?? order.buyer?.phone ?? "-"}',
+              style: theme.textTheme.bodySmall,
+            ),
+
             // Common Actions (Invoice & Tracking)
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                if (order.status != 'pending_payment' && order.status != 'cancelled')
+                if (order.status != 'pending_payment' &&
+                    order.status != 'cancelled')
                   TextButton.icon(
-                    onPressed: () => context.push('/orders/${order.id}/invoice'),
+                    onPressed: () =>
+                        context.push('/orders/${order.id}/invoice'),
                     icon: const Icon(Icons.receipt_long, size: 16),
                     label: const Text('Invoice'),
                   ),
                 const Spacer(),
-                if (order.status != 'pending_payment' && order.status != 'cancelled' && order.status != 'completed')
+                if (order.status != 'pending_payment' &&
+                    order.status != 'cancelled' &&
+                    order.status != 'completed')
                   TextButton.icon(
-                    onPressed: () => context.push('/orders/${order.id}/tracking'),
+                    onPressed: () =>
+                        context.push('/orders/${order.id}/tracking'),
                     icon: const Icon(Icons.local_shipping, size: 16),
                     label: const Text('Lacak'),
                   ),
               ],
             ),
-            
+
             // Actions
             if (order.status != 'completed' && order.status != 'cancelled') ...[
               const SizedBox(height: AppSpacing.md),
@@ -166,51 +207,75 @@ class _OrderCard extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   // Cancel button for both buyer and seller in early stages
-                  if (order.status == 'pending_payment' || order.status == 'paid')
+                  if (order.status == 'pending_payment' ||
+                      order.status == 'paid')
                     TextButton(
-                      onPressed: actionState.isLoading ? null : () {
-                        _showConfirmation(
-                          context,
-                          'Batalkan Pesanan',
-                          'Yakin ingin membatalkan pesanan ini?',
-                          () => ref.read(orderActionControllerProvider.notifier).updateStatus(order.id, 'cancelled'),
-                        );
-                      },
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              _showConfirmation(
+                                context,
+                                'Batalkan Pesanan',
+                                'Yakin ingin membatalkan pesanan ini?',
+                                () => ref
+                                    .read(
+                                      orderActionControllerProvider.notifier,
+                                    )
+                                    .updateStatus(order.id, 'cancelled'),
+                              );
+                            },
                       style: TextButton.styleFrom(foregroundColor: Colors.red),
                       child: const Text('Batalkan'),
                     ),
                   const SizedBox(width: AppSpacing.sm),
-                  
+
                   if (isBuyer && order.status == 'pending_payment')
                     ElevatedButton(
-                      onPressed: actionState.isLoading ? null : () {
-                        context.push('/payment/${order.id}');
-                      },
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              context.push('/payment/${order.id}');
+                            },
                       child: const Text('Bayar Sekarang'),
                     ),
                   if (!isBuyer && order.status == 'paid')
                     ElevatedButton(
-                      onPressed: actionState.isLoading ? null : () {
-                        _showConfirmation(
-                          context,
-                          'Tandai Dikirim',
-                          'Apakah pesanan sudah diserahkan ke kurir?',
-                          () => ref.read(orderActionControllerProvider.notifier).updateStatus(order.id, 'shipped'),
-                        );
-                      },
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              _showConfirmation(
+                                context,
+                                'Tandai Dikirim',
+                                'Apakah pesanan sudah diserahkan ke kurir?',
+                                () => ref
+                                    .read(
+                                      orderActionControllerProvider.notifier,
+                                    )
+                                    .updateStatus(order.id, 'shipped'),
+                              );
+                            },
                       child: const Text('Tandai Dikirim'),
                     ),
                   if (isBuyer && order.status == 'shipped')
                     ElevatedButton(
-                      onPressed: actionState.isLoading ? null : () {
-                        _showConfirmation(
-                          context,
-                          'Pesanan Diterima',
-                          'Konfirmasi bahwa Anda telah menerima pesanan dengan baik?',
-                          () => ref.read(orderActionControllerProvider.notifier).updateStatus(order.id, 'completed'),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              _showConfirmation(
+                                context,
+                                'Pesanan Diterima',
+                                'Konfirmasi bahwa Anda telah menerima pesanan dengan baik?',
+                                () => ref
+                                    .read(
+                                      orderActionControllerProvider.notifier,
+                                    )
+                                    .updateStatus(order.id, 'completed'),
+                              );
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Pesanan Diterima'),
                     ),
                 ],
@@ -233,28 +298,42 @@ class _OrderCard extends ConsumerWidget {
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black,
+                      ),
                       child: const Text('Beri Ulasan'),
                     )
                   else
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade800,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Text('Sudah Diulas', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      child: const Text(
+                        'Sudah Diulas',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
                     ),
                 ],
               ),
-            ]
+            ],
           ],
         ),
       ),
     );
   }
 
-  void _showConfirmation(BuildContext context, String title, String content, VoidCallback onConfirm) {
+  void _showConfirmation(
+    BuildContext context,
+    String title,
+    String content,
+    VoidCallback onConfirm,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

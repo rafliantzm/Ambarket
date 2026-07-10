@@ -7,7 +7,17 @@ ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_status_check;
 ALTER TABLE public.products ADD CONSTRAINT products_status_check CHECK (status IN ('active', 'reserved', 'sold', 'archived'));
 
 -- Make sure an offer can only be checked out once
-ALTER TABLE public.orders ADD CONSTRAINT unique_offer_order UNIQUE (offer_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'unique_offer_order'
+        AND conrelid = 'public.orders'::regclass
+    ) THEN
+        ALTER TABLE public.orders ADD CONSTRAINT unique_offer_order UNIQUE (offer_id);
+    END IF;
+END $$;
 
 -- New Trigger 1: When an order is created, product becomes 'reserved'
 CREATE OR REPLACE FUNCTION set_product_reserved_on_order()
@@ -33,8 +43,8 @@ BEGIN
         SET status = 'sold', updated_at = now()
         WHERE id = NEW.product_id;
     ELSIF NEW.status = 'cancelled' AND OLD.status != 'cancelled' THEN
-        -- Only restore to active if it was reserved by this order. 
-        -- If it was already sold (somehow), we might not want to revert it automatically, 
+        -- Only restore to active if it was reserved by this order.
+        -- If it was already sold (somehow), we might not want to revert it automatically,
         -- but typically cancelled orders means it should go back to active.
         -- We just update it if it's currently reserved.
         UPDATE public.products
@@ -45,6 +55,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_order_updated ON public.orders;
 CREATE TRIGGER on_order_updated
     AFTER UPDATE OF status ON public.orders
     FOR EACH ROW EXECUTE PROCEDURE handle_order_status_update();

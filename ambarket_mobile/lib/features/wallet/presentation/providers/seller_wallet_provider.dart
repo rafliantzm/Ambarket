@@ -15,27 +15,31 @@ final sellerWalletRepositoryProvider = Provider<SellerWalletRepository>((ref) {
 });
 
 // 2. Wallet Summary Provider
-final sellerWalletSummaryProvider = FutureProvider.autoDispose<SellerWalletSummary>((ref) async {
-  final user = ref.watch(currentUserProvider);
-  if (user == null) throw Exception('User not logged in');
+final sellerWalletSummaryProvider =
+    FutureProvider.autoDispose<SellerWalletSummary>((ref) async {
+      final user = ref.watch(currentUserProvider);
+      if (user == null) throw Exception('User not logged in');
 
-  final repo = ref.watch(sellerWalletRepositoryProvider);
-  
-  // Ensure wallet exists before fetching
-  await repo.ensureSellerWalletExists(user.id);
-  // Calculate earnings (simulation for MVP)
-  await repo.calculateSellerEarningsFromCompletedOrders(user.id);
+      final repo = ref.watch(sellerWalletRepositoryProvider);
 
-  return repo.fetchSellerWalletSummary(user.id);
-});
+      // Ensure wallet exists before fetching
+      await repo.ensureSellerWalletExists(user.id);
+      // Calculate earnings (simulation for MVP)
+      await repo.calculateSellerEarningsFromCompletedOrders(user.id);
+
+      return repo.fetchSellerWalletSummary(user.id);
+    });
 
 // 3. Seller Withdrawals Provider
-final sellerWithdrawalsProvider = FutureProvider.autoDispose<List<SellerWithdrawalModel>>((ref) async {
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return [];
+final sellerWithdrawalsProvider =
+    FutureProvider.autoDispose<List<SellerWithdrawalModel>>((ref) async {
+      final user = ref.watch(currentUserProvider);
+      if (user == null) return [];
 
-  return ref.watch(sellerWalletRepositoryProvider).fetchSellerWithdrawals(user.id);
-});
+      return ref
+          .watch(sellerWalletRepositoryProvider)
+          .fetchSellerWithdrawals(user.id);
+    });
 
 // 4. Action Controller
 class SellerWithdrawalActionController extends AsyncNotifier<void> {
@@ -48,17 +52,21 @@ class SellerWithdrawalActionController extends AsyncNotifier<void> {
       final user = ref.read(currentUserProvider);
       if (user == null) throw Exception('User not logged in');
 
-      await ref.read(sellerWalletRepositoryProvider).requestDummyWithdrawal(user.id, input);
-      
+      await ref
+          .read(sellerWalletRepositoryProvider)
+          .requestDummyWithdrawal(user.id, input);
+
       // Notify seller
-      ref.read(notificationRepositoryProvider).createDummyNotification(
-        userId: user.id,
-        type: 'withdrawal_requested',
-        title: 'Penarikan Diproses',
-        body: 'Permintaan penarikan saldo sedang diproses (Dummy).',
-        relatedType: 'withdrawal',
-      );
-      
+      ref
+          .read(notificationRepositoryProvider)
+          .createDummyNotification(
+            userId: user.id,
+            type: 'withdrawal_requested',
+            title: 'Penarikan Diproses',
+            body: 'Permintaan penarikan saldo sedang diproses (Dummy).',
+            relatedType: 'withdrawal',
+          );
+
       // Invalidate to refresh lists and summary
       ref.invalidate(sellerWalletSummaryProvider);
       ref.invalidate(sellerWithdrawalsProvider);
@@ -66,6 +74,7 @@ class SellerWithdrawalActionController extends AsyncNotifier<void> {
   }
 }
 
-final sellerWithdrawalActionControllerProvider = AsyncNotifierProvider<SellerWithdrawalActionController, void>(
-  () => SellerWithdrawalActionController(),
-);
+final sellerWithdrawalActionControllerProvider =
+    AsyncNotifierProvider<SellerWithdrawalActionController, void>(
+      () => SellerWithdrawalActionController(),
+    );

@@ -2,10 +2,7 @@ class ReviewSummaryModel {
   final double averageRating;
   final int totalReviews;
 
-  ReviewSummaryModel({
-    required this.averageRating,
-    required this.totalReviews,
-  });
+  ReviewSummaryModel({required this.averageRating, required this.totalReviews});
 
   factory ReviewSummaryModel.fromJson(Map<String, dynamic> json) {
     return ReviewSummaryModel(

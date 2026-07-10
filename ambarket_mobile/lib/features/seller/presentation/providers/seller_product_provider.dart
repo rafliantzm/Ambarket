@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../marketplace/domain/models/product_model.dart';
 import '../../domain/models/seller_product_stats.dart';
@@ -13,18 +14,32 @@ class SellerProductStatusFilter extends Notifier<String> {
   }
 }
 
-final sellerProductStatusFilterProvider = NotifierProvider<SellerProductStatusFilter, String>(SellerProductStatusFilter.new);
+final sellerProductStatusFilterProvider =
+    NotifierProvider<SellerProductStatusFilter, String>(
+      SellerProductStatusFilter.new,
+    );
 
 class SellerProductSearchQuery extends Notifier<String> {
+  Timer? _debounceTimer;
+
   @override
-  String build() => '';
+  String build() {
+    ref.onDispose(() => _debounceTimer?.cancel());
+    return '';
+  }
 
   void setQuery(String query) {
-    state = query;
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      state = query;
+    });
   }
 }
 
-final sellerProductSearchQueryProvider = NotifierProvider<SellerProductSearchQuery, String>(SellerProductSearchQuery.new);
+final sellerProductSearchQueryProvider =
+    NotifierProvider<SellerProductSearchQuery, String>(
+      SellerProductSearchQuery.new,
+    );
 
 class SellerProductListNotifier extends AsyncNotifier<List<ProductModel>> {
   @override
@@ -35,11 +50,13 @@ class SellerProductListNotifier extends AsyncNotifier<List<ProductModel>> {
     final status = ref.watch(sellerProductStatusFilterProvider);
     final query = ref.watch(sellerProductSearchQueryProvider);
 
-    return ref.read(sellerRepositoryProvider).fetchSellerProductsFiltered(
-      user.id,
-      status: status,
-      searchQuery: query,
-    );
+    return ref
+        .read(sellerRepositoryProvider)
+        .fetchSellerProductsFiltered(
+          user.id,
+          status: status,
+          searchQuery: query,
+        );
   }
 
   Future<void> refresh() async {
@@ -47,7 +64,10 @@ class SellerProductListNotifier extends AsyncNotifier<List<ProductModel>> {
   }
 }
 
-final sellerProductsProvider = AsyncNotifierProvider<SellerProductListNotifier, List<ProductModel>>(SellerProductListNotifier.new);
+final sellerProductsProvider =
+    AsyncNotifierProvider<SellerProductListNotifier, List<ProductModel>>(
+      SellerProductListNotifier.new,
+    );
 
 class SellerProductStatsNotifier extends AsyncNotifier<SellerProductStats> {
   @override
@@ -63,7 +83,10 @@ class SellerProductStatsNotifier extends AsyncNotifier<SellerProductStats> {
   }
 }
 
-final sellerProductStatsProvider = AsyncNotifierProvider<SellerProductStatsNotifier, SellerProductStats>(SellerProductStatsNotifier.new);
+final sellerProductStatsProvider =
+    AsyncNotifierProvider<SellerProductStatsNotifier, SellerProductStats>(
+      SellerProductStatsNotifier.new,
+    );
 
 class SellerProductActionState {
   final bool isLoading;
@@ -84,7 +107,9 @@ class SellerProductActionController extends Notifier<SellerProductActionState> {
     }
 
     try {
-      await ref.read(sellerRepositoryProvider).archiveProduct(productId, user.id);
+      await ref
+          .read(sellerRepositoryProvider)
+          .archiveProduct(productId, user.id);
       _refreshDependencies();
       state = SellerProductActionState();
       return true;
@@ -103,7 +128,9 @@ class SellerProductActionController extends Notifier<SellerProductActionState> {
     }
 
     try {
-      await ref.read(sellerRepositoryProvider).reactivateArchivedProduct(productId, user.id);
+      await ref
+          .read(sellerRepositoryProvider)
+          .reactivateArchivedProduct(productId, user.id);
       _refreshDependencies();
       state = SellerProductActionState();
       return true;
@@ -120,4 +147,7 @@ class SellerProductActionController extends Notifier<SellerProductActionState> {
   }
 }
 
-final sellerProductActionControllerProvider = NotifierProvider<SellerProductActionController, SellerProductActionState>(SellerProductActionController.new);
+final sellerProductActionControllerProvider =
+    NotifierProvider<SellerProductActionController, SellerProductActionState>(
+      SellerProductActionController.new,
+    );

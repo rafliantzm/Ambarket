@@ -3,29 +3,39 @@ import '../../domain/models/product_model.dart';
 import 'marketplace_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 
-final homeRecommendedProvider = FutureProvider.autoDispose<List<ProductModel>>((ref) async {
+final homeRecommendedProvider = FutureProvider.autoDispose<List<ProductModel>>((
+  ref,
+) async {
+  ref.keepAlive();
   final repo = ref.watch(marketplaceRepositoryProvider);
   return repo.fetchRecommendedProducts();
 });
 
-final homeLatestProductsProvider = FutureProvider.autoDispose<List<ProductModel>>((ref) async {
-  final repo = ref.watch(marketplaceRepositoryProvider);
-  return repo.fetchLatestProducts();
-});
+final homeLatestProductsProvider =
+    FutureProvider.autoDispose<List<ProductModel>>((ref) async {
+      ref.keepAlive();
+      final repo = ref.watch(marketplaceRepositoryProvider);
+      return repo.fetchLatestProducts();
+    });
 
-final homeBestDealsProvider = FutureProvider.autoDispose<List<ProductModel>>((ref) async {
+final homeBestDealsProvider = FutureProvider.autoDispose<List<ProductModel>>((
+  ref,
+) async {
+  ref.keepAlive();
   final repo = ref.watch(marketplaceRepositoryProvider);
   return repo.fetchBestDealProducts();
 });
 
-final homeNearbyProductsProvider = FutureProvider.autoDispose<List<ProductModel>>((ref) async {
-  final repo = ref.watch(marketplaceRepositoryProvider);
-  final profileAsync = ref.watch(currentProfileProvider);
-  
-  String? location;
-  if (profileAsync.value != null && profileAsync.value!.location != null) {
-    location = profileAsync.value!.location;
-  }
-  
-  return repo.fetchNearbyProducts(location);
-});
+final homeNearbyProductsProvider =
+    FutureProvider.autoDispose<List<ProductModel>>((ref) async {
+      ref.keepAlive();
+      final repo = ref.watch(marketplaceRepositoryProvider);
+      final profileAsync = ref.watch(currentProfileProvider);
+
+      String? location;
+      if (profileAsync.value != null && profileAsync.value!.location != null) {
+        location = profileAsync.value!.location;
+      }
+
+      return repo.fetchNearbyProducts(location);
+    });

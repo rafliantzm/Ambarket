@@ -6,7 +6,9 @@ import 'package:ambarket_mobile/features/order/domain/models/order_model.dart';
 import 'package:ambarket_mobile/features/order/presentation/providers/order_provider.dart';
 
 void main() {
-  testWidgets('InvoiceScreen renders invoice number', (WidgetTester tester) async {
+  testWidgets('InvoiceScreen renders invoice number', (
+    WidgetTester tester,
+  ) async {
     final mockDate = DateTime(2026, 1, 1);
     final mockOrder = OrderModel(
       id: 'ORDER_UUID',
@@ -33,12 +35,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          buyerOrdersProvider.overrideWith((ref) => [mockOrder]), 
+          buyerOrdersProvider.overrideWith((ref) => [mockOrder]),
           sellerOrdersProvider.overrideWith((ref) => []),
         ],
-        child: const MaterialApp(
-          home: InvoiceScreen(orderId: 'ORDER_UUID'),
-        ),
+        child: const MaterialApp(home: InvoiceScreen(orderId: 'ORDER_UUID')),
       ),
     );
 

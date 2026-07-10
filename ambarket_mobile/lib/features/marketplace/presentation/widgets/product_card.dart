@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_glass_card.dart';
+import '../../../../core/widgets/app_money_text.dart';
 import '../../../../core/widgets/app_status_badge.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/models/product_model.dart';
-import '../providers/marketplace_provider.dart';
+import '../../../cart/presentation/providers/cart_provider.dart';
 
 class ProductCard extends ConsumerWidget {
   final ProductModel product;
@@ -19,167 +19,217 @@ class ProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final primaryImage = product.images.where((img) => img.isPrimary).firstOrNull ?? product.images.firstOrNull;
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    final primaryImage =
+        product.images.where((img) => img.isPrimary).firstOrNull ??
+        product.images.firstOrNull;
 
-    final wishlistsState = ref.watch(wishlistProductIdsProvider);
-    final isWishlisted = wishlistsState.maybeWhen(
-      data: (wishlists) => wishlists.contains(product.id),
-      orElse: () => false,
-    );
+    final userId = ref.watch(currentUserProvider.select((user) => user?.id));
+    final isOwner = userId == product.sellerId;
+    final isActive = product.status == 'active';
 
     return AppGlassCard(
       padding: EdgeInsets.zero,
+      variant: AppGlassCardVariant.soft,
       onTap: () {
-        context.push('/products/${product.id}');
+        // Use Future.microtask so the InkWell ripple finishes its first frame before heavy navigation
+        Future.microtask(() {
+          if (context.mounted) context.push('/products/${product.id}');
+        });
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Image Section
-          Expanded(
-            flex: 5,
+          AspectRatio(
+            aspectRatio: 1.05,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                primaryImage != null
-                    ? CachedNetworkImage(
+                if (primaryImage != null)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final devicePixelRatio = MediaQuery.devicePixelRatioOf(
+                        context,
+                      );
+                      final cacheWidth =
+                          (constraints.maxWidth * devicePixelRatio)
+                              .clamp(180, 520)
+                              .round();
+                      final cacheHeight =
+                          (constraints.maxHeight * devicePixelRatio)
+                              .clamp(180, 520)
+                              .round();
+
+                      return CachedNetworkImage(
                         imageUrl: primaryImage.imageUrl,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: AppColors.backgroundDarker,
-                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppColors.backgroundDarker,
-                          child: const Center(child: Icon(Icons.broken_image, size: 40, color: AppColors.textMuted)),
-                        ),
-                      )
-                    : Container(
-                        color: AppColors.backgroundDarker,
-                        child: const Center(child: Icon(Icons.image, size: 40, color: AppColors.textMuted)),
-                      ),
-                
-                // Dark gradient overlay at top for icons
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 60,
-                  child: Container(
+                        memCacheWidth: cacheWidth,
+                        memCacheHeight: cacheHeight,
+                        fadeInDuration: Duration.zero,
+                        fadeOutDuration: Duration.zero,
+                        placeholder: (context, url) =>
+                            _buildImagePlaceholder(context),
+                        errorWidget: (context, url, error) =>
+                            _buildImagePlaceholder(context, isError: true),
+                      );
+                    },
+                  )
+                else
+                  _buildImagePlaceholder(context),
+
+                // Overlay Gradient at bottom of image
+                Positioned.fill(
+                  child: DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withValues(alpha: 0.5),
                           Colors.transparent,
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.1),
+                          Colors.black.withValues(alpha: 0.6),
                         ],
                       ),
                     ),
                   ),
                 ),
 
+                // Badges
                 Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Material(
-                    color: AppColors.surface,
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.antiAlias,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      iconSize: 20,
-                      icon: Icon(
-                        isWishlisted ? Icons.favorite : Icons.favorite_border,
-                        color: isWishlisted ? AppColors.accent : AppColors.textPrimary,
-                      ),
-                      onPressed: () async {
-                        try {
-                          await ref.read(wishlistProductIdsProvider.notifier).toggleWishlist(product.id);
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-                            );
-                          }
-                        }
-                      },
-                    ),
+                  bottom: 8,
+                  left: 8,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isActive)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: AppStatusBadge(
+                            label: product.status == 'sold'
+                                ? 'Terjual'
+                                : 'Dipesan',
+                            status: product.status == 'sold'
+                                ? BadgeStatus.error
+                                : BadgeStatus.warning,
+                          ),
+                        ),
+                      if (isOwner)
+                        const AppStatusBadge(
+                          label: 'Toko Anda',
+                          status: BadgeStatus
+                              .info, // Changed to info as primary isn't in BadgeStatus
+                        ),
+                    ],
                   ),
                 ),
-                
-                if (product.status != 'available')
+
+                // Cart Button
+                if (!isOwner && isActive)
                   Positioned(
                     top: 8,
-                    left: 8,
-                    child: AppStatusBadge(
-                      label: product.status == 'sold' ? 'Terjual' : 'Dipesan',
-                      status: product.status == 'sold' ? BadgeStatus.error : BadgeStatus.warning,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.colors.surface.withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(),
+                        iconSize: 18,
+                        icon: Icon(
+                          Icons.add_shopping_cart_outlined,
+                          color: context.colors.textPrimary,
+                        ),
+                        onPressed: () async {
+                          try {
+                            await ref
+                                .read(cartActionControllerProvider.notifier)
+                                .addToCart(product.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Ditambahkan ke keranjang',
+                                  ),
+                                  action: SnackBarAction(
+                                    label: 'Lihat',
+                                    onPressed: () => context.push('/cart'),
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    e.toString().replaceAll('Exception: ', ''),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
                     ),
                   ),
               ],
             ),
           ),
-          
+
           // Details Section
           Expanded(
-            flex: 4,
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
+              padding: const EdgeInsets.all(
+                10,
+              ), // Fixed 10px padding for mobile
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween, // Push content properly
                 children: [
-                  Text(
-                    product.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Spacer(),
-                  Text(
-                    currencyFormatter.format(product.price),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          border: Border.all(color: AppColors.border),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                      SizedBox(
+                        height:
+                            42, // Fixed height for 2 lines (14px * 1.35 * 2 approx + padding)
                         child: Text(
-                          _getConditionLabel(product.condition),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: AppColors.textSecondary,
+                          product.title,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: context.colors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            height: 1.35,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: true,
                         ),
                       ),
-                      if (product.isNegotiable) ...[
-                        const SizedBox(width: AppSpacing.xs),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Nego',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppColors.primary,
-                            ),
-                          ),
+                      const SizedBox(height: 4),
+                      AppMoneyText(
+                        amount: product.price,
+                        fontSize:
+                            15, // Slightly smaller to prevent overflow, but bold
+                      ),
+                    ],
+                  ),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: [
+                      AppStatusBadge(
+                        label: _getConditionLabel(product.condition),
+                        status: BadgeStatus.neutral,
+                      ),
+                      if (product.isNegotiable)
+                        const AppStatusBadge(
+                          label: 'Nego',
+                          status: BadgeStatus.success,
                         ),
-                      ],
                     ],
                   ),
                 ],
@@ -191,14 +241,54 @@ class ProductCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildImagePlaceholder(BuildContext context, {bool isError = false}) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [context.colors.surfaceHighlight, context.colors.surface],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isError
+                  ? Icons.broken_image_rounded
+                  : Icons.shopping_bag_outlined,
+              size: 32,
+              color: context.colors.textMuted.withValues(alpha: 0.5),
+            ),
+            if (isError) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Gambar tidak tersedia',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: context.colors.textMuted.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   String _getConditionLabel(String condition) {
     switch (condition) {
-      case 'new': return 'Baru';
-      case 'like_new': return 'Seperti Baru';
-      case 'good': return 'Baik';
-      case 'fair': return 'Cukup';
-      default: return condition;
+      case 'new':
+        return 'Baru';
+      case 'like_new':
+        return 'Spt. Baru';
+      case 'good':
+        return 'Baik';
+      case 'fair':
+        return 'Cukup';
+      default:
+        return condition;
     }
   }
 }
-

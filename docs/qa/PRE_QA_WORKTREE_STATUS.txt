@@ -1,0 +1,206 @@
+﻿ M ambarket_mobile/lib/core/env/env.dart
+ M ambarket_mobile/lib/core/error/error_mapper.dart
+ M ambarket_mobile/lib/core/router/app_router.dart
+ M ambarket_mobile/lib/core/theme/app_colors.dart
+ M ambarket_mobile/lib/core/theme/app_spacing.dart
+ M ambarket_mobile/lib/core/theme/app_theme.dart
+ M ambarket_mobile/lib/core/theme/app_typography.dart
+ M ambarket_mobile/lib/core/widgets/app_animated_background.dart
+ M ambarket_mobile/lib/core/widgets/app_button.dart
+ M ambarket_mobile/lib/core/widgets/app_empty_state.dart
+ M ambarket_mobile/lib/core/widgets/app_error_state.dart
+ M ambarket_mobile/lib/core/widgets/app_glass_card.dart
+ M ambarket_mobile/lib/core/widgets/app_status_badge.dart
+ M ambarket_mobile/lib/features/admin/data/repositories/supabase_admin_repository.dart
+ M ambarket_mobile/lib/features/admin/domain/repositories/admin_repository.dart
+ M ambarket_mobile/lib/features/admin/presentation/providers/admin_provider.dart
+ M ambarket_mobile/lib/features/admin/presentation/screens/admin_audit_logs_screen.dart
+ M ambarket_mobile/lib/features/admin/presentation/screens/admin_dashboard_screen.dart
+ M ambarket_mobile/lib/features/admin/presentation/screens/admin_products_screen.dart
+ M ambarket_mobile/lib/features/admin/presentation/screens/admin_report_detail_screen.dart
+ M ambarket_mobile/lib/features/admin/presentation/screens/admin_reports_screen.dart
+ M ambarket_mobile/lib/features/admin/presentation/screens/admin_reviews_screen.dart
+ M ambarket_mobile/lib/features/admin/presentation/screens/admin_users_screen.dart
+ M ambarket_mobile/lib/features/admin/presentation/widgets/report_target_card.dart
+ M ambarket_mobile/lib/features/auth/data/repositories/supabase_auth_repository.dart
+ M ambarket_mobile/lib/features/auth/domain/repositories/auth_repository.dart
+ M ambarket_mobile/lib/features/auth/presentation/providers/auth_provider.dart
+ M ambarket_mobile/lib/features/auth/presentation/screens/login_screen.dart
+ M ambarket_mobile/lib/features/auth/presentation/screens/register_screen.dart
+ M ambarket_mobile/lib/features/cart/data/repositories/supabase_cart_repository.dart
+ M ambarket_mobile/lib/features/cart/domain/models/cart_item_model.dart
+ M ambarket_mobile/lib/features/cart/domain/repositories/cart_repository.dart
+ M ambarket_mobile/lib/features/cart/presentation/providers/cart_provider.dart
+ M ambarket_mobile/lib/features/cart/presentation/screens/cart_screen.dart
+ M ambarket_mobile/lib/features/chat/data/repositories/supabase_chat_repository.dart
+ M ambarket_mobile/lib/features/chat/domain/models/conversation_model.dart
+ M ambarket_mobile/lib/features/chat/domain/repositories/chat_repository.dart
+ M ambarket_mobile/lib/features/chat/presentation/providers/chat_provider.dart
+ M ambarket_mobile/lib/features/chat/presentation/screens/chat_detail_screen.dart
+ M ambarket_mobile/lib/features/chat/presentation/screens/chat_list_screen.dart
+ M ambarket_mobile/lib/features/home/presentation/screens/home_screen.dart
+ M ambarket_mobile/lib/features/home/presentation/screens/main_shell.dart
+ M ambarket_mobile/lib/features/home/presentation/widgets/home_category_strip.dart
+ M ambarket_mobile/lib/features/home/presentation/widgets/home_hero_carousel.dart
+ M ambarket_mobile/lib/features/home/presentation/widgets/home_product_horizontal_list.dart
+ M ambarket_mobile/lib/features/home/presentation/widgets/home_product_section.dart
+ M ambarket_mobile/lib/features/home/presentation/widgets/home_promo_banner.dart
+ M ambarket_mobile/lib/features/home/presentation/widgets/home_quick_actions.dart
+ M ambarket_mobile/lib/features/home/presentation/widgets/home_search_header.dart
+ M ambarket_mobile/lib/features/marketplace/data/repositories/supabase_marketplace_repository.dart
+ M ambarket_mobile/lib/features/marketplace/domain/models/product_model.dart
+ M ambarket_mobile/lib/features/marketplace/domain/repositories/marketplace_repository.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/providers/home_providers.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/providers/marketplace_provider.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/screens/product_detail_screen.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/widgets/product_card.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_condition_section.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_image_gallery.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_info_section.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_purchase_panel.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_related_section.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_safety_section.dart
+ M ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_seller_card.dart
+ M ambarket_mobile/lib/features/notification/data/repositories/supabase_notification_repository.dart
+ M ambarket_mobile/lib/features/notification/presentation/providers/notification_provider.dart
+ M ambarket_mobile/lib/features/notification/presentation/screens/notifications_screen.dart
+ M ambarket_mobile/lib/features/offer/data/repositories/supabase_offer_repository.dart
+ M ambarket_mobile/lib/features/offer/domain/models/offer_model.dart
+ M ambarket_mobile/lib/features/offer/domain/repositories/offer_repository.dart
+ M ambarket_mobile/lib/features/offer/presentation/providers/offer_provider.dart
+ M ambarket_mobile/lib/features/offer/presentation/screens/my_offers_screen.dart
+ M ambarket_mobile/lib/features/offer/presentation/screens/seller_offers_screen.dart
+ M ambarket_mobile/lib/features/offer/presentation/widgets/make_offer_dialog.dart
+ M ambarket_mobile/lib/features/order/data/repositories/supabase_order_repository.dart
+ M ambarket_mobile/lib/features/order/domain/models/checkout_models.dart
+ M ambarket_mobile/lib/features/order/domain/models/order_model.dart
+ M ambarket_mobile/lib/features/order/domain/repositories/order_repository.dart
+ M ambarket_mobile/lib/features/order/presentation/providers/checkout_provider.dart
+ M ambarket_mobile/lib/features/order/presentation/providers/order_provider.dart
+ M ambarket_mobile/lib/features/order/presentation/screens/buyer_orders_screen.dart
+ M ambarket_mobile/lib/features/order/presentation/screens/checkout_screen.dart
+ M ambarket_mobile/lib/features/order/presentation/screens/invoice_screen.dart
+ M ambarket_mobile/lib/features/order/presentation/screens/order_tracking_screen.dart
+ M ambarket_mobile/lib/features/order/presentation/screens/payment_dummy_screen.dart
+ M ambarket_mobile/lib/features/order/presentation/screens/seller_orders_screen.dart
+ M ambarket_mobile/lib/features/profile/data/repositories/supabase_profile_repository.dart
+ M ambarket_mobile/lib/features/profile/domain/models/profile_model.dart
+ M ambarket_mobile/lib/features/profile/presentation/providers/profile_provider.dart
+ M ambarket_mobile/lib/features/profile/presentation/screens/edit_profile_screen.dart
+ M ambarket_mobile/lib/features/profile/presentation/screens/profile_screen.dart
+ D ambarket_mobile/lib/features/profile/presentation/screens/wishlist_screen.dart
+ M ambarket_mobile/lib/features/report/data/repositories/supabase_report_repository.dart
+ M ambarket_mobile/lib/features/report/domain/models/report_model.dart
+ M ambarket_mobile/lib/features/report/domain/repositories/report_repository.dart
+ M ambarket_mobile/lib/features/report/presentation/providers/report_provider.dart
+ M ambarket_mobile/lib/features/report/presentation/screens/my_reports_screen.dart
+ M ambarket_mobile/lib/features/report/presentation/widgets/report_dialog.dart
+ M ambarket_mobile/lib/features/review/data/repositories/supabase_review_repository.dart
+ M ambarket_mobile/lib/features/review/domain/models/review_model.dart
+ M ambarket_mobile/lib/features/review/domain/models/review_summary_model.dart
+ M ambarket_mobile/lib/features/review/presentation/providers/review_provider.dart
+ M ambarket_mobile/lib/features/review/presentation/widgets/create_review_dialog.dart
+ M ambarket_mobile/lib/features/seller/data/repositories/supabase_seller_repository.dart
+ M ambarket_mobile/lib/features/seller/domain/models/create_product_input.dart
+ M ambarket_mobile/lib/features/seller/domain/models/seller_dashboard_stats.dart
+ M ambarket_mobile/lib/features/seller/domain/repositories/seller_repository.dart
+ M ambarket_mobile/lib/features/seller/presentation/providers/seller_product_provider.dart
+ M ambarket_mobile/lib/features/seller/presentation/providers/seller_provider.dart
+ M ambarket_mobile/lib/features/seller/presentation/screens/add_product_screen.dart
+ M ambarket_mobile/lib/features/seller/presentation/screens/edit_product_screen.dart
+ M ambarket_mobile/lib/features/seller/presentation/screens/seller_dashboard_screen.dart
+ M ambarket_mobile/lib/features/seller/presentation/screens/seller_products_screen.dart
+ M ambarket_mobile/lib/features/seller/presentation/widgets/seller_product_card.dart
+ M ambarket_mobile/lib/features/seller/presentation/widgets/seller_review_insights.dart
+ M ambarket_mobile/lib/features/wallet/data/repositories/supabase_seller_wallet_repository.dart
+ M ambarket_mobile/lib/features/wallet/domain/models/seller_wallet_summary.dart
+ M ambarket_mobile/lib/features/wallet/domain/repositories/seller_wallet_repository.dart
+ M ambarket_mobile/lib/features/wallet/presentation/providers/seller_wallet_provider.dart
+ M ambarket_mobile/lib/features/wallet/presentation/screens/seller_wallet_screen.dart
+ M ambarket_mobile/lib/features/wallet/presentation/widgets/dummy_withdrawal_dialog.dart
+ M ambarket_mobile/lib/main.dart
+ M ambarket_mobile/pubspec.lock
+ M ambarket_mobile/pubspec.yaml
+ M ambarket_mobile/test/features/admin/presentation/screens/admin_dashboard_screen_test.dart
+ M ambarket_mobile/test/features/admin/presentation/screens/admin_reports_screen_test.dart
+ M ambarket_mobile/test/features/cart/presentation/screens/cart_screen_test.dart
+ M ambarket_mobile/test/features/chat/presentation/screens/chat_detail_screen_test.dart
+ M ambarket_mobile/test/features/chat/presentation/screens/chat_list_screen_test.dart
+ M ambarket_mobile/test/features/home/presentation/screens/home_screen_test.dart
+ M ambarket_mobile/test/features/marketplace/presentation/widgets/product_detail/product_purchase_panel_test.dart
+ M ambarket_mobile/test/features/offer/presentation/screens/my_offers_screen_test.dart
+ M ambarket_mobile/test/features/offer/presentation/screens/seller_offers_screen_test.dart
+ M ambarket_mobile/test/features/offer/presentation/widgets/make_offer_dialog_test.dart
+ M ambarket_mobile/test/features/order/presentation/screens/buyer_orders_screen_test.dart
+ M ambarket_mobile/test/features/order/presentation/screens/checkout_screen_test.dart
+ M ambarket_mobile/test/features/order/presentation/screens/invoice_screen_test.dart
+ M ambarket_mobile/test/features/order/presentation/screens/order_tracking_screen_test.dart
+ M ambarket_mobile/test/features/order/presentation/screens/payment_dummy_screen_test.dart
+ M ambarket_mobile/test/features/order/presentation/screens/seller_orders_screen_test.dart
+ M ambarket_mobile/test/features/profile/presentation/screens/profile_screen_test.dart
+ M ambarket_mobile/test/features/seller/presentation/screens/add_product_screen_test.dart
+ M ambarket_mobile/test/features/seller/presentation/screens/seller_dashboard_screen_test.dart
+ M ambarket_mobile/test/features/seller/presentation/screens/seller_products_screen_test.dart
+ M ambarket_mobile/test/features/wallet/presentation/screens/seller_wallet_screen_test.dart
+ M ambarket_mobile/test/widget_test.dart
+ M ambarket_mobile/web/index.html
+ M ambarket_mobile/web/manifest.json
+ M supabase/migrations/20260702223000_ambarket_order_hardening.sql
+ M supabase/migrations/20260702225800_ambarket_admin.sql
+ M supabase/migrations/20260705000000_ambarket_phase7_hardening.sql
+ M supabase/migrations/20260706000000_ambarket_phase8d_cart_checkout.sql
+?? ambarket_mobile/docs/BETA_BUG_REPORT_TEMPLATE.md
+?? ambarket_mobile/docs/CLOSED_BETA_TESTER_GUIDE.md
+?? ambarket_mobile/docs/GITHUB_RELEASE_TAGGING.md
+?? ambarket_mobile/docs/INTERACTION_JANK_AUDIT.md
+?? ambarket_mobile/docs/PERFORMANCE_BASELINE.md
+?? ambarket_mobile/docs/PRODUCT_FEED_PERFORMANCE_AUDIT.md
+?? ambarket_mobile/docs/RC_DISTRIBUTION_CHECKLIST.md
+?? ambarket_mobile/docs/SELLER_ADMIN_PERFORMANCE_BASELINE.md
+?? ambarket_mobile/lib/core/utils/
+?? ambarket_mobile/lib/core/widgets/ambarket_loaders.dart
+?? ambarket_mobile/lib/core/widgets/ambarket_scaffold.dart
+?? ambarket_mobile/lib/core/widgets/app_money_text.dart
+?? ambarket_mobile/lib/core/widgets/app_section_header.dart
+?? ambarket_mobile/lib/core/widgets/huashu_motion_background.dart
+?? ambarket_mobile/lib/core/widgets/premium_button.dart
+?? ambarket_mobile/lib/core/widgets/premium_command_search_bar.dart
+?? ambarket_mobile/lib/core/widgets/premium_dropdown.dart
+?? ambarket_mobile/lib/core/widgets/premium_empty_state.dart
+?? ambarket_mobile/lib/core/widgets/premium_filter_chips.dart
+?? ambarket_mobile/lib/core/widgets/premium_promo_card.dart
+?? ambarket_mobile/lib/core/widgets/premium_search_bar.dart
+?? ambarket_mobile/lib/core/widgets/premium_status_badge.dart
+?? ambarket_mobile/lib/core/widgets/premium_surface_card.dart
+?? ambarket_mobile/lib/core/widgets/premium_text_field.dart
+?? ambarket_mobile/lib/features/admin/presentation/providers/admin_voucher_provider.dart
+?? ambarket_mobile/lib/features/admin/presentation/screens/admin_create_voucher_screen.dart
+?? ambarket_mobile/lib/features/admin/presentation/screens/admin_vouchers_screen.dart
+?? ambarket_mobile/lib/features/home/presentation/widgets/animated_promo_hero_card.dart
+?? ambarket_mobile/lib/features/home/presentation/widgets/home_coupon_banner.dart
+?? ambarket_mobile/lib/features/marketplace/presentation/screens/products_list_screen.dart
+?? ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_bottom_action_bar.dart
+?? ambarket_mobile/lib/features/marketplace/presentation/widgets/product_detail/product_header_section.dart
+?? ambarket_mobile/lib/features/profile/data/repositories/supabase_voucher_repository.dart
+?? ambarket_mobile/lib/features/profile/presentation/providers/voucher_provider.dart
+?? ambarket_mobile/lib/features/profile/presentation/screens/seller_public_profile_screen.dart
+?? ambarket_mobile/lib/features/profile/presentation/screens/vouchers_screen.dart
+?? ambarket_mobile/lib/features/report/domain/models/report_message_model.dart
+?? ambarket_mobile/lib/features/report/presentation/screens/create_report_screen.dart
+?? ambarket_mobile/lib/features/report/presentation/screens/report_detail_screen.dart
+?? ambarket_mobile/scripts/
+?? ambarket_mobile/test/core/
+?? ambarket_mobile/test/features/auth/
+?? ambarket_mobile/test/features/marketplace/presentation/widgets/product_card_test.dart
+?? ambarket_mobile/test/features/profile/presentation/screens/profile_screen_admin_test.dart
+?? ambarket_mobile/test/manual/
+?? ambarket_mobile/web/flutter_bootstrap.js
+?? docs/
+?? supabase/migrations/20260707000000_ambarket_phase8f_notifications.sql
+?? supabase/migrations/20260707000001_ambarket_phase8f_notifications_hardening.sql
+?? supabase/migrations/20260707000002_ambarket_phase8e_wallet.sql
+?? supabase/migrations/20260707000003_ambarket_offer_expiry.sql
+?? supabase/migrations/20260707100005_ambarket_review_hardening.sql
+?? supabase/migrations/20260707110000_ambarket_phase9c4_report_messages.sql
+?? supabase/migrations/20260708000000_ambarket_wallet_rpcs.sql
+?? supabase/migrations/20260708000001_ambarket_vouchers.sql

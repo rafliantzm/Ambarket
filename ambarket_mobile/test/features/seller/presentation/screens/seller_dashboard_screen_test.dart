@@ -24,7 +24,7 @@ class MockMyProductsNotifier extends MyProductsNotifier {
 void main() {
   final mockUser = ProfileModel(
     id: 'user1',
-    
+
     name: 'Test Seller',
     username: 'testseller',
     role: 'seller',
@@ -49,7 +49,9 @@ void main() {
   );
 
   group('SellerDashboardScreen Tests', () {
-    testWidgets('renders header, stats, and quick actions', (WidgetTester tester) async {
+    testWidgets('renders header, stats, and quick actions', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -58,11 +60,11 @@ void main() {
             sellerRecentOrdersProvider.overrideWith((ref) => []),
             sellerRecentOffersProvider.overrideWith((ref) => []),
             myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
-            sellerWalletSummaryProvider.overrideWith((ref) => mockWalletSummary),
+            sellerWalletSummaryProvider.overrideWith(
+              (ref) => mockWalletSummary,
+            ),
           ],
-          child: const MaterialApp(
-            home: SellerDashboardScreen(),
-          ),
+          child: const MaterialApp(home: SellerDashboardScreen()),
         ),
       );
 
@@ -77,7 +79,10 @@ void main() {
       // Quick Actions
       expect(find.text('Aksi Cepat'), findsOneWidget);
       expect(find.text('Wallet'), findsOneWidget);
-      expect(find.text('Tambah Produk'), findsWidgets); // Header button + quick action
+      expect(
+        find.text('Tambah Produk'),
+        findsWidgets,
+      ); // Header button + quick action
       expect(find.text('Pesanan'), findsOneWidget);
 
       // Stats Grid
@@ -91,7 +96,9 @@ void main() {
       expect(find.text('4.8'), findsOneWidget);
     });
 
-    testWidgets('renders recent orders and offers empty states', (WidgetTester tester) async {
+    testWidgets('renders recent orders and offers empty states', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -100,11 +107,11 @@ void main() {
             sellerRecentOrdersProvider.overrideWith((ref) => []),
             sellerRecentOffersProvider.overrideWith((ref) => []),
             myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
-            sellerWalletSummaryProvider.overrideWith((ref) => mockWalletSummary),
+            sellerWalletSummaryProvider.overrideWith(
+              (ref) => mockWalletSummary,
+            ),
           ],
-          child: const MaterialApp(
-            home: SellerDashboardScreen(),
-          ),
+          child: const MaterialApp(home: SellerDashboardScreen()),
         ),
       );
 
@@ -119,7 +126,9 @@ void main() {
       expect(find.text('Tidak Ada Tawaran Pending'), findsOneWidget);
     });
 
-    testWidgets('renders product performance empty state', (WidgetTester tester) async {
+    testWidgets('renders product performance empty state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -128,20 +137,19 @@ void main() {
             sellerRecentOrdersProvider.overrideWith((ref) => []),
             sellerRecentOffersProvider.overrideWith((ref) => []),
             myProductsProvider.overrideWith(() => MockMyProductsNotifier([])),
-            sellerWalletSummaryProvider.overrideWith((ref) => mockWalletSummary),
+            sellerWalletSummaryProvider.overrideWith(
+              (ref) => mockWalletSummary,
+            ),
           ],
-          child: const MaterialApp(
-            home: SellerDashboardScreen(),
-          ),
+          child: const MaterialApp(home: SellerDashboardScreen()),
         ),
       );
 
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      
+
       expect(find.text('Performa Produk'), findsOneWidget);
       expect(find.text('Belum Ada Produk'), findsOneWidget);
     });
   });
 }
-

@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:ambarket_mobile/core/theme/app_spacing.dart';
 import 'package:ambarket_mobile/core/error/error_mapper.dart';
-import 'package:ambarket_mobile/core/widgets/app_animated_background.dart';
-import 'package:ambarket_mobile/core/widgets/app_button.dart';
-import 'package:ambarket_mobile/core/widgets/app_empty_state.dart';
+import 'package:ambarket_mobile/core/widgets/ambarket_scaffold.dart';
+import 'package:ambarket_mobile/core/widgets/premium_button.dart';
+import 'package:ambarket_mobile/core/widgets/premium_empty_state.dart';
 import 'package:ambarket_mobile/core/widgets/app_error_state.dart';
-import 'package:ambarket_mobile/core/widgets/app_glass_card.dart';
+import 'package:ambarket_mobile/core/widgets/premium_surface_card.dart';
 import 'package:ambarket_mobile/core/widgets/app_loading_skeleton.dart';
-import 'package:ambarket_mobile/core/widgets/app_status_badge.dart';
+import 'package:ambarket_mobile/core/widgets/premium_status_badge.dart';
+import 'package:ambarket_mobile/core/widgets/premium_filter_chips.dart';
 
 import 'package:ambarket_mobile/features/order/domain/models/order_model.dart';
 import 'package:ambarket_mobile/features/order/presentation/providers/order_provider.dart';
@@ -24,12 +26,16 @@ class SellerOrdersScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width >= 768;
 
-    return Scaffold(
+    return AmbarketScaffold(
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Pesanan Masuk'),
+            const Text(
+              'Pesanan Masuk',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             Text(
               'Kelola pesanan pembeli dari pembayaran hingga pengiriman.',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -38,16 +44,14 @@ class SellerOrdersScreen extends ConsumerWidget {
             ),
           ],
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: AppAnimatedBackground(
-        child: Column(
-          children: [
-            _buildFilters(context, ref),
-            Expanded(
-              child: _buildOrderList(context, ref, isDesktop),
-            ),
-          ],
-        ),
+      body: Column(
+        children: [
+          _buildFilters(context, ref),
+          Expanded(child: _buildOrderList(context, ref, isDesktop)),
+        ],
       ),
     );
   }
@@ -80,22 +84,23 @@ class SellerOrdersScreen extends ConsumerWidget {
         children: [
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             child: Row(
               children: statusOptions.entries.map((entry) {
                 final isSelected = statusFilter == entry.key;
                 return Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: FilterChip(
-                    label: Text(entry.value),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        ref.read(sellerOrderStatusFilterProvider.notifier).setFilter(entry.key);
-                      }
+                  child: PremiumFilterChip(
+                    label: entry.value,
+                    isSelected: isSelected,
+                    onTap: () {
+                      ref
+                          .read(sellerOrderStatusFilterProvider.notifier)
+                          .setFilter(entry.key);
                     },
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    selectedColor: Theme.of(context).colorScheme.primaryContainer,
                   ),
                 );
               }).toList(),
@@ -103,22 +108,23 @@ class SellerOrdersScreen extends ConsumerWidget {
           ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs).copyWith(bottom: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ).copyWith(bottom: AppSpacing.sm),
             child: Row(
               children: paymentOptions.entries.map((entry) {
                 final isSelected = paymentFilter == entry.key;
                 return Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: FilterChip(
-                    label: Text(entry.value),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        ref.read(sellerPaymentStatusFilterProvider.notifier).setFilter(entry.key);
-                      }
+                  child: PremiumFilterChip(
+                    label: entry.value,
+                    isSelected: isSelected,
+                    onTap: () {
+                      ref
+                          .read(sellerPaymentStatusFilterProvider.notifier)
+                          .setFilter(entry.key);
                     },
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    selectedColor: Theme.of(context).colorScheme.secondaryContainer,
                   ),
                 );
               }).toList(),
@@ -141,10 +147,11 @@ class SellerOrdersScreen extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
                 SizedBox(height: 100),
-                AppEmptyState(
+                PremiumEmptyState(
                   icon: Icons.inbox_outlined,
                   title: 'Belum ada pesanan masuk',
-                  message: 'Pesanan yang sesuai dengan filter akan muncul di sini.',
+                  message:
+                      'Pesanan yang sesuai dengan filter akan muncul di sini.',
                 ),
               ],
             );
@@ -152,9 +159,15 @@ class SellerOrdersScreen extends ConsumerWidget {
 
           return ListView.builder(
             padding: EdgeInsets.symmetric(
-              horizontal: isDesktop && MediaQuery.of(context).size.width > 1200 ? (MediaQuery.of(context).size.width - 1200) / 2 : AppSpacing.md,
+              horizontal: isDesktop && MediaQuery.of(context).size.width > 1200
+                  ? (MediaQuery.of(context).size.width - 1200) / 2
+                  : AppSpacing.md,
               vertical: AppSpacing.md,
             ),
+            cacheExtent: 800,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
             itemCount: orders.length,
             itemBuilder: (context, index) {
               return SellerOrderCard(order: orders[index]);
@@ -163,10 +176,17 @@ class SellerOrdersScreen extends ConsumerWidget {
         },
         loading: () => ListView.builder(
           padding: const EdgeInsets.all(AppSpacing.md),
+          cacheExtent: 500,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: true,
           itemCount: 3,
           itemBuilder: (context, index) => const Padding(
             padding: EdgeInsets.only(bottom: AppSpacing.md),
-            child: AppLoadingSkeleton(width: double.infinity, height: 200, borderRadius: 16),
+            child: AppLoadingSkeleton(
+              width: double.infinity,
+              height: 200,
+              borderRadius: 16,
+            ),
           ),
         ),
         error: (error, stack) => ListView(
@@ -195,55 +215,60 @@ class SellerOrderCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
-    final actionState = ref.watch(orderActionControllerProvider);
-    final isLoading = actionState.isLoading;
+    final isLoading = ref.watch(
+      orderActionControllerProvider.select((state) => state.isLoading),
+    );
 
     // Status Mapping
-    BadgeStatus statusColor;
+    PremiumBadgeStatus statusColor;
     String statusText;
     switch (order.status) {
       case 'pending_payment':
-        statusColor = BadgeStatus.warning;
+        statusColor = PremiumBadgeStatus.warning;
         statusText = 'Menunggu Pembayaran';
         break;
       case 'paid':
-        statusColor = BadgeStatus.info;
+        statusColor = PremiumBadgeStatus.info;
         statusText = 'Dibayar';
         break;
       case 'packed':
-        statusColor = BadgeStatus.warning;
+        statusColor = PremiumBadgeStatus.warning;
         statusText = 'Dikemas';
         break;
       case 'shipped':
-        statusColor = BadgeStatus.info;
+        statusColor = PremiumBadgeStatus.info;
         statusText = 'Dikirim';
         break;
       case 'completed':
-        statusColor = BadgeStatus.success;
+        statusColor = PremiumBadgeStatus.success;
         statusText = 'Selesai';
         break;
       case 'cancelled':
-        statusColor = BadgeStatus.error;
+        statusColor = PremiumBadgeStatus.error;
         statusText = 'Dibatalkan';
         break;
       default:
-        statusColor = BadgeStatus.neutral;
+        statusColor = PremiumBadgeStatus.neutral;
         statusText = order.status;
     }
 
     // Payment Status Mapping
-    BadgeStatus payStatusColor;
+    PremiumBadgeStatus payStatusColor;
     String payStatusText;
     if (order.paymentMethod == 'cod') {
-      payStatusColor = BadgeStatus.warning;
+      payStatusColor = PremiumBadgeStatus.warning;
       payStatusText = 'COD';
     } else if (order.paymentStatus == 'paid') {
-      payStatusColor = BadgeStatus.success;
+      payStatusColor = PremiumBadgeStatus.success;
       payStatusText = 'Dibayar';
     } else {
-      payStatusColor = BadgeStatus.error;
+      payStatusColor = PremiumBadgeStatus.error;
       payStatusText = 'Belum Dibayar';
     }
 
@@ -253,7 +278,7 @@ class SellerOrderCard extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: AppGlassCard(
+      child: PremiumSurfaceCard(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,36 +287,54 @@ class SellerOrderCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppStatusBadge(
-                  label: statusText,
-                  status: statusColor,
-                ),
+                PremiumStatusBadge(label: statusText, status: statusColor),
                 Text(
                   dateFormat.format(order.createdAt),
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            
+
             // Product & Buyer Info
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    image: imageUrl != null
-                        ? DecorationImage(
-                            image: NetworkImage(imageUrl),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: imageUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
                             fit: BoxFit.cover,
+                            memCacheWidth: 160,
+                            memCacheHeight: 160,
+                            fadeInDuration: Duration.zero,
+                            fadeOutDuration: Duration.zero,
+                            placeholder: (context, url) => ColoredBox(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                            ),
+                            errorWidget: (context, url, error) =>
+                                const ColoredBox(
+                                  color: Colors.black12,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey,
+                                  ),
+                                ),
                           )
-                        : null,
+                        : ColoredBox(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Icon(
+                              Icons.inventory_2,
+                              color: Colors.grey,
+                            ),
+                          ),
                   ),
-                  child: imageUrl == null ? const Icon(Icons.inventory_2, color: Colors.grey) : null,
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -300,7 +343,9 @@ class SellerOrderCard extends ConsumerWidget {
                     children: [
                       Text(
                         order.product?.title ?? 'Produk Dihapus',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -312,7 +357,9 @@ class SellerOrderCard extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         'INV: ${order.invoiceNumber ?? (order.id.length > 8 ? order.id.substring(0, 8) : order.id).toUpperCase()}',
-                        style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                        ),
                       ),
                     ],
                   ),
@@ -320,7 +367,7 @@ class SellerOrderCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            
+
             // Order Details Grid
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -330,19 +377,62 @@ class SellerOrderCard extends ConsumerWidget {
               ),
               child: Column(
                 children: [
-                  _buildDetailRow(context, 'Total Pendapatan', currencyFormat.format(order.totalPrice), isBold: true),
+                  _buildDetailRow(
+                    context,
+                    'Total Pendapatan',
+                    currencyFormat.format(order.totalPrice),
+                    isBold: true,
+                  ),
                   const SizedBox(height: 8),
-                  _buildDetailRow(context, 'Pengiriman', '${order.shippingMethod ?? "-"} (${currencyFormat.format(order.shippingCost)})'),
+                  _buildDetailRow(
+                    context,
+                    'Pengiriman',
+                    '${order.shippingMethod ?? "-"} (${currencyFormat.format(order.shippingCost)})',
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Alamat',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          order.shippingAddress ?? "Alamat tidak tersedia",
+                          style: theme.textTheme.bodyMedium,
+                          textAlign: TextAlign.right,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Pembayaran', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      Text(
+                        'Pembayaran',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                       Row(
                         children: [
-                          Text(order.paymentMethod.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            order.paymentMethod.toUpperCase(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(width: 8),
-                          AppStatusBadge(label: payStatusText, status: payStatusColor),
+                          PremiumStatusBadge(
+                            label: payStatusText,
+                            status: payStatusColor,
+                          ),
                         ],
                       ),
                     ],
@@ -350,9 +440,9 @@ class SellerOrderCard extends ConsumerWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: AppSpacing.md),
-            
+
             // Action Buttons
             Wrap(
               spacing: AppSpacing.sm,
@@ -360,38 +450,51 @@ class SellerOrderCard extends ConsumerWidget {
               alignment: WrapAlignment.end,
               crossAxisAlignment: WrapCrossAlignment.end,
               children: [
-                if (order.status != 'pending_payment' && order.status != 'cancelled')
+                if (order.status != 'pending_payment' &&
+                    order.status != 'cancelled')
                   OutlinedButton.icon(
-                    onPressed: () => context.push('/orders/${order.id}/invoice'),
+                    onPressed: () =>
+                        context.push('/orders/${order.id}/invoice'),
                     icon: const Icon(Icons.receipt_long, size: 18),
                     label: const Text('Invoice'),
                   ),
-                if (order.status != 'pending_payment' && order.status != 'cancelled' && order.status != 'completed')
+                if (order.status != 'pending_payment' &&
+                    order.status != 'cancelled' &&
+                    order.status != 'completed')
                   OutlinedButton.icon(
-                    onPressed: () => context.push('/orders/${order.id}/tracking'),
+                    onPressed: () =>
+                        context.push('/orders/${order.id}/tracking'),
                     icon: const Icon(Icons.local_shipping, size: 18),
                     label: const Text('Lacak'),
                   ),
-                
+
                 // State-specific actions
                 if (order.status == 'pending_payment' || order.status == 'paid')
                   TextButton(
-                    onPressed: isLoading ? null : () => _handleCancel(context, ref),
+                    onPressed: isLoading
+                        ? null
+                        : () => _handleCancel(context, ref),
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Batalkan'),
                   ),
-                
-                if (order.status == 'paid' || (order.paymentMethod == 'cod' && order.status == 'pending_payment'))
-                  AppButton(
+
+                if (order.status == 'paid' ||
+                    (order.paymentMethod == 'cod' &&
+                        order.status == 'pending_payment'))
+                  PremiumButton(
                     label: 'Tandai Dikemas',
-                    onPressed: isLoading ? () {} : () => _handleUpdateStatus(context, ref, 'packed', 'Tandai pesanan telah dikemas dan siap dipickup?'),
+                    onPressed: isLoading
+                        ? () {}
+                        : () => _showProcessOrderModal(context, ref),
                     isLoading: isLoading,
                   ),
-                  
+
                 if (order.status == 'packed')
-                  AppButton(
+                  PremiumButton(
                     label: 'Tandai Dikirim',
-                    onPressed: isLoading ? () {} : () => _handleUpdateStatus(context, ref, 'shipped', 'Pesanan sudah diserahkan ke kurir?'),
+                    onPressed: isLoading
+                        ? () {}
+                        : () => _showShippingModal(context, ref),
                     isLoading: isLoading,
                   ),
               ],
@@ -402,17 +505,172 @@ class SellerOrderCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildDetailRow(BuildContext context, String label, String value, {bool isBold = false}) {
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value, {
+    bool isBold = false,
+  }) {
     final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        Text(value, style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-          color: isBold ? theme.colorScheme.primary : null,
-        )),
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            color: isBold ? theme.colorScheme.primary : null,
+          ),
+        ),
       ],
+    );
+  }
+
+  void _showProcessOrderModal(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Konfirmasi & Proses Pesanan',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const Text(
+                'Harap siapkan paket untuk dikirim ke alamat berikut:',
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      order.receiverName ?? 'Tanpa Nama',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      order.receiverPhone ?? '-',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      order.shippingAddress ?? 'Alamat tidak tersedia',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Kurir: ${order.shippingMethod ?? "-"}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              PremiumButton(
+                label: 'Terima & Proses Pesanan',
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _executeUpdateStatus(context, ref, 'packed');
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Tutup'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showShippingModal(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          top: AppSpacing.lg,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Atur Pengiriman',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text('Kurir pengiriman: ${order.shippingMethod ?? "-"}'),
+              const SizedBox(height: AppSpacing.lg),
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Nomor Resi (Opsional/Dummy)',
+                  hintText: 'Misal: JNT1234567890',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              PremiumButton(
+                label: 'Tandai Sebagai Dikirim',
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  _executeUpdateStatus(context, ref, 'shipped');
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Batal'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -421,7 +679,9 @@ class SellerOrderCard extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Batalkan Pesanan'),
-        content: const Text('Yakin ingin membatalkan pesanan ini? Aksi ini tidak dapat diubah.'),
+        content: const Text(
+          'Yakin ingin membatalkan pesanan ini? Aksi ini tidak dapat diubah.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -432,7 +692,10 @@ class SellerOrderCard extends ConsumerWidget {
               Navigator.of(ctx).pop();
               _executeCancel(context, ref);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Batalkan'),
           ),
         ],
@@ -441,54 +704,49 @@ class SellerOrderCard extends ConsumerWidget {
   }
 
   Future<void> _executeCancel(BuildContext context, WidgetRef ref) async {
-    final success = await ref.read(orderActionControllerProvider.notifier).cancelSellerOrder(order.id);
+    final success = await ref
+        .read(orderActionControllerProvider.notifier)
+        .cancelSellerOrder(order.id);
     if (!context.mounted) return;
-    
+
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pesanan berhasil dibatalkan.'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Pesanan berhasil dibatalkan.'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
-      final errorMsg = ref.read(orderActionControllerProvider).error ?? 'Gagal membatalkan pesanan.';
+      final errorMsg =
+          ref.read(orderActionControllerProvider).error ??
+          'Gagal membatalkan pesanan.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );
     }
   }
 
-  void _handleUpdateStatus(BuildContext context, WidgetRef ref, String newStatus, String message) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Konfirmasi Status'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _executeUpdateStatus(context, ref, newStatus);
-            },
-            child: const Text('Ya, Lanjutkan'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _executeUpdateStatus(BuildContext context, WidgetRef ref, String newStatus) async {
-    final success = await ref.read(orderActionControllerProvider.notifier).updateStatus(order.id, newStatus);
+  Future<void> _executeUpdateStatus(
+    BuildContext context,
+    WidgetRef ref,
+    String newStatus,
+  ) async {
+    final success = await ref
+        .read(orderActionControllerProvider.notifier)
+        .updateStatus(order.id, newStatus);
     if (!context.mounted) return;
-    
+
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Status pesanan berhasil diperbarui.'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Status pesanan berhasil diperbarui.'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
-      final errorMsg = ref.read(orderActionControllerProvider).error ?? 'Gagal memperbarui status.';
+      final errorMsg =
+          ref.read(orderActionControllerProvider).error ??
+          'Gagal memperbarui status.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );

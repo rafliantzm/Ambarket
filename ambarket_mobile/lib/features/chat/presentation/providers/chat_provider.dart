@@ -14,10 +14,14 @@ class PaginatedConversationsState {
   final List<ConversationModel> conversations;
   final bool hasMore;
 
-  PaginatedConversationsState({required this.conversations, required this.hasMore});
+  PaginatedConversationsState({
+    required this.conversations,
+    required this.hasMore,
+  });
 }
 
-class MyConversationsNotifier extends AsyncNotifier<PaginatedConversationsState> {
+class MyConversationsNotifier
+    extends AsyncNotifier<PaginatedConversationsState> {
   static const int _limit = 30;
   int _offset = 0;
 
@@ -29,60 +33,96 @@ class MyConversationsNotifier extends AsyncNotifier<PaginatedConversationsState>
   Future<PaginatedConversationsState> _fetchInitial() async {
     _offset = 0;
     final user = ref.watch(currentUserProvider);
-    if (user == null) return PaginatedConversationsState(conversations: [], hasMore: false);
-    
+    if (user == null) {
+      return PaginatedConversationsState(conversations: [], hasMore: false);
+    }
+
     final repo = ref.watch(chatRepositoryProvider);
-    final conversations = await repo.fetchMyConversations(user.id, offset: _offset, limit: _limit);
-    return PaginatedConversationsState(conversations: conversations, hasMore: conversations.length == _limit);
+    final conversations = await repo.fetchMyConversations(
+      user.id,
+      offset: _offset,
+      limit: _limit,
+    );
+    return PaginatedConversationsState(
+      conversations: conversations,
+      hasMore: conversations.length == _limit,
+    );
   }
 
   Future<void> fetchMore() async {
     final currentState = state.value;
-    if (currentState == null || !currentState.hasMore || state.isLoading) return;
+    if (currentState == null || !currentState.hasMore || state.isLoading) {
+      return;
+    }
     final user = ref.read(currentUserProvider);
-    if (user == null) return;
+    if (user == null) {
+      return;
+    }
 
     state = const AsyncLoading();
     try {
       _offset += _limit;
       final repo = ref.read(chatRepositoryProvider);
-      final newConversations = await repo.fetchMyConversations(user.id, offset: _offset, limit: _limit);
-      
-      state = AsyncData(PaginatedConversationsState(
-        conversations: [...currentState.conversations, ...newConversations],
-        hasMore: newConversations.length == _limit,
-      ));
+      final newConversations = await repo.fetchMyConversations(
+        user.id,
+        offset: _offset,
+        limit: _limit,
+      );
+
+      state = AsyncData(
+        PaginatedConversationsState(
+          conversations: [...currentState.conversations, ...newConversations],
+          hasMore: newConversations.length == _limit,
+        ),
+      );
     } catch (e, st) {
       state = AsyncError(e, st);
     }
   }
 }
 
-final myConversationsProvider = AsyncNotifierProvider<MyConversationsNotifier, PaginatedConversationsState>(() {
-  return MyConversationsNotifier();
-});
+final myConversationsProvider =
+    AsyncNotifierProvider<MyConversationsNotifier, PaginatedConversationsState>(
+      () {
+        return MyConversationsNotifier();
+      },
+    );
 
-final conversationDetailProvider = FutureProvider.family.autoDispose<ConversationModel, String>((ref, conversationId) async {
-  final repo = ref.watch(chatRepositoryProvider);
-  return repo.fetchConversationDetail(conversationId);
-});
+final conversationDetailProvider = FutureProvider.family
+    .autoDispose<ConversationModel, String>((ref, conversationId) async {
+      final repo = ref.watch(chatRepositoryProvider);
+      return repo.fetchConversationDetail(conversationId);
+    });
 
-final messagesStreamProvider = StreamProvider.family.autoDispose<List<MessageModel>, String>((ref, conversationId) {
-  final repo = ref.watch(chatRepositoryProvider);
-  return repo.watchMessages(conversationId);
-});
+final messagesStreamProvider = StreamProvider.family
+    .autoDispose<List<MessageModel>, String>((ref, conversationId) {
+      final repo = ref.watch(chatRepositoryProvider);
+      return repo.watchMessages(conversationId);
+    });
 
-final unreadCountProvider = StreamProvider.family.autoDispose<int, String>((ref, conversationId) {
+final unreadCountProvider = StreamProvider.family.autoDispose<int, String>((
+  ref,
+  conversationId,
+) {
   final user = ref.watch(currentUserProvider);
   if (user == null) return Stream.value(0);
-  
+
   final repo = ref.watch(chatRepositoryProvider);
   return repo.watchUnreadCount(conversationId, user.id);
 });
 
-final chatActionControllerProvider = AsyncNotifierProvider<ChatActionController, void>(() {
-  return ChatActionController();
+final totalUnreadChatCountProvider = StreamProvider.autoDispose<int>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return Stream.value(0);
+
+  final repo = ref.watch(chatRepositoryProvider);
+  return repo.watchTotalUnreadCount(user.id);
 });
+
+final chatActionControllerProvider =
+    AsyncNotifierProvider<ChatActionController, void>(() {
+      return ChatActionController();
+    });
 
 class ChatActionController extends AsyncNotifier<void> {
   late final ChatRepository _repo;
@@ -92,10 +132,20 @@ class ChatActionController extends AsyncNotifier<void> {
     _repo = ref.watch(chatRepositoryProvider);
   }
 
-  Future<ConversationModel> createOrGetConversation(String productId, String buyerId, String sellerId, {String? offerId}) async {
+  Future<ConversationModel> createOrGetConversation(
+    String productId,
+    String buyerId,
+    String sellerId, {
+    String? offerId,
+  }) async {
     state = const AsyncLoading();
     try {
-      final conv = await _repo.createOrGetConversation(productId, buyerId, sellerId, offerId: offerId);
+      final conv = await _repo.createOrGetConversation(
+        productId,
+        buyerId,
+        sellerId,
+        offerId: offerId,
+      );
       ref.invalidate(myConversationsProvider);
       state = const AsyncData(null);
       return conv;
@@ -105,7 +155,9 @@ class ChatActionController extends AsyncNotifier<void> {
     }
   }
 
-  Future<ConversationModel> createOrGetConversationFromOffer(String offerId) async {
+  Future<ConversationModel> createOrGetConversationFromOffer(
+    String offerId,
+  ) async {
     state = const AsyncLoading();
     try {
       final conv = await _repo.createOrGetConversationFromOffer(offerId);
@@ -118,7 +170,11 @@ class ChatActionController extends AsyncNotifier<void> {
     }
   }
 
-  Future<void> sendMessage(String conversationId, String receiverId, String message) async {
+  Future<void> sendMessage(
+    String conversationId,
+    String receiverId,
+    String message,
+  ) async {
     state = const AsyncLoading();
     try {
       final user = ref.read(currentUserProvider);
@@ -130,7 +186,7 @@ class ChatActionController extends AsyncNotifier<void> {
       state = AsyncError(e, st);
     }
   }
-  
+
   Future<void> markAsRead(String conversationId) async {
     try {
       final user = ref.read(currentUserProvider);

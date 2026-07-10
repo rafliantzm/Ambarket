@@ -15,12 +15,8 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          cartItemsProvider.overrideWith((ref) => Future.value([])),
-        ],
-        child: const MaterialApp(
-          home: CartScreen(),
-        ),
+        overrides: [cartItemsProvider.overrideWith((ref) => Future.value([]))],
+        child: const MaterialApp(home: CartScreen()),
       ),
     );
 
@@ -55,7 +51,7 @@ void main() {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         product: mockProduct,
-      )
+      ),
     ];
 
     tester.view.physicalSize = const Size(1080, 2400);
@@ -68,9 +64,7 @@ void main() {
         overrides: [
           cartItemsProvider.overrideWith((ref) => Future.value(mockItems)),
         ],
-        child: const MaterialApp(
-          home: CartScreen(),
-        ),
+        child: const MaterialApp(home: CartScreen()),
       ),
     );
 

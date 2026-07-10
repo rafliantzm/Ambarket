@@ -8,7 +8,9 @@ import 'package:ambarket_mobile/features/profile/presentation/providers/profile_
 import 'package:ambarket_mobile/features/profile/domain/models/profile_model.dart';
 
 void main() {
-  testWidgets('CheckoutScreen renders correctly and validates form', (WidgetTester tester) async {
+  testWidgets('CheckoutScreen renders correctly and validates form', (
+    WidgetTester tester,
+  ) async {
     final mockProduct = ProductModel(
       id: 'prod1',
       sellerId: 'seller1',
@@ -50,7 +52,8 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Checkout'), findsOneWidget);
     expect(find.text('Mock Product'), findsOneWidget);
@@ -58,17 +61,15 @@ void main() {
     // Fill the short address
     await tester.enterText(find.byType(TextFormField).at(1), '081234567890');
     await tester.enterText(find.byType(TextFormField).last, '');
-    
+
     // Need to scroll if it's offscreen, but we set physicalSize large enough.
     // Still, let's make sure we find 'Buat Pesanan'.
     final buatPesananFinder = find.text('Buat Pesanan');
     expect(buatPesananFinder, findsOneWidget);
-    
+
     await tester.tap(buatPesananFinder);
-    await tester.pumpAndSettle();
-    
+    await tester.pump(const Duration(seconds: 1));
+
     expect(find.text('Wajib diisi'), findsOneWidget);
   });
 }
-
-

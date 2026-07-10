@@ -25,10 +25,7 @@ class MyOffersScreen extends ConsumerWidget {
           ),
         ),
         body: const TabBarView(
-          children: [
-            _SentOffersTab(),
-            _ReceivedOffersTab(),
-          ],
+          children: [_SentOffersTab(), _ReceivedOffersTab()],
         ),
       ),
     );
@@ -49,8 +46,13 @@ class _SentOffersTab extends ConsumerWidget {
         }
         return ListView.builder(
           padding: const EdgeInsets.all(AppSpacing.md),
+          cacheExtent: 700,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: true,
           itemCount: offers.length,
-          itemBuilder: (context, index) => _OfferCard(offer: offers[index], isSent: true),
+          itemBuilder: (context, index) =>
+              _OfferCard(offer: offers[index], isSent: true),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -73,8 +75,13 @@ class _ReceivedOffersTab extends ConsumerWidget {
         }
         return ListView.builder(
           padding: const EdgeInsets.all(AppSpacing.md),
+          cacheExtent: 700,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: true,
           itemCount: offers.length,
-          itemBuilder: (context, index) => _OfferCard(offer: offers[index], isSent: false),
+          itemBuilder: (context, index) =>
+              _OfferCard(offer: offers[index], isSent: false),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -91,7 +98,11 @@ class _OfferCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
     final theme = Theme.of(context);
 
     Color statusColor;
@@ -128,13 +139,18 @@ class _OfferCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     offer.product?.title ?? 'Produk tidak diketahui',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -142,28 +158,51 @@ class _OfferCard extends ConsumerWidget {
                   ),
                   child: Text(
                     statusText,
-                    style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text('Harga Asli: ${currencyFormat.format(offer.product?.price ?? 0)}', style: const TextStyle(color: Colors.grey)),
-            Text('Ditawar: ${currencyFormat.format(offer.offerPrice)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              'Harga Asli: ${currencyFormat.format(offer.product?.price ?? 0)}',
+              style: const TextStyle(color: Colors.grey),
+            ),
+            Text(
+              'Ditawar: ${currencyFormat.format(offer.offerPrice)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             if (offer.message != null && offer.message!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
-              Text('Pesan: "${offer.message}"', style: const TextStyle(fontStyle: FontStyle.italic)),
+              Text(
+                'Pesan: "${offer.message}"',
+                style: const TextStyle(fontStyle: FontStyle.italic),
+              ),
             ],
             const SizedBox(height: AppSpacing.sm),
-            Text('Oleh: ${isSent ? "Anda" : (offer.buyer?.name ?? "User")}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            
+            Text(
+              'Oleh: ${isSent ? "Anda" : (offer.buyer?.name ?? "User")}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+
             if (offer.status == 'pending') ...[
               const Divider(height: 24),
               if (isSent)
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () => _confirmAction(context, ref, 'Batalkan tawaran?', () => ref.read(offerActionControllerProvider.notifier).cancelOffer(offer.id)),
+                    onPressed: () => _confirmAction(
+                      context,
+                      ref,
+                      'Batalkan tawaran?',
+                      () => ref
+                          .read(offerActionControllerProvider.notifier)
+                          .cancelOffer(offer.id),
+                    ),
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Batalkan Tawaran'),
                   ),
@@ -173,14 +212,33 @@ class _OfferCard extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     OutlinedButton(
-                      onPressed: () => _confirmAction(context, ref, 'Tolak tawaran ini?', () => ref.read(offerActionControllerProvider.notifier).rejectOffer(offer.id)),
-                      style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                      onPressed: () => _confirmAction(
+                        context,
+                        ref,
+                        'Tolak tawaran ini?',
+                        () => ref
+                            .read(offerActionControllerProvider.notifier)
+                            .rejectOffer(offer.id),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
                       child: const Text('Tolak'),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     ElevatedButton(
-                      onPressed: () => _confirmAction(context, ref, 'Terima tawaran ini?', () => ref.read(offerActionControllerProvider.notifier).acceptOffer(offer.id)),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                      onPressed: () => _confirmAction(
+                        context,
+                        ref,
+                        'Terima tawaran ini?',
+                        () => ref
+                            .read(offerActionControllerProvider.notifier)
+                            .acceptOffer(offer.id),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Terima'),
                     ),
                   ],
@@ -194,20 +252,25 @@ class _OfferCard extends ConsumerWidget {
                   ElevatedButton.icon(
                     onPressed: () async {
                       try {
-                        final chat = await ref.read(chatActionControllerProvider.notifier).createOrGetConversationFromOffer(offer.id);
+                        final chat = await ref
+                            .read(chatActionControllerProvider.notifier)
+                            .createOrGetConversationFromOffer(offer.id);
                         if (context.mounted) {
                           context.push('/chats/${chat.id}');
                         }
                       } catch (e) {
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membuka chat: $e')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Gagal membuka chat: $e')),
+                          );
                         }
                       }
                     },
                     icon: const Icon(Icons.chat),
                     label: const Text('Chat'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
                       foregroundColor: theme.colorScheme.onSurface,
                     ),
                   ),
@@ -234,14 +297,22 @@ class _OfferCard extends ConsumerWidget {
     );
   }
 
-  void _confirmAction(BuildContext context, WidgetRef ref, String title, Future<void> Function() action) {
+  void _confirmAction(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    Future<void> Function() action,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Konfirmasi'),
         content: Text(title),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             onPressed: () async {
               Navigator.of(ctx).pop();

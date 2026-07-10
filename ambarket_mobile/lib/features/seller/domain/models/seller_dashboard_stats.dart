@@ -11,6 +11,8 @@ class SellerDashboardStats {
   final double averageRating;
   final int totalReviews;
   final double totalRevenueDummy;
+  final int cancelledOrdersCount;
+  final int returnedOrdersCount;
 
   const SellerDashboardStats({
     this.activeProductsCount = 0,
@@ -25,6 +27,8 @@ class SellerDashboardStats {
     this.averageRating = 0.0,
     this.totalReviews = 0,
     this.totalRevenueDummy = 0.0,
+    this.cancelledOrdersCount = 0,
+    this.returnedOrdersCount = 0,
   });
 
   factory SellerDashboardStats.empty() {

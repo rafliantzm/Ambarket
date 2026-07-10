@@ -8,6 +8,8 @@ class ReportModel {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? finalResolution;
+  final String? resolvedBy;
   final DateTime? resolvedAt;
 
   ReportModel({
@@ -20,6 +22,8 @@ class ReportModel {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.finalResolution,
+    this.resolvedBy,
     this.resolvedAt,
   });
 
@@ -34,7 +38,11 @@ class ReportModel {
       status: json['status'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      resolvedAt: json['resolved_at'] != null ? DateTime.parse(json['resolved_at'] as String) : null,
+      finalResolution: json['final_resolution'] as String?,
+      resolvedBy: json['resolved_by'] as String?,
+      resolvedAt: json['resolved_at'] != null
+          ? DateTime.parse(json['resolved_at'] as String)
+          : null,
     );
   }
 
@@ -49,6 +57,8 @@ class ReportModel {
       'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      if (finalResolution != null) 'final_resolution': finalResolution,
+      if (resolvedBy != null) 'resolved_by': resolvedBy,
       if (resolvedAt != null) 'resolved_at': resolvedAt!.toIso8601String(),
     };
   }

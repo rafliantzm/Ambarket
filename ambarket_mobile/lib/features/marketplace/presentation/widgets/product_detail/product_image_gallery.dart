@@ -31,11 +31,15 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
   Widget build(BuildContext context) {
     if (widget.images.isEmpty) {
       return AspectRatio(
-        aspectRatio: 4 / 3,
+        aspectRatio: 16 / 9,
         child: Container(
-          color: AppColors.border,
-          child: const Center(
-            child: Icon(Icons.image_not_supported, size: 64, color: AppColors.textMuted),
+          color: context.colors.border,
+          child: Center(
+            child: Icon(
+              Icons.image_not_supported,
+              size: 64,
+              color: context.colors.textMuted,
+            ),
           ),
         ),
       );
@@ -47,29 +51,50 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
       children: [
         // Main Image
         AspectRatio(
-          aspectRatio: 4 / 3,
-          child: CachedNetworkImage(
-            imageUrl: currentImage.imageUrl,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              color: AppColors.surface,
-              child: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-            ),
-            errorWidget: (context, url, error) => Container(
-              color: AppColors.surface,
-              child: const Center(child: Icon(Icons.broken_image, size: 64, color: AppColors.textMuted)),
+          aspectRatio: 16 / 9,
+          child: Container(
+            color: Colors.black.withValues(
+              alpha: 0.2,
+            ), // Latar belakang gelap agar fit contain terlihat bagus
+            child: CachedNetworkImage(
+              imageUrl: currentImage.imageUrl,
+              fit: BoxFit.contain,
+              memCacheWidth: 1200,
+              fadeInDuration: Duration.zero,
+              fadeOutDuration: Duration.zero,
+              placeholder: (context, url) => Container(
+                color: context.colors.surface,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: context.colors.primary,
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: context.colors.surface,
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image,
+                    size: 64,
+                    color: context.colors.textMuted,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
-        
+
         // Thumbnails
         if (widget.images.length > 1)
           Container(
             height: 80,
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              cacheExtent: 360,
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: true,
               itemCount: widget.images.length,
               itemBuilder: (context, index) {
                 final img = widget.images[index];
@@ -82,10 +107,12 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
                   },
                   child: Container(
                     width: 60,
-                    margin: const EdgeInsets.only(right: AppSpacing.sm),
+                    margin: EdgeInsets.only(right: AppSpacing.sm),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : Colors.transparent,
+                        color: isSelected
+                            ? context.colors.primary
+                            : Colors.transparent,
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(8),
@@ -95,10 +122,19 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
                       child: CachedNetworkImage(
                         imageUrl: img.imageUrl,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(color: AppColors.surface),
+                        memCacheWidth: 120,
+                        memCacheHeight: 120,
+                        fadeInDuration: Duration.zero,
+                        fadeOutDuration: Duration.zero,
+                        placeholder: (context, url) =>
+                            Container(color: context.colors.surface),
                         errorWidget: (context, url, error) => Container(
-                          color: AppColors.surface,
-                          child: const Icon(Icons.broken_image, size: 24, color: AppColors.textMuted),
+                          color: context.colors.surface,
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 24,
+                            color: context.colors.textMuted,
+                          ),
                         ),
                       ),
                     ),

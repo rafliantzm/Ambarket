@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_animated_background.dart';
-import '../../../../core/widgets/app_glass_card.dart';
-import '../../../../core/widgets/app_status_badge.dart';
-import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/ambarket_scaffold.dart';
+import '../../../../core/widgets/premium_surface_card.dart';
+import '../../../../core/widgets/premium_status_badge.dart';
+import '../../../../core/widgets/premium_empty_state.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_loading_skeleton.dart';
 import '../../../../core/error/error_mapper.dart';
@@ -30,56 +31,67 @@ class SellerDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AppAnimatedBackground(
-      child: Scaffold(
+    return AmbarketScaffold(
+      backgroundColor: context.colors.background,
+      showMotionBackground: false,
+      appBar: AppBar(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          title: const Text('Seller Center', style: TextStyle(color: AppColors.textPrimary)),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.add_business, color: AppColors.textPrimary),
-              onPressed: () => context.push('/seller/products/new'),
-            ),
-          ],
+        elevation: 0,
+        title: Text(
+          'Seller Center',
+          style: TextStyle(
+            color: context.colors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final isDesktop = constraints.maxWidth > 900;
-            return RefreshIndicator(
-              color: AppColors.primary,
-              backgroundColor: AppColors.surface,
-              onRefresh: () => _onRefresh(ref),
-              child: isDesktop ? _buildDesktopLayout(context, ref) : _buildMobileLayout(context, ref),
-            );
-          },
-        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add_business, color: context.colors.primary),
+            onPressed: () => context.push('/seller/products/new'),
+          ),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 900;
+          return RefreshIndicator(
+            color: context.colors.primary,
+            backgroundColor: context.colors.surface,
+            onRefresh: () => _onRefresh(ref),
+            child: isDesktop
+                ? _buildDesktopLayout(context, ref)
+                : _buildMobileLayout(context, ref),
+          );
+        },
       ),
     );
   }
 
   Widget _buildMobileLayout(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSellerHeader(context, ref),
-          const SizedBox(height: AppSpacing.lg),
-          _buildQuickActions(context),
-          const SizedBox(height: AppSpacing.lg),
-          _buildStatsOverview(context, ref, crossAxisCount: 2),
-          const SizedBox(height: AppSpacing.lg),
-          _buildRecentOffers(context, ref),
-          const SizedBox(height: AppSpacing.lg),
-          _buildRecentOrders(context, ref),
-          const SizedBox(height: AppSpacing.lg),
-          _buildProductPerformance(context, ref),
-          const SizedBox(height: AppSpacing.lg),
-          const SellerReviewInsights(),
-          const SizedBox(height: 100),
-        ],
+    return SafeArea(
+      child: SingleChildScrollView(
+        physics: AlwaysScrollableScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSellerHeader(context, ref),
+            SizedBox(height: AppSpacing.lg),
+            _buildQuickActions(context),
+            SizedBox(height: AppSpacing.lg),
+            _buildStatsOverview(context, ref, crossAxisCount: 2),
+            SizedBox(height: AppSpacing.lg),
+            _buildRecentOffers(context, ref),
+            SizedBox(height: AppSpacing.lg),
+            _buildRecentOrders(context, ref),
+            SizedBox(height: AppSpacing.lg),
+            _buildProductPerformance(context, ref),
+            SizedBox(height: AppSpacing.lg),
+            SellerReviewInsights(),
+            SizedBox(height: 100),
+          ],
+        ),
       ),
     );
   }
@@ -87,10 +99,11 @@ class SellerDashboardScreen extends ConsumerWidget {
   Widget _buildDesktopLayout(BuildContext context, WidgetRef ref) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
+        constraints: BoxConstraints(maxWidth: 1200),
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          physics: AlwaysScrollableScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.all(AppSpacing.lg),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -98,24 +111,24 @@ class SellerDashboardScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     _buildSellerHeader(context, ref),
-                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(height: AppSpacing.lg),
                     _buildQuickActions(context),
-                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(height: AppSpacing.lg),
                     _buildStatsOverview(context, ref, crossAxisCount: 3),
-                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(height: AppSpacing.lg),
                     _buildProductPerformance(context, ref),
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.xl),
+              SizedBox(width: AppSpacing.xl),
               Expanded(
                 child: Column(
                   children: [
                     _buildRecentOffers(context, ref),
-                    const SizedBox(height: AppSpacing.lg),
+                    SizedBox(height: AppSpacing.lg),
                     _buildRecentOrders(context, ref),
-                    const SizedBox(height: AppSpacing.lg),
-                    const SellerReviewInsights(),
+                    SizedBox(height: AppSpacing.lg),
+                    SellerReviewInsights(),
                   ],
                 ),
               ),
@@ -128,38 +141,53 @@ class SellerDashboardScreen extends ConsumerWidget {
 
   Widget _buildSellerHeader(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentProfileProvider).value;
-    if (user == null) return const SizedBox.shrink();
+    if (user == null) return SizedBox.shrink();
 
-    return AppGlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    return PremiumSurfaceCard(
+      padding: EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+            backgroundColor: context.colors.primary.withValues(alpha: 0.2),
             child: user.avatarUrl != null
-                ? ClipOval(child: CachedNetworkImage(imageUrl: user.avatarUrl!, fit: BoxFit.cover, width: 60, height: 60))
-                : const Icon(Icons.storefront, size: 30, color: AppColors.primary),
+                ? ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: user.avatarUrl!,
+                      fit: BoxFit.cover,
+                      width: 60,
+                      height: 60,
+                    ),
+                  )
+                : Icon(
+                    Icons.storefront,
+                    size: 30,
+                    color: context.colors.primary,
+                  ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   user.name ?? user.username ?? "Seller",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   '@${user.username ?? "seller"}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: context.colors.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
-          AppStatusBadge(
+          PremiumStatusBadge(
             label: user.role == 'admin' ? 'Admin' : 'Terverifikasi',
-            status: BadgeStatus.success,
+            status: PremiumBadgeStatus.success,
           ),
         ],
       ),
@@ -170,71 +198,161 @@ class SellerDashboardScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Aksi Cepat', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: AppSpacing.sm),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildActionChip(context, 'Wallet', Icons.account_balance_wallet, () => context.push('/seller/wallet')),
-              _buildActionChip(context, 'Kelola Produk', Icons.inventory_2, () => context.push('/seller/products')),
-              _buildActionChip(context, 'Tambah Produk', Icons.add_box, () => context.push('/seller/products/new')),
-              _buildActionChip(context, 'Pesanan', Icons.shopping_bag, () => context.push('/seller/orders')),
-              _buildActionChip(context, 'Tawaran', Icons.local_offer, () => context.push('/seller/offers')),
-            ],
+        Text(
+          'Aksi Cepat',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
           ),
+        ),
+        SizedBox(height: AppSpacing.md),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.md,
+          alignment: WrapAlignment.start,
+          children: [
+            _buildQuickActionItem(
+              context,
+              'Wallet',
+              Icons.account_balance_wallet_outlined,
+              () => context.push('/seller/wallet'),
+            ),
+            _buildQuickActionItem(
+              context,
+              'Kelola Produk',
+              Icons.inventory_2_outlined,
+              () => context.push('/seller/products'),
+            ),
+            _buildQuickActionItem(
+              context,
+              'Tambah Produk',
+              Icons.add_box_outlined,
+              () => context.push('/seller/products/new'),
+            ),
+            _buildQuickActionItem(
+              context,
+              'Pesanan',
+              Icons.shopping_bag_outlined,
+              () => context.push('/seller/orders'),
+            ),
+            _buildQuickActionItem(
+              context,
+              'Tawaran',
+              Icons.local_offer_outlined,
+              () => context.push('/seller/offers'),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildActionChip(BuildContext context, String label, IconData icon, VoidCallback onTap) {
-    return Padding(
-      padding: const EdgeInsets.only(right: AppSpacing.sm),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.surface.withValues(alpha: 0.5),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-              ],
-            ),
+  Widget _buildQuickActionItem(
+    BuildContext context,
+    String label,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 76,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PremiumSurfaceCard(
+                padding: EdgeInsets.all(14),
+                child: Icon(icon, size: 24, color: context.colors.primary),
+              ),
+              SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: context.colors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 11,
+                  height: 1.2,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatsOverview(BuildContext context, WidgetRef ref, {required int crossAxisCount}) {
+  Widget _buildStatsOverview(
+    BuildContext context,
+    WidgetRef ref, {
+    required int crossAxisCount,
+  }) {
     final statsAsync = ref.watch(sellerDashboardStatsProvider);
     final walletAsync = ref.watch(sellerWalletSummaryProvider);
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Ringkasan Performa', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Ringkasan Performa',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: AppSpacing.sm),
         statsAsync.when(
-          loading: () => GridView.count(
-            crossAxisCount: crossAxisCount,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: AppSpacing.sm,
-            crossAxisSpacing: AppSpacing.sm,
-            childAspectRatio: 1.5,
-            children: List.generate(4, (index) => const AppLoadingSkeleton(width: double.infinity, height: 100, borderRadius: 12)),
+          loading: () => Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: AppLoadingSkeleton(
+                      width: double.infinity,
+                      height: 200,
+                      borderRadius: 12,
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: AppLoadingSkeleton(
+                      width: double.infinity,
+                      height: 200,
+                      borderRadius: 12,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppLoadingSkeleton(
+                      width: double.infinity,
+                      height: 200,
+                      borderRadius: 12,
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: AppLoadingSkeleton(
+                      width: double.infinity,
+                      height: 200,
+                      borderRadius: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           error: (err, stack) => AppErrorState(
             title: 'Gagal memuat statistik',
@@ -247,22 +365,20 @@ class SellerDashboardScreen extends ConsumerWidget {
               orElse: () => 0.0,
             );
 
-            return GridView.count(
-              crossAxisCount: crossAxisCount,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: AppSpacing.sm,
-              crossAxisSpacing: AppSpacing.sm,
-              childAspectRatio: 1.8,
+            return Column(
               children: [
-                _buildStatCard(context, 'Saldo (Dummy)', currencyFormatter.format(walletBalance), Icons.account_balance_wallet, color: Colors.teal),
-                _buildStatCard(context, 'Pendapatan', currencyFormatter.format(stats.totalRevenueDummy), Icons.payments, color: AppColors.primary),
-                _buildStatCard(context, 'Pesanan Baru', '${stats.pendingOrdersCount + stats.paidOrdersCount}', Icons.shopping_cart, color: AppColors.primary),
-                _buildStatCard(context, 'Perlu Dikirim', '${stats.packedOrdersCount}', Icons.local_shipping, color: AppColors.accent),
-                _buildStatCard(context, 'Tawaran Masuk', '${stats.pendingOffersCount}', Icons.local_offer, color: Colors.orange),
-                _buildStatCard(context, 'Pesanan Selesai', '${stats.completedOrdersCount}', Icons.check_circle, color: Colors.green),
-                _buildStatCard(context, 'Rating Toko', stats.averageRating > 0 ? stats.averageRating.toStringAsFixed(1) : '-', Icons.star, color: Colors.amber),
-                _buildStatCard(context, 'Produk Aktif', '${stats.activeProductsCount}', Icons.inventory_2),
+                _buildFinancialOverview(
+                  context,
+                  stats,
+                  walletBalance,
+                  currencyFormatter,
+                ),
+                SizedBox(height: AppSpacing.lg),
+                _buildSalesChartCard(context),
+                SizedBox(height: AppSpacing.lg),
+                _buildOperationalMetrics(context, stats),
+                SizedBox(height: AppSpacing.lg),
+                _buildStorePerformance(context, stats),
               ],
             );
           },
@@ -271,36 +387,327 @@ class SellerDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, {Color? color}) {
-    return AppGlassCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildFinancialOverview(
+    BuildContext context,
+    dynamic stats,
+    double walletBalance,
+    NumberFormat currencyFormatter,
+  ) {
+    return PremiumSurfaceCard(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 20, color: color ?? AppColors.textMuted),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pendapatan Bersih',
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  currencyFormatter.format(stats.totalRevenueDummy),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    color: context.colors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 40,
+            color: context.colors.border.withValues(alpha: 0.5),
+          ),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Saldo Aktif',
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  currencyFormatter.format(walletBalance),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    color: context.colors.accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSalesChartCard(BuildContext context) {
+    return RepaintBoundary(
+      child: PremiumSurfaceCard(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Grafik Penjualan (7 Hari)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 1,
+                  ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          final days = [
+                            'Sen',
+                            'Sel',
+                            'Rab',
+                            'Kam',
+                            'Jum',
+                            'Sab',
+                            'Min',
+                          ];
+                          if (value.toInt() >= 0 &&
+                              value.toInt() < days.length) {
+                            return SideTitleWidget(
+                              meta: meta,
+                              space: 8,
+                              child: Text(
+                                days[value.toInt()],
+                                style: TextStyle(
+                                  color: context.colors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            );
+                          }
+                          return SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  minX: 0,
+                  maxX: 6,
+                  minY: 0,
+                  maxY: 10,
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: const [
+                        FlSpot(0, 3),
+                        FlSpot(1, 1),
+                        FlSpot(2, 4),
+                        FlSpot(3, 2),
+                        FlSpot(4, 5),
+                        FlSpot(5, 7),
+                        FlSpot(6, 6),
+                      ],
+                      isCurved: true,
+                      color: context.colors.primary,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: context.colors.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOperationalMetrics(BuildContext context, dynamic stats) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Operasional',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        SizedBox(height: AppSpacing.sm),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: AppSpacing.sm,
+          childAspectRatio: 2.2,
+          children: [
+            _buildMetricTile(
+              context,
+              'Pesanan Baru',
+              '${stats.pendingOrdersCount + stats.paidOrdersCount}',
+              Icons.fiber_new,
+              Colors.blue,
+            ),
+            _buildMetricTile(
+              context,
+              'Perlu Dikirim',
+              '${stats.packedOrdersCount}',
+              Icons.inventory,
+              Colors.orange,
+            ),
+            _buildMetricTile(
+              context,
+              'Selesai',
+              '${stats.completedOrdersCount}',
+              Icons.check_circle,
+              Colors.green,
+            ),
+            _buildMetricTile(
+              context,
+              'Dibatalkan/Retur',
+              '${stats.cancelledOrdersCount + stats.returnedOrdersCount}',
+              Icons.cancel,
+              Colors.red,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStorePerformance(BuildContext context, dynamic stats) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Performa Toko',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricTile(
+                context,
+                'Rating',
+                stats.averageRating > 0
+                    ? stats.averageRating.toStringAsFixed(1)
+                    : '-',
+                Icons.star,
+                Colors.amber,
+                subtitle: '${stats.totalReviews} Ulasan',
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildMetricTile(
+                context,
+                'Produk Aktif',
+                '${stats.activeProductsCount}',
+                Icons.storefront,
+                context.colors.primary,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricTile(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color, {
+    String? subtitle,
+  }) {
+    return PremiumSurfaceCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
                   title,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.colors.textSecondary,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: color ?? AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      SizedBox(width: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: context.colors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -316,12 +723,24 @@ class SellerDashboardScreen extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Pesanan Terbaru', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () => context.push('/seller/orders'), child: const Text('Lihat Semua')),
+            Text(
+              'Pesanan Terbaru',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            TextButton(
+              onPressed: () => context.push('/seller/orders'),
+              child: Text('Lihat Semua'),
+            ),
           ],
         ),
         ordersAsync.when(
-          loading: () => const AppLoadingSkeleton(width: double.infinity, height: 120, borderRadius: 12),
+          loading: () => AppLoadingSkeleton(
+            width: double.infinity,
+            height: 120,
+            borderRadius: 12,
+          ),
           error: (err, stack) => AppErrorState(
             title: 'Gagal memuat pesanan',
             message: ErrorMapper.getFriendlyMessage(err),
@@ -329,7 +748,7 @@ class SellerDashboardScreen extends ConsumerWidget {
           ),
           data: (orders) {
             if (orders.isEmpty) {
-              return AppEmptyState(
+              return PremiumEmptyState(
                 icon: Icons.shopping_bag_outlined,
                 title: 'Belum Ada Pesanan',
                 message: 'Pesanan yang masuk akan muncul di sini.',
@@ -338,29 +757,48 @@ class SellerDashboardScreen extends ConsumerWidget {
             return Column(
               children: orders.map((order) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: AppGlassCard(
-                    padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: PremiumSurfaceCard(
+                    padding: EdgeInsets.all(AppSpacing.md),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-                          child: const Icon(Icons.receipt_long, color: AppColors.primary),
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: context.colors.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.receipt_long,
+                            color: context.colors.primary,
+                          ),
                         ),
-                        const SizedBox(width: AppSpacing.md),
+                        SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('INV/...${order.id.substring(0, 8).toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              Text(order.status.toUpperCase(), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                              Text(
+                                'INV/...${order.id.substring(0, 8).toUpperCase()}',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                order.status.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.colors.textSecondary,
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        AppStatusBadge(
+                        PremiumStatusBadge(
                           label: order.paymentStatus.toUpperCase(),
-                          status: order.paymentStatus == 'paid' ? BadgeStatus.success : BadgeStatus.neutral,
+                          status: order.paymentStatus == 'paid'
+                              ? PremiumBadgeStatus.success
+                              : PremiumBadgeStatus.neutral,
                         ),
                       ],
                     ),
@@ -376,7 +814,11 @@ class SellerDashboardScreen extends ConsumerWidget {
 
   Widget _buildRecentOffers(BuildContext context, WidgetRef ref) {
     final offersAsync = ref.watch(sellerRecentOffersProvider);
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,12 +826,24 @@ class SellerDashboardScreen extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Tawaran Pending', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () => context.push('/seller/offers'), child: const Text('Lihat Semua')),
+            Text(
+              'Tawaran Pending',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            TextButton(
+              onPressed: () => context.push('/seller/offers'),
+              child: Text('Lihat Semua'),
+            ),
           ],
         ),
         offersAsync.when(
-          loading: () => const AppLoadingSkeleton(width: double.infinity, height: 120, borderRadius: 12),
+          loading: () => AppLoadingSkeleton(
+            width: double.infinity,
+            height: 120,
+            borderRadius: 12,
+          ),
           error: (err, stack) => AppErrorState(
             title: 'Gagal memuat tawaran',
             message: ErrorMapper.getFriendlyMessage(err),
@@ -397,7 +851,7 @@ class SellerDashboardScreen extends ConsumerWidget {
           ),
           data: (offers) {
             if (offers.isEmpty) {
-              return AppEmptyState(
+              return PremiumEmptyState(
                 icon: Icons.local_offer_outlined,
                 title: 'Tidak Ada Tawaran Pending',
                 message: 'Tawaran baru akan muncul di sini.',
@@ -406,23 +860,38 @@ class SellerDashboardScreen extends ConsumerWidget {
             return Column(
               children: offers.map((offer) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: AppGlassCard(
-                    padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: PremiumSurfaceCard(
+                    padding: EdgeInsets.all(AppSpacing.md),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), shape: BoxShape.circle),
-                          child: const Icon(Icons.local_offer, color: Colors.orange),
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.local_offer, color: Colors.orange),
                         ),
-                        const SizedBox(width: AppSpacing.md),
+                        SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(currencyFormatter.format(offer.offerPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accent)),
-                              Text('Status: ${offer.status}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                              Text(
+                                currencyFormatter.format(offer.offerPrice),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: context.colors.accent,
+                                ),
+                              ),
+                              Text(
+                                'Status: ${offer.status}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.colors.textSecondary,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -441,7 +910,11 @@ class SellerDashboardScreen extends ConsumerWidget {
   Widget _buildProductPerformance(BuildContext context, WidgetRef ref) {
     final productsAsync = ref.watch(myProductsProvider);
     final theme = Theme.of(context);
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,106 +922,172 @@ class SellerDashboardScreen extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Performa Produk', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              'Performa Produk',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
-        productsAsync.when(
-          loading: () => const AppLoadingSkeleton(width: double.infinity, height: 200, borderRadius: 12),
-          error: (err, stack) => AppErrorState(
+        SizedBox(height: AppSpacing.sm),
+        if (productsAsync.isLoading && !productsAsync.hasValue)
+          AppLoadingSkeleton(
+            width: double.infinity,
+            height: 200,
+            borderRadius: 12,
+          )
+        else if (productsAsync.hasError)
+          AppErrorState(
             title: 'Gagal memuat produk',
-            message: ErrorMapper.getFriendlyMessage(err),
+            message: ErrorMapper.getFriendlyMessage(productsAsync.error!),
             onRetry: () => ref.invalidate(myProductsProvider),
-          ),
-          data: (paginatedState) {
-            final products = paginatedState.products;
-            if (products.isEmpty) {
-              return AppEmptyState(
-                icon: Icons.storefront,
-                title: 'Belum Ada Produk',
-                message: 'Mulai hasilkan uang dengan menjual barang preloved Anda.',
-                buttonText: 'Tambah Produk',
-                onButtonPressed: () => context.push('/seller/products/new'),
-              );
-            }
-            return Column(
-              children: products.map((product) {
-                final primaryImage = product.images.where((i) => i.isPrimary).firstOrNull ?? product.images.firstOrNull;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: AppGlassCard(
-                    padding: EdgeInsets.zero,
-                    onTap: () => context.push('/seller/products/${product.id}/edit'),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.backgroundDarker,
-                            borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-                          ),
-                          child: primaryImage != null
-                              ? ClipRRect(
-                                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-                                  child: CachedNetworkImage(
-                                    imageUrl: primaryImage.imageUrl,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-                                    errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: AppColors.textMuted),
-                                  ),
-                                )
-                              : const Icon(Icons.image, color: AppColors.textMuted),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.sm),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(product.title, style: const TextStyle(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                const SizedBox(height: 4),
-                                Text(currencyFormatter.format(product.price), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(AppSpacing.sm),
-                          child: AppStatusBadge(
-                            label: _getStatusLabel(product.status),
-                            status: _getBadgeStatus(product.status),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+          )
+        else if (productsAsync.hasValue)
+          Builder(
+            builder: (context) {
+              final products = productsAsync.value!.products;
+              if (products.isEmpty) {
+                return PremiumEmptyState(
+                  icon: Icons.storefront,
+                  title: 'Belum Ada Produk',
+                  message:
+                      'Mulai hasilkan uang dengan menjual barang preloved Anda.',
+                  buttonText: 'Tambah Produk',
+                  onButtonPressed: () => context.push('/seller/products/new'),
                 );
-              }).toList(),
-            );
-          },
-        ),
+              }
+              final previewProducts = products.take(5).toList();
+              return Column(
+                children: [
+                  ...previewProducts.map((product) {
+                    final primaryImage =
+                        product.images.where((i) => i.isPrimary).firstOrNull ??
+                        product.images.firstOrNull;
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: PremiumSurfaceCard(
+                        padding: EdgeInsets.zero,
+                        onTap: () =>
+                            context.push('/seller/products/${product.id}/edit'),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: context.colors.backgroundDarker,
+                                borderRadius: BorderRadius.horizontal(
+                                  left: Radius.circular(12),
+                                ),
+                              ),
+                              child: primaryImage != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.horizontal(
+                                        left: Radius.circular(12),
+                                      ),
+                                      child: CachedNetworkImage(
+                                        imageUrl: primaryImage.imageUrl,
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) => Center(
+                                          child: SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        ),
+                                        errorWidget: (context, url, error) =>
+                                            Icon(
+                                              Icons.broken_image,
+                                              color: context.colors.textMuted,
+                                            ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.image,
+                                      color: context.colors.textMuted,
+                                    ),
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.all(AppSpacing.sm),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product.title,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      currencyFormatter.format(product.price),
+                                      style: TextStyle(
+                                        color: context.colors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.all(AppSpacing.sm),
+                              child: PremiumStatusBadge(
+                                label: _getStatusLabel(product.status),
+                                status: _getBadgeStatus(product.status),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  if (products.length > previewProducts.length)
+                    TextButton(
+                      onPressed: () => context.push('/seller/products'),
+                      child: const Text('Lihat Semua Produk'),
+                    ),
+                ],
+              );
+            },
+          ),
       ],
     );
   }
 
   String _getStatusLabel(String status) {
     switch (status) {
-      case 'available': return 'Aktif';
-      case 'sold': return 'Terjual';
-      case 'reserved': return 'Dipesan';
-      case 'archived': return 'Diarsipkan';
-      default: return status;
+      case 'active':
+        return 'Aktif';
+      case 'sold':
+        return 'Terjual';
+      case 'reserved':
+        return 'Dipesan';
+      case 'archived':
+        return 'Diarsipkan';
+      default:
+        return status;
     }
   }
 
-  BadgeStatus _getBadgeStatus(String status) {
+  PremiumBadgeStatus _getBadgeStatus(String status) {
     switch (status) {
-      case 'available': return BadgeStatus.success;
-      case 'sold': return BadgeStatus.error;
-      case 'reserved': return BadgeStatus.warning;
-      case 'archived': return BadgeStatus.neutral;
-      default: return BadgeStatus.info;
+      case 'active':
+        return PremiumBadgeStatus.success;
+      case 'sold':
+        return PremiumBadgeStatus.error;
+      case 'reserved':
+        return PremiumBadgeStatus.warning;
+      case 'archived':
+        return PremiumBadgeStatus.neutral;
+      default:
+        return PremiumBadgeStatus.info;
     }
   }
 }

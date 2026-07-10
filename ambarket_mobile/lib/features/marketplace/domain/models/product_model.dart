@@ -17,7 +17,7 @@ class ProductModel {
   final String? usageDuration;
   final String status;
   final DateTime createdAt;
-  
+
   // Relations
   final CategoryModel? category;
   final List<ProductImageModel> images;
@@ -59,11 +59,15 @@ class ProductModel {
       usageDuration: json['usage_duration'] as String?,
       status: json['status'] as String? ?? 'active',
       createdAt: DateTime.parse(json['created_at'] as String),
-      category: json['categories'] != null 
-          ? CategoryModel.fromJson(json['categories'] as Map<String, dynamic>) 
+      category: json['categories'] != null
+          ? CategoryModel.fromJson(json['categories'] as Map<String, dynamic>)
           : null,
       images: json['product_images'] != null
-          ? (json['product_images'] as List).map((i) => ProductImageModel.fromJson(i as Map<String, dynamic>)).toList()
+          ? (json['product_images'] as List)
+                .map(
+                  (i) => ProductImageModel.fromJson(i as Map<String, dynamic>),
+                )
+                .toList()
           : [],
     );
   }

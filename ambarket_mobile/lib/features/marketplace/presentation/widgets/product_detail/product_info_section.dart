@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_spacing.dart';
 import '../../../domain/models/product_model.dart';
-import 'package:intl/intl.dart';
 
 class ProductInfoSection extends StatelessWidget {
   final ProductModel product;
@@ -12,52 +11,145 @@ class ProductInfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Informasi Produk',
           style: theme.textTheme.titleMedium?.copyWith(
-            color: AppColors.textPrimary,
+            color: context.colors.textPrimary,
             fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        if (product.brand?.isNotEmpty ?? false)
-          _buildInfoRow(theme, 'Merek', product.brand!),
-        _buildInfoRow(theme, 'Kategori', product.category?.name ?? 'Tidak ada kategori'),
-        _buildInfoRow(theme, 'Lokasi', product.location),
-        _buildInfoRow(theme, 'Diposting pada', DateFormat('dd MMM yyyy').format(product.createdAt)),
-        _buildInfoRow(theme, 'Tipe Harga', product.isNegotiable ? 'Bisa Nego' : 'Harga Pas'),
+        SizedBox(height: AppSpacing.lg),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                children: [
+                  _buildInfoRow(
+                    context,
+                    theme,
+                    Icons.verified_outlined,
+                    'Merek',
+                    product.brand ?? '-',
+                  ),
+                  _buildInfoRow(
+                    context,
+                    theme,
+                    Icons.grid_view_outlined,
+                    'Kategori',
+                    product.category?.name ?? '-',
+                  ),
+                  _buildInfoRow(
+                    context,
+                    theme,
+                    Icons.location_on_outlined,
+                    'Lokasi',
+                    product.location,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                children: [
+                  _buildInfoRow(
+                    context,
+                    theme,
+                    Icons.sell_outlined,
+                    'Kondisi',
+                    _mapCondition(product.condition),
+                  ),
+                  _buildInfoRow(
+                    context,
+                    theme,
+                    Icons.calendar_today_outlined,
+                    'Garansi',
+                    'Resmi 3 Tahun',
+                  ),
+                  _buildInfoRow(
+                    context,
+                    theme,
+                    Icons.inventory_2_outlined,
+                    'Kelengkapan',
+                    product.completeness ?? 'Fullset',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildInfoRow(ThemeData theme, String label, String value) {
+  Widget _buildInfoRow(
+    BuildContext context,
+    ThemeData theme,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: EdgeInsets.only(bottom: AppSpacing.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: context.colors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Icon(icon, size: 18, color: context.colors.primary),
           ),
+          SizedBox(width: 12),
           Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: context.colors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _mapCondition(String condition) {
+    switch (condition) {
+      case 'like_new':
+        return 'Seperti Baru';
+      case 'good':
+        return 'Kondisi Baik';
+      case 'fair':
+        return 'Cukup';
+      case 'need_repair':
+        return 'Perlu Perbaikan';
+      default:
+        return condition;
+    }
   }
 }

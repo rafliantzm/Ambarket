@@ -1,76 +1,124 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'app_colors.dart';
 import 'app_typography.dart';
 
 class AppTheme {
-  // Huashu-inspired design is inherently a dark premium theme.
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
-        surface: AppColors.surface,
-        error: AppColors.accent,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.light.background,
+      colorScheme: ColorScheme.light(
+        primary: AppColors.light.primary,
+        secondary: AppColors.light.accent,
+        surface: AppColors.light.surface,
+        error: AppColors.light.error,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: AppColors.light.textPrimary,
+        onError: Colors.white,
       ),
-      textTheme: AppTypography.getDarkTextTheme(),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
-        titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme)
+          .copyWith(
+            displayLarge: AppTypography.h1.copyWith(
+              color: AppColors.light.textPrimary,
+            ),
+            displayMedium: AppTypography.h2.copyWith(
+              color: AppColors.light.textPrimary,
+            ),
+            displaySmall: AppTypography.h3.copyWith(
+              color: AppColors.light.textPrimary,
+            ),
+            headlineMedium: AppTypography.h4.copyWith(
+              color: AppColors.light.textPrimary,
+            ),
+            titleLarge: AppTypography.h5.copyWith(
+              color: AppColors.light.textPrimary,
+            ),
+            titleMedium: AppTypography.h6.copyWith(
+              color: AppColors.light.textPrimary,
+            ),
+            bodyLarge: AppTypography.bodyLg.copyWith(
+              color: AppColors.light.textPrimary,
+            ),
+            bodyMedium: AppTypography.bodyMd.copyWith(
+              color: AppColors.light.textPrimary,
+            ),
+            bodySmall: AppTypography.bodySm.copyWith(
+              color: AppColors.light.textSecondary,
+            ),
+            labelLarge: AppTypography.button,
+            labelSmall: AppTypography.caption.copyWith(
+              color: AppColors.light.textMuted,
+            ),
+          ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: AppColors.light.primary,
           foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          textStyle: AppTypography.button,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(100),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          elevation: 0,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.light.textPrimary,
+          side: BorderSide(color: AppColors.light.borderStrong),
+          textStyle: AppTypography.button,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(100),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.light.surface,
+        hintStyle: AppTypography.bodyMd.copyWith(
+          color: AppColors.light.textMuted,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.light.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.light.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        hintStyle: const TextStyle(color: AppColors.textMuted),
-      ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.border,
-        thickness: 1,
-      ),
-      cardTheme: CardThemeData(
-        color: AppColors.surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.light.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.light.error),
         ),
       ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.light.background,
+        elevation: 0,
+        iconTheme: IconThemeData(color: AppColors.light.textPrimary),
+        titleTextStyle: AppTypography.h5.copyWith(
+          color: AppColors.light.textPrimary,
+        ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: AppColors.light.surface,
+        selectedItemColor: AppColors.light.primary,
+        unselectedItemColor: AppColors.light.textMuted,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+      extensions: [AppColors.light],
     );
   }
-
-  // Fallback to dark theme even if light is requested to enforce Huashu style
-  static ThemeData get lightTheme => darkTheme;
 }

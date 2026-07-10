@@ -10,11 +10,14 @@ abstract class SellerWalletRepository {
   Future<List<SellerWithdrawalModel>> fetchSellerWithdrawals(String sellerId);
 
   /// Submits a dummy withdrawal request.
-  Future<void> requestDummyWithdrawal(String sellerId, DummyWithdrawalInput input);
+  Future<void> requestDummyWithdrawal(
+    String sellerId,
+    DummyWithdrawalInput input,
+  );
 
   /// Ensures a wallet record exists for the seller.
   Future<void> ensureSellerWalletExists(String sellerId);
-  
+
   /// Calculates completed order earnings and updates wallet (dummy MVP behavior).
   Future<void> calculateSellerEarningsFromCompletedOrders(String sellerId);
 }

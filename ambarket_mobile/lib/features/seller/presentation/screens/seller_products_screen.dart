@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/ambarket_scaffold.dart';
+import '../../../../core/widgets/premium_empty_state.dart';
+import '../../../../core/widgets/premium_command_search_bar.dart';
+import '../../../../core/widgets/premium_filter_chips.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_loading_skeleton.dart';
 import '../../../../core/error/error_mapper.dart';
@@ -17,9 +21,13 @@ class SellerProductsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width >= 768;
 
-    return Scaffold(
+    return AmbarketScaffold(
+      backgroundColor: context.colors.background,
+      showMotionBackground: false,
       appBar: AppBar(
         title: const Text('Kelola Produk'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -28,8 +36,8 @@ class SellerProductsScreen extends ConsumerWidget {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: isDesktop && MediaQuery.of(context).size.width > 1200 
-                ? (MediaQuery.of(context).size.width - 1200) / 2 
+            horizontal: isDesktop && MediaQuery.of(context).size.width > 1200
+                ? (MediaQuery.of(context).size.width - 1200) / 2
                 : AppSpacing.md,
             vertical: AppSpacing.md,
           ),
@@ -38,16 +46,16 @@ class SellerProductsScreen extends ConsumerWidget {
             children: [
               Text(
                 'Pantau, edit, dan kelola status produk toko Anda.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               _buildSearchBar(context, ref),
               const SizedBox(height: AppSpacing.sm),
               _buildFilterChips(context, ref),
               const SizedBox(height: AppSpacing.md),
-              Expanded(
-                child: _buildProductList(context, ref, isDesktop),
-              ),
+              Expanded(child: _buildProductList(context, ref, isDesktop)),
             ],
           ),
         ),
@@ -56,15 +64,8 @@ class SellerProductsScreen extends ConsumerWidget {
   }
 
   Widget _buildSearchBar(BuildContext context, WidgetRef ref) {
-    return TextField(
-      decoration: InputDecoration(
-        hintText: 'Cari produk jualan...',
-        prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        filled: true,
-      ),
+    return PremiumCommandSearchBar(
+      hintText: 'Cari produk jualan...',
       onChanged: (value) {
         ref.read(sellerProductSearchQueryProvider.notifier).setQuery(value);
       },
@@ -90,13 +91,13 @@ class SellerProductsScreen extends ConsumerWidget {
           final isSelected = currentFilter == entry.key;
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text(entry.value),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  ref.read(sellerProductStatusFilterProvider.notifier).setFilter(entry.key);
-                }
+            child: PremiumFilterChip(
+              label: entry.value,
+              isSelected: isSelected,
+              onTap: () {
+                ref
+                    .read(sellerProductStatusFilterProvider.notifier)
+                    .setFilter(entry.key);
               },
             ),
           );
@@ -105,13 +106,17 @@ class SellerProductsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProductList(BuildContext context, WidgetRef ref, bool isDesktop) {
+  Widget _buildProductList(
+    BuildContext context,
+    WidgetRef ref,
+    bool isDesktop,
+  ) {
     final productsState = ref.watch(sellerProductsProvider);
 
     return productsState.when(
       data: (products) {
         if (products.isEmpty) {
-          return const AppEmptyState(
+          return const PremiumEmptyState(
             icon: Icons.inventory_2_outlined,
             title: 'Tidak Ada Produk',
             message: 'Belum ada produk pada status ini.',
@@ -120,6 +125,9 @@ class SellerProductsScreen extends ConsumerWidget {
 
         if (isDesktop) {
           return GridView.builder(
+            cacheExtent: 800,
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 400,
               mainAxisExtent: 320,
@@ -136,8 +144,13 @@ class SellerProductsScreen extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: () => ref.read(sellerProductsProvider.notifier).refresh(),
           child: ListView.separated(
+            cacheExtent: 800,
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             itemCount: products.length,
-            separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: AppSpacing.sm),
             itemBuilder: (context, index) {
               return SellerProductCard(product: products[index]);
             },
@@ -146,8 +159,10 @@ class SellerProductsScreen extends ConsumerWidget {
       },
       loading: () => ListView.separated(
         itemCount: 5,
-        separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
-        itemBuilder: (context, index) => const AppLoadingSkeleton(width: double.infinity, height: 150),
+        separatorBuilder: (context, index) =>
+            const SizedBox(height: AppSpacing.sm),
+        itemBuilder: (context, index) =>
+            const AppLoadingSkeleton(width: double.infinity, height: 150),
       ),
       error: (error, stack) => AppErrorState(
         message: ErrorMapper.getFriendlyMessage(error),

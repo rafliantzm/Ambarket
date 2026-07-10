@@ -15,9 +15,18 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 final currentProfileProvider = FutureProvider<ProfileModel?>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return null;
-  
+
   final repo = ref.watch(profileRepositoryProvider);
   return repo.fetchCurrentProfile(user.id);
+});
+
+// Public Profile Provider
+final publicProfileProvider = FutureProvider.family<ProfileModel, String>((
+  ref,
+  userId,
+) async {
+  final repo = ref.watch(profileRepositoryProvider);
+  return repo.fetchCurrentProfile(userId);
 });
 
 // Edit Profile Controller
@@ -34,15 +43,16 @@ class EditProfileController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       final user = ref.read(currentUserProvider);
       if (user == null) throw Exception('User not logged in');
-      
+
       await _repo.updateProfile(user.id, data);
-      
+
       // Refresh current profile
       ref.invalidate(currentProfileProvider);
     });
   }
 }
 
-final editProfileControllerProvider = AsyncNotifierProvider<EditProfileController, void>(() {
-  return EditProfileController();
-});
+final editProfileControllerProvider =
+    AsyncNotifierProvider<EditProfileController, void>(() {
+      return EditProfileController();
+    });

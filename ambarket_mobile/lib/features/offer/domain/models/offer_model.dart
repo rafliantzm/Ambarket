@@ -11,7 +11,9 @@ class OfferModel {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
-  
+  final DateTime? acceptedAt;
+  final DateTime? expiresAt;
+
   // Relations
   final ProductModel? product;
   final ProfileModel? buyer;
@@ -27,6 +29,8 @@ class OfferModel {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.acceptedAt,
+    this.expiresAt,
     this.product,
     this.buyer,
     this.seller,
@@ -43,9 +47,21 @@ class OfferModel {
       status: json['status'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      product: json['products'] != null ? ProductModel.fromJson(json['products'] as Map<String, dynamic>) : null,
-      buyer: json['buyer'] != null ? ProfileModel.fromJson(json['buyer'] as Map<String, dynamic>) : null,
-      seller: json['seller'] != null ? ProfileModel.fromJson(json['seller'] as Map<String, dynamic>) : null,
+      acceptedAt: json['accepted_at'] != null
+          ? DateTime.parse(json['accepted_at'] as String)
+          : null,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String)
+          : null,
+      product: json['products'] != null
+          ? ProductModel.fromJson(json['products'] as Map<String, dynamic>)
+          : null,
+      buyer: json['buyer'] != null
+          ? ProfileModel.fromJson(json['buyer'] as Map<String, dynamic>)
+          : null,
+      seller: json['seller'] != null
+          ? ProfileModel.fromJson(json['seller'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -60,6 +76,8 @@ class OfferModel {
       'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      if (acceptedAt != null) 'accepted_at': acceptedAt!.toIso8601String(),
+      if (expiresAt != null) 'expires_at': expiresAt!.toIso8601String(),
     };
   }
 }

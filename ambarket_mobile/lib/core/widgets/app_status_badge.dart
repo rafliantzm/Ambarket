@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
-enum BadgeStatus {
-  success,
-  warning,
-  error,
-  info,
-  neutral,
-}
+enum BadgeStatus { success, warning, error, info, neutral }
 
 class AppStatusBadge extends StatelessWidget {
   final String label;
@@ -27,24 +22,24 @@ class AppStatusBadge extends StatelessWidget {
 
     switch (status) {
       case BadgeStatus.success:
-        bgColor = const Color(0xFF10B981).withValues(alpha: 0.15); // Emerald
-        textColor = const Color(0xFF34D399);
+        bgColor = context.colors.success.withValues(alpha: 0.15);
+        textColor = context.colors.success;
         break;
       case BadgeStatus.warning:
-        bgColor = const Color(0xFFF59E0B).withValues(alpha: 0.15); // Amber
-        textColor = const Color(0xFFFBBF24);
+        bgColor = context.colors.warning.withValues(alpha: 0.15);
+        textColor = context.colors.warning;
         break;
       case BadgeStatus.error:
-        bgColor = const Color(0xFFF43F5E).withValues(alpha: 0.15); // Rose
-        textColor = const Color(0xFFFB7185);
+        bgColor = context.colors.error.withValues(alpha: 0.15);
+        textColor = context.colors.error;
         break;
       case BadgeStatus.info:
-        bgColor = const Color(0xFF3B82F6).withValues(alpha: 0.15); // Blue
-        textColor = const Color(0xFF60A5FA);
+        bgColor = context.colors.info.withValues(alpha: 0.15);
+        textColor = context.colors.info;
         break;
       case BadgeStatus.neutral:
-        bgColor = Colors.white.withValues(alpha: 0.1);
-        textColor = Colors.white70;
+        bgColor = context.colors.borderStrong.withValues(alpha: 0.5);
+        textColor = context.colors.textSecondary;
         break;
     }
 
@@ -76,4 +71,3 @@ class AppStatusBadge extends StatelessWidget {
     );
   }
 }
-

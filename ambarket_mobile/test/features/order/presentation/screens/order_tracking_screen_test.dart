@@ -32,7 +32,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          buyerOrdersProvider.overrideWith((ref) => [mockOrder]), // synchronous return!
+          buyerOrdersProvider.overrideWith(
+            (ref) => [mockOrder],
+          ), // synchronous return!
           sellerOrdersProvider.overrideWith((ref) => []),
         ],
         child: const MaterialApp(

@@ -31,9 +31,11 @@ class SellerWalletSummary {
       availableBalance: (json['available_balance'] as num?)?.toDouble() ?? 0.0,
       pendingBalance: (json['pending_balance'] as num?)?.toDouble() ?? 0.0,
       totalEarning: (json['total_earning'] as num?)?.toDouble() ?? 0.0,
-      completedOrderRevenue: (json['completed_order_revenue'] as num?)?.toDouble() ?? 0.0,
+      completedOrderRevenue:
+          (json['completed_order_revenue'] as num?)?.toDouble() ?? 0.0,
       withdrawalCount: (json['withdrawal_count'] as num?)?.toInt() ?? 0,
-      pendingWithdrawalCount: (json['pending_withdrawal_count'] as num?)?.toInt() ?? 0,
+      pendingWithdrawalCount:
+          (json['pending_withdrawal_count'] as num?)?.toInt() ?? 0,
     );
   }
 }

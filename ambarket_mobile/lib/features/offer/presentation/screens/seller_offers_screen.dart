@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:ambarket_mobile/core/theme/app_spacing.dart';
 import 'package:ambarket_mobile/core/error/error_mapper.dart';
-import 'package:ambarket_mobile/core/widgets/app_animated_background.dart';
-import 'package:ambarket_mobile/core/widgets/app_button.dart';
-import 'package:ambarket_mobile/core/widgets/app_empty_state.dart';
+import 'package:ambarket_mobile/core/widgets/ambarket_scaffold.dart';
+import 'package:ambarket_mobile/core/widgets/premium_button.dart';
+import 'package:ambarket_mobile/core/widgets/premium_empty_state.dart';
 import 'package:ambarket_mobile/core/widgets/app_error_state.dart';
-import 'package:ambarket_mobile/core/widgets/app_glass_card.dart';
+import 'package:ambarket_mobile/core/widgets/premium_surface_card.dart';
 import 'package:ambarket_mobile/core/widgets/app_loading_skeleton.dart';
-import 'package:ambarket_mobile/core/widgets/app_status_badge.dart';
+import 'package:ambarket_mobile/core/widgets/premium_status_badge.dart';
+import 'package:ambarket_mobile/core/widgets/premium_filter_chips.dart';
 
 import 'package:ambarket_mobile/features/offer/domain/models/offer_model.dart';
 import 'package:ambarket_mobile/features/offer/presentation/providers/offer_provider.dart';
@@ -24,12 +26,16 @@ class SellerOffersScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width >= 768;
 
-    return Scaffold(
+    return AmbarketScaffold(
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Tawaran Masuk'),
+            const Text(
+              'Tawaran Masuk',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             Text(
               'Kelola negosiasi harga dari calon pembeli.',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -38,16 +44,14 @@ class SellerOffersScreen extends ConsumerWidget {
             ),
           ],
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: AppAnimatedBackground(
-        child: Column(
-          children: [
-            _buildFilters(context, ref),
-            Expanded(
-              child: _buildOfferList(context, ref, isDesktop),
-            ),
-          ],
-        ),
+      body: Column(
+        children: [
+          _buildFilters(context, ref),
+          Expanded(child: _buildOfferList(context, ref, isDesktop)),
+        ],
       ),
     );
   }
@@ -67,22 +71,23 @@ class SellerOffersScreen extends ConsumerWidget {
       color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
         child: Row(
           children: statusOptions.entries.map((entry) {
             final isSelected = statusFilter == entry.key;
             return Padding(
               padding: const EdgeInsets.only(right: AppSpacing.sm),
-              child: FilterChip(
-                label: Text(entry.value),
-                selected: isSelected,
-                onSelected: (selected) {
-                  if (selected) {
-                    ref.read(sellerOfferStatusFilterProvider.notifier).setFilter(entry.key);
-                  }
+              child: PremiumFilterChip(
+                label: entry.value,
+                isSelected: isSelected,
+                onTap: () {
+                  ref
+                      .read(sellerOfferStatusFilterProvider.notifier)
+                      .setFilter(entry.key);
                 },
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
               ),
             );
           }).toList(),
@@ -103,7 +108,7 @@ class SellerOffersScreen extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
                 SizedBox(height: 100),
-                AppEmptyState(
+                PremiumEmptyState(
                   icon: Icons.local_offer_outlined,
                   title: 'Belum ada tawaran masuk',
                   message: 'Tawaran dari calon pembeli akan muncul di sini.',
@@ -114,9 +119,15 @@ class SellerOffersScreen extends ConsumerWidget {
 
           return ListView.builder(
             padding: EdgeInsets.symmetric(
-              horizontal: isDesktop && MediaQuery.of(context).size.width > 1200 ? (MediaQuery.of(context).size.width - 1200) / 2 : AppSpacing.md,
+              horizontal: isDesktop && MediaQuery.of(context).size.width > 1200
+                  ? (MediaQuery.of(context).size.width - 1200) / 2
+                  : AppSpacing.md,
               vertical: AppSpacing.md,
             ),
+            cacheExtent: 800,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
             itemCount: offers.length,
             itemBuilder: (context, index) {
               return SellerOfferCard(offer: offers[index]);
@@ -125,10 +136,17 @@ class SellerOffersScreen extends ConsumerWidget {
         },
         loading: () => ListView.builder(
           padding: const EdgeInsets.all(AppSpacing.md),
+          cacheExtent: 500,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: true,
           itemCount: 3,
           itemBuilder: (context, index) => const Padding(
             padding: EdgeInsets.only(bottom: AppSpacing.md),
-            child: AppLoadingSkeleton(width: double.infinity, height: 200, borderRadius: 16),
+            child: AppLoadingSkeleton(
+              width: double.infinity,
+              height: 200,
+              borderRadius: 16,
+            ),
           ),
         ),
         error: (error, stack) => ListView(
@@ -139,7 +157,8 @@ class SellerOffersScreen extends ConsumerWidget {
               child: AppErrorState(
                 title: 'Gagal Memuat',
                 message: ErrorMapper.getFriendlyMessage(error),
-                onRetry: () => ref.refresh(filteredReceivedOffersProvider.future),
+                onRetry: () =>
+                    ref.refresh(filteredReceivedOffersProvider.future),
               ),
             ),
           ],
@@ -157,33 +176,38 @@ class SellerOfferCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
-    final actionState = ref.watch(offerActionControllerProvider);
-    final isLoading = actionState.isLoading;
+    final isLoading = ref.watch(
+      offerActionControllerProvider.select((state) => state.isLoading),
+    );
 
     // Status Mapping
-    BadgeStatus statusColor;
+    PremiumBadgeStatus statusColor;
     String statusText;
     switch (offer.status) {
       case 'pending':
-        statusColor = BadgeStatus.warning;
+        statusColor = PremiumBadgeStatus.warning;
         statusText = 'Pending';
         break;
       case 'accepted':
-        statusColor = BadgeStatus.success;
+        statusColor = PremiumBadgeStatus.success;
         statusText = 'Diterima';
         break;
       case 'rejected':
-        statusColor = BadgeStatus.error;
+        statusColor = PremiumBadgeStatus.error;
         statusText = 'Ditolak';
         break;
       case 'cancelled':
-        statusColor = BadgeStatus.neutral;
+        statusColor = PremiumBadgeStatus.neutral;
         statusText = 'Dibatalkan';
         break;
       default:
-        statusColor = BadgeStatus.neutral;
+        statusColor = PremiumBadgeStatus.neutral;
         statusText = offer.status;
     }
 
@@ -193,11 +217,13 @@ class SellerOfferCard extends ConsumerWidget {
 
     final originalPrice = offer.product?.price ?? 0;
     final diffAmount = originalPrice - offer.offerPrice;
-    final discountPercent = originalPrice > 0 ? (diffAmount / originalPrice * 100).toStringAsFixed(1) : "0";
+    final discountPercent = originalPrice > 0
+        ? (diffAmount / originalPrice * 100).toStringAsFixed(1)
+        : "0";
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: AppGlassCard(
+      child: PremiumSurfaceCard(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,36 +232,54 @@ class SellerOfferCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AppStatusBadge(
-                  label: statusText,
-                  status: statusColor,
-                ),
+                PremiumStatusBadge(label: statusText, status: statusColor),
                 Text(
                   dateFormat.format(offer.createdAt),
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            
+
             // Product & Buyer Info
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    image: imageUrl != null
-                        ? DecorationImage(
-                            image: NetworkImage(imageUrl),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: imageUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
                             fit: BoxFit.cover,
+                            memCacheWidth: 160,
+                            memCacheHeight: 160,
+                            fadeInDuration: Duration.zero,
+                            fadeOutDuration: Duration.zero,
+                            placeholder: (context, url) => ColoredBox(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                            ),
+                            errorWidget: (context, url, error) =>
+                                const ColoredBox(
+                                  color: Colors.black12,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey,
+                                  ),
+                                ),
                           )
-                        : null,
+                        : ColoredBox(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Icon(
+                              Icons.inventory_2,
+                              color: Colors.grey,
+                            ),
+                          ),
                   ),
-                  child: imageUrl == null ? const Icon(Icons.inventory_2, color: Colors.grey) : null,
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -244,7 +288,9 @@ class SellerOfferCard extends ConsumerWidget {
                     children: [
                       Text(
                         offer.product?.title ?? 'Produk Dihapus',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -253,11 +299,14 @@ class SellerOfferCard extends ConsumerWidget {
                         'Pembeli: ${offer.buyer?.name ?? offer.buyer?.username ?? "Unknown"}',
                         style: theme.textTheme.bodyMedium,
                       ),
-                      if (offer.message != null && offer.message!.isNotEmpty) ...[
+                      if (offer.message != null &&
+                          offer.message!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
                           '"${offer.message}"',
-                          style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontStyle: FontStyle.italic,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -268,7 +317,7 @@ class SellerOfferCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            
+
             // Offer Price Comparison
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -281,10 +330,17 @@ class SellerOfferCard extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Harga Asli', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      Text(
+                        'Harga Asli',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                       Text(
                         currencyFormat.format(originalPrice),
-                        style: theme.textTheme.bodyMedium?.copyWith(decoration: TextDecoration.lineThrough),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          decoration: TextDecoration.lineThrough,
+                        ),
                       ),
                     ],
                   ),
@@ -292,10 +348,18 @@ class SellerOfferCard extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Ditawar', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      Text(
+                        'Ditawar',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                       Text(
                         currencyFormat.format(offer.offerPrice),
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
                     ],
                   ),
@@ -303,19 +367,27 @@ class SellerOfferCard extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Selisih', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+                      Text(
+                        'Selisih',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
                       Text(
                         '- ${currencyFormat.format(diffAmount)} (-$discountPercent%)',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error, fontWeight: FontWeight.bold),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: AppSpacing.md),
-            
+
             // Action Buttons
             Wrap(
               spacing: AppSpacing.sm,
@@ -339,28 +411,36 @@ class SellerOfferCard extends ConsumerWidget {
                 ),
                 if (offer.status == 'accepted')
                   FutureBuilder(
-                    future: ref.read(offerRepositoryProvider).findOrderByOfferId(offer.id),
+                    future: ref
+                        .read(offerRepositoryProvider)
+                        .findOrderByOfferId(offer.id),
                     builder: (context, snapshot) {
                       if (snapshot.hasData && snapshot.data != null) {
                         final orderId = snapshot.data!.id;
-                        return AppButton(
+                        return PremiumButton(
                           label: 'Lihat Pesanan',
-                          onPressed: () => context.push('/orders/$orderId/tracking'), // adjust as needed
+                          onPressed: () => context.push(
+                            '/orders/$orderId/tracking',
+                          ), // adjust as needed
                         );
                       }
                       return const SizedBox.shrink();
                     },
                   ),
-                
+
                 if (offer.status == 'pending') ...[
                   TextButton(
-                    onPressed: isLoading ? null : () => _handleReject(context, ref),
+                    onPressed: isLoading
+                        ? null
+                        : () => _handleReject(context, ref),
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Tolak'),
                   ),
-                  AppButton(
+                  PremiumButton(
                     label: 'Terima Tawaran',
-                    onPressed: isLoading ? () {} : () => _handleAccept(context, ref),
+                    onPressed: isLoading
+                        ? () {}
+                        : () => _handleAccept(context, ref),
                     isLoading: isLoading,
                   ),
                 ],
@@ -386,9 +466,19 @@ class SellerOfferCard extends ConsumerWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              _executeAction(context, ref, () => ref.read(offerActionControllerProvider.notifier).rejectOffer(offer.id), 'Tawaran ditolak.');
+              _executeAction(
+                context,
+                ref,
+                () => ref
+                    .read(offerActionControllerProvider.notifier)
+                    .rejectOffer(offer.id),
+                'Tawaran ditolak.',
+              );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Tolak'),
           ),
         ],
@@ -401,7 +491,9 @@ class SellerOfferCard extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Terima Tawaran'),
-        content: const Text('Yakin ingin menerima tawaran ini? Pembeli dapat melakukan checkout dengan harga ini.'),
+        content: const Text(
+          'Yakin ingin menerima tawaran ini? Pembeli dapat melakukan checkout dengan harga ini.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -410,7 +502,14 @@ class SellerOfferCard extends ConsumerWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              _executeAction(context, ref, () => ref.read(offerActionControllerProvider.notifier).acceptOffer(offer.id), 'Tawaran diterima.');
+              _executeAction(
+                context,
+                ref,
+                () => ref
+                    .read(offerActionControllerProvider.notifier)
+                    .acceptOffer(offer.id),
+                'Tawaran diterima.',
+              );
             },
             child: const Text('Ya, Terima'),
           ),
@@ -419,10 +518,15 @@ class SellerOfferCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _executeAction(BuildContext context, WidgetRef ref, Future<void> Function() action, String successMsg) async {
+  Future<void> _executeAction(
+    BuildContext context,
+    WidgetRef ref,
+    Future<void> Function() action,
+    String successMsg,
+  ) async {
     await action();
     if (!context.mounted) return;
-    
+
     final errorState = ref.read(offerActionControllerProvider).error;
     if (errorState == null) {
       ScaffoldMessenger.of(context).showSnackBar(

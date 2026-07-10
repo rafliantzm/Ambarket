@@ -45,9 +45,15 @@ class ReviewModel {
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       isHidden: json['is_hidden'] as bool? ?? false,
-      product: json['product'] != null ? ProductModel.fromJson(json['product'] as Map<String, dynamic>) : null,
-      reviewer: json['reviewer'] != null ? ProfileModel.fromJson(json['reviewer'] as Map<String, dynamic>) : null,
-      reviewedUser: json['reviewed_user'] != null ? ProfileModel.fromJson(json['reviewed_user'] as Map<String, dynamic>) : null,
+      product: json['product'] != null
+          ? ProductModel.fromJson(json['product'] as Map<String, dynamic>)
+          : null,
+      reviewer: json['reviewer'] != null
+          ? ProfileModel.fromJson(json['reviewer'] as Map<String, dynamic>)
+          : null,
+      reviewedUser: json['reviewed_user'] != null
+          ? ProfileModel.fromJson(json['reviewed_user'] as Map<String, dynamic>)
+          : null,
     );
   }
 

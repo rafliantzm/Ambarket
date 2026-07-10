@@ -6,16 +6,16 @@ import 'package:ambarket_mobile/features/offer/presentation/screens/my_offers_sc
 import 'package:ambarket_mobile/features/offer/presentation/providers/offer_provider.dart';
 
 void main() {
-  testWidgets('MyOffersScreen renders empty states', (WidgetTester tester) async {
+  testWidgets('MyOffersScreen renders empty states', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           mySentOffersProvider.overrideWith((ref) => Future.value([])),
           myReceivedOffersProvider.overrideWith((ref) => Future.value([])),
         ],
-        child: const MaterialApp(
-          home: MyOffersScreen(),
-        ),
+        child: const MaterialApp(home: MyOffersScreen()),
       ),
     );
 

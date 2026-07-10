@@ -49,35 +49,41 @@ final dummyRejectedProduct = ProductModel(
 );
 
 // Mock providers
-final mockEmptyProductsProvider = AsyncNotifierProvider<SellerProductListNotifier, List<ProductModel>>(
-  () => MockEmptyProductsNotifier(),
-);
+final mockEmptyProductsProvider =
+    AsyncNotifierProvider<SellerProductListNotifier, List<ProductModel>>(
+      () => MockEmptyProductsNotifier(),
+    );
 
 class MockEmptyProductsNotifier extends SellerProductListNotifier {
   @override
   Future<List<ProductModel>> build() async => [];
 }
 
-final mockDataProductsProvider = AsyncNotifierProvider<SellerProductListNotifier, List<ProductModel>>(
-  () => MockDataProductsNotifier(),
-);
+final mockDataProductsProvider =
+    AsyncNotifierProvider<SellerProductListNotifier, List<ProductModel>>(
+      () => MockDataProductsNotifier(),
+    );
 
 class MockDataProductsNotifier extends SellerProductListNotifier {
   @override
-  Future<List<ProductModel>> build() async => [dummyActiveProduct, dummyArchivedProduct, dummyRejectedProduct];
+  Future<List<ProductModel>> build() async => [
+    dummyActiveProduct,
+    dummyArchivedProduct,
+    dummyRejectedProduct,
+  ];
 }
 
 void main() {
   Widget createTestWidget(ProviderContainer container) {
     return UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(
-        home: SellerProductsScreen(),
-      ),
+      child: const MaterialApp(home: SellerProductsScreen()),
     );
   }
 
-  testWidgets('SellerProductsScreen renders header and filters', (WidgetTester tester) async {
+  testWidgets('SellerProductsScreen renders header and filters', (
+    WidgetTester tester,
+  ) async {
     final container = ProviderContainer(
       overrides: [
         sellerProductsProvider.overrideWith(() => MockEmptyProductsNotifier()),
@@ -88,14 +94,19 @@ void main() {
     await tester.pump();
 
     expect(find.text('Kelola Produk'), findsOneWidget);
-    expect(find.text('Pantau, edit, dan kelola status produk toko Anda.'), findsOneWidget);
+    expect(
+      find.text('Pantau, edit, dan kelola status produk toko Anda.'),
+      findsOneWidget,
+    );
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Semua'), findsOneWidget);
     expect(find.text('Aktif'), findsOneWidget);
     expect(find.text('Diarsipkan'), findsOneWidget);
   });
 
-  testWidgets('SellerProductsScreen empty state render', (WidgetTester tester) async {
+  testWidgets('SellerProductsScreen empty state render', (
+    WidgetTester tester,
+  ) async {
     final container = ProviderContainer(
       overrides: [
         sellerProductsProvider.overrideWith(() => MockEmptyProductsNotifier()),
@@ -109,7 +120,9 @@ void main() {
     expect(find.text('Belum ada produk pada status ini.'), findsOneWidget);
   });
 
-  testWidgets('SellerProductsScreen renders active product card and buttons', (WidgetTester tester) async {
+  testWidgets('SellerProductsScreen renders active product card and buttons', (
+    WidgetTester tester,
+  ) async {
     final container = ProviderContainer(
       overrides: [
         sellerProductsProvider.overrideWith(() => MockDataProductsNotifier()),
@@ -127,7 +140,7 @@ void main() {
     // Archived doesn't have Arsipkan.
     expect(find.text('Arsipkan'), findsOneWidget);
     expect(find.text('Aktifkan'), findsOneWidget);
-    
+
     // There are 2 "Edit" buttons (Active and Archived can be edited). Rejected cannot be edited.
     expect(find.text('Edit'), findsNWidgets(2));
   });

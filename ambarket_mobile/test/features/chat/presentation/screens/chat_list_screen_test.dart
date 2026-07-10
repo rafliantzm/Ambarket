@@ -14,7 +14,10 @@ class MockMyConversationsNotifier extends MyConversationsNotifier {
 
   @override
   FutureOr<PaginatedConversationsState> build() {
-    return PaginatedConversationsState(conversations: _conversations, hasMore: false);
+    return PaginatedConversationsState(
+      conversations: _conversations,
+      hasMore: false,
+    );
   }
 }
 
@@ -32,18 +35,18 @@ void main() {
       ProviderScope(
         overrides: [
           currentUserProvider.overrideWithValue(mockUser),
-          myConversationsProvider.overrideWith(() => MockMyConversationsNotifier([])),
+          myConversationsProvider.overrideWith(
+            () => MockMyConversationsNotifier([]),
+          ),
         ],
-        child: const MaterialApp(
-          home: ChatListScreen(),
-        ),
+        child: const MaterialApp(home: ChatListScreen()),
       ),
     );
 
     // Initial loading is skipped because mock resolves synchronously
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('Belum ada pesan.'), findsOneWidget);
+    expect(find.text('Belum Ada Pesan'), findsOneWidget);
   });
 
   testWidgets('ChatListScreen shows unread badge', (WidgetTester tester) async {
@@ -70,16 +73,16 @@ void main() {
       ProviderScope(
         overrides: [
           currentUserProvider.overrideWithValue(mockUser),
-          myConversationsProvider.overrideWith(() => MockMyConversationsNotifier([chat])),
+          myConversationsProvider.overrideWith(
+            () => MockMyConversationsNotifier([chat]),
+          ),
           unreadCountProvider('conv1').overrideWith((ref) => Stream.value(5)),
         ],
-        child: const MaterialApp(
-          home: ChatListScreen(),
-        ),
+        child: const MaterialApp(home: ChatListScreen()),
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('5'), findsOneWidget);
     expect(find.text('Hello'), findsOneWidget);

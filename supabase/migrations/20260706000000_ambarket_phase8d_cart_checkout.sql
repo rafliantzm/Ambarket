@@ -14,29 +14,39 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS service_fee DECIMAL(12, 2) DE
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS subtotal DECIMAL(12, 2) DEFAULT 0;
 
 -- Backfill subtotal with total_price and copy receiver info from shipping if null
-UPDATE public.orders SET 
+UPDATE public.orders SET
     subtotal = total_price,
     receiver_name = 'Receiver', -- Default since we didn't have it before
     receiver_phone = shipping_phone
 WHERE subtotal = 0;
 
 -- Drop existing status check constraint dynamically and add new one
-DO $$ 
-DECLARE constraint_name text; 
-BEGIN 
-    SELECT conname INTO constraint_name 
-    FROM pg_constraint 
-    WHERE conrelid = 'public.orders'::regclass 
-    AND contype = 'c' 
-    AND conname LIKE '%status%'; 
+DO $$
+DECLARE constraint_name text;
+BEGIN
+    SELECT conname INTO constraint_name
+    FROM pg_constraint
+    WHERE conrelid = 'public.orders'::regclass
+    AND contype = 'c'
+    AND conname LIKE '%status%';
 
-    IF constraint_name IS NOT NULL THEN 
-        EXECUTE 'ALTER TABLE public.orders DROP CONSTRAINT ' || constraint_name; 
-    END IF; 
+    IF constraint_name IS NOT NULL THEN
+        EXECUTE 'ALTER TABLE public.orders DROP CONSTRAINT ' || constraint_name;
+    END IF;
 END $$;
 
-ALTER TABLE public.orders ADD CONSTRAINT orders_status_check 
-CHECK (status IN ('pending_payment', 'paid', 'packed', 'shipped', 'completed', 'cancelled'));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'orders_status_check'
+        AND conrelid = 'public.orders'::regclass
+    ) THEN
+        ALTER TABLE public.orders ADD CONSTRAINT orders_status_check
+        CHECK (status IN ('pending_payment', 'paid', 'packed', 'shipped', 'completed', 'cancelled'));
+    END IF;
+END $$;
 
 -- Update product status trigger
 CREATE OR REPLACE FUNCTION update_product_status_on_order()
@@ -50,7 +60,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create cart_items table
-CREATE TABLE public.cart_items (
+CREATE TABLE IF NOT EXISTS public.cart_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
     product_id UUID REFERENCES public.products(id) ON DELETE CASCADE NOT NULL,
@@ -61,25 +71,30 @@ CREATE TABLE public.cart_items (
 );
 
 -- Trigger for cart_items updated_at
-CREATE TRIGGER handle_cart_items_updated_at 
-    BEFORE UPDATE ON public.cart_items 
+DROP TRIGGER IF EXISTS handle_cart_items_updated_at ON public.cart_items;
+CREATE TRIGGER handle_cart_items_updated_at
+    BEFORE UPDATE ON public.cart_items
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 -- RLS for cart_items
 ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view their own cart" 
-ON public.cart_items FOR SELECT 
+DROP POLICY IF EXISTS "Users can view their own cart" ON public.cart_items;
+CREATE POLICY "Users can view their own cart"
+ON public.cart_items FOR SELECT
 USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert to their own cart" 
-ON public.cart_items FOR INSERT 
+DROP POLICY IF EXISTS "Users can insert to their own cart" ON public.cart_items;
+CREATE POLICY "Users can insert to their own cart"
+ON public.cart_items FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete their own cart" 
-ON public.cart_items FOR DELETE 
+DROP POLICY IF EXISTS "Users can delete their own cart" ON public.cart_items;
+CREATE POLICY "Users can delete their own cart"
+ON public.cart_items FOR DELETE
 USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own cart" 
-ON public.cart_items FOR UPDATE 
+DROP POLICY IF EXISTS "Users can update their own cart" ON public.cart_items;
+CREATE POLICY "Users can update their own cart"
+ON public.cart_items FOR UPDATE
 USING (auth.uid() = user_id);

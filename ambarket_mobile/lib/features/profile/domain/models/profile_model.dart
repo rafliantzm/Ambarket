@@ -45,8 +45,12 @@ class ProfileModel {
       bio: json['bio'] as String?,
       isSuspended: json['is_suspended'] as bool? ?? false,
       suspensionReason: json['suspension_reason'] as String?,
-      suspendedAt: json['suspended_at'] != null ? DateTime.parse(json['suspended_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      suspendedAt: json['suspended_at'] != null
+          ? DateTime.parse(json['suspended_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 

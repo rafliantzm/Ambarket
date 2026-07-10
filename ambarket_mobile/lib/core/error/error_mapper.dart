@@ -6,16 +6,19 @@ class ErrorMapper {
     if (error is SocketException) {
       return 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
     }
-    
+
     if (error is AuthException) {
       final msg = error.message.toLowerCase();
       if (msg.contains('invalid login credentials')) {
         return 'Email atau kata sandi yang Anda masukkan salah.';
       }
-      if (msg.contains('user already registered')) {
+      if (msg.contains('user already registered') ||
+          msg.contains('user_already_exists') ||
+          msg.contains('already exists') ||
+          msg.contains('already registered')) {
         return 'Email ini sudah terdaftar. Silakan masuk.';
       }
-      return 'Autentikasi gagal. Silakan coba lagi.';
+      return error.message; // Show raw message for easier debugging
     }
 
     if (error is PostgrestException) {
@@ -26,7 +29,9 @@ class ErrorMapper {
         // Unique violation
         return 'Data ini sudah pernah dibuat sebelumnya.';
       }
-      if (code == '42501' || msg.contains('row-level security') || msg.contains('new row violates')) {
+      if (code == '42501' ||
+          msg.contains('row-level security') ||
+          msg.contains('new row violates')) {
         // RLS or permission error
         return 'Anda tidak memiliki akses untuk melakukan aksi ini.';
       }

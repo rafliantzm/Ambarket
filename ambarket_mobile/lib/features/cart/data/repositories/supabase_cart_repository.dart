@@ -14,8 +14,10 @@ class SupabaseCartRepository implements CartRepository {
         .select('*, product:products(*, seller:profiles(*), product_images(*))')
         .eq('user_id', userId)
         .order('created_at', ascending: false);
-    
-    return (response as List).map((json) => CartItemModel.fromJson(json)).toList();
+
+    return (response as List)
+        .map((json) => CartItemModel.fromJson(json))
+        .toList();
   }
 
   @override
@@ -26,7 +28,7 @@ class SupabaseCartRepository implements CartRepository {
         .select('seller_id, status')
         .eq('id', productId)
         .single();
-        
+
     if (productCheck['seller_id'] == userId) {
       throw Exception('Tidak bisa menambahkan produk sendiri ke keranjang.');
     }
@@ -36,11 +38,7 @@ class SupabaseCartRepository implements CartRepository {
 
     final response = await _client
         .from('cart_items')
-        .insert({
-          'user_id': userId,
-          'product_id': productId,
-          'quantity': 1,
-        })
+        .insert({'user_id': userId, 'product_id': productId, 'quantity': 1})
         .select('*, product:products(*, seller:profiles(*), product_images(*))')
         .single();
 
@@ -55,5 +53,14 @@ class SupabaseCartRepository implements CartRepository {
   @override
   Future<void> clearCart(String userId) async {
     await _client.from('cart_items').delete().eq('user_id', userId);
+  }
+
+  @override
+  Future<void> removeProductFromCart(String userId, String productId) async {
+    await _client
+        .from('cart_items')
+        .delete()
+        .eq('user_id', userId)
+        .eq('product_id', productId);
   }
 }

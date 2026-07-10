@@ -43,7 +43,9 @@ class _ReportDialogState extends ConsumerState<ReportDialog> {
   void _submit() async {
     final currentProfile = ref.read(currentProfileProvider).value;
     if (currentProfile?.isSuspended == true) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Akun Anda sedang ditangguhkan.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Akun Anda sedang ditangguhkan.')),
+      );
       return;
     }
 
@@ -54,18 +56,24 @@ class _ReportDialogState extends ConsumerState<ReportDialog> {
       return;
     }
 
-    final success = await ref.read(createReportControllerProvider.notifier).submitReport(
-      targetType: widget.targetType,
-      targetId: widget.targetId,
-      reason: _selectedReason!,
-      description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
-    );
+    final success = await ref
+        .read(createReportControllerProvider.notifier)
+        .submitReport(
+          targetType: widget.targetType,
+          targetId: widget.targetId,
+          reason: _selectedReason!,
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+        );
 
     if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Laporan berhasil dikirim. Terima kasih!')),
+        const SnackBar(
+          content: Text('Laporan berhasil dikirim. Terima kasih!'),
+        ),
       );
       Navigator.of(context).pop();
     } else {
@@ -91,7 +99,9 @@ class _ReportDialogState extends ConsumerState<ReportDialog> {
             children: [
               Text(
                 'Laporkan ${widget.title}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: AppSpacing.md),
               const Text('Pilih alasan pelaporan:'),
@@ -101,7 +111,10 @@ class _ReportDialogState extends ConsumerState<ReportDialog> {
                 runSpacing: 4.0,
                 children: _reasons.entries.map((entry) {
                   return ChoiceChip(
-                    label: Text(entry.value, style: const TextStyle(fontSize: 12)),
+                    label: Text(
+                      entry.value,
+                      style: const TextStyle(fontSize: 12),
+                    ),
                     selected: _selectedReason == entry.key,
                     onSelected: (selected) {
                       setState(() {
@@ -128,15 +141,27 @@ class _ReportDialogState extends ConsumerState<ReportDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: state.isLoading ? null : () => Navigator.of(context).pop(),
+                    onPressed: state.isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     child: const Text('Batal'),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   ElevatedButton(
                     onPressed: state.isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
                     child: state.isLoading
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Text('Kirim Laporan'),
                   ),
                 ],

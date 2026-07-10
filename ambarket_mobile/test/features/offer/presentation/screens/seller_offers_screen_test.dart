@@ -36,7 +36,9 @@ class FakeOfferRepository implements OfferRepository {
 }
 
 void main() {
-  testWidgets('SellerOffersScreen renders actions based on status', (WidgetTester tester) async {
+  testWidgets('SellerOffersScreen renders actions based on status', (
+    WidgetTester tester,
+  ) async {
     final mockProduct = ProductModel(
       id: 'p1',
       sellerId: 's1',
@@ -98,9 +100,7 @@ void main() {
           filteredReceivedOffersProvider.overrideWith((ref) => offers),
           offerRepositoryProvider.overrideWith((ref) => FakeOfferRepository()),
         ],
-        child: const MaterialApp(
-          home: Scaffold(body: SellerOffersScreen()),
-        ),
+        child: const MaterialApp(home: Scaffold(body: SellerOffersScreen())),
       ),
     );
 

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html><head>
+<!DOCTYPE html>
+<html>
+<head>
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
@@ -16,101 +18,297 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Ambarket - Marketplace Preloved yang Lebih Cerdas">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="ambarket_mobile">
+  <meta name="apple-mobile-web-app-title" content="Ambarket">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <title>ambarket_mobile</title>
+  <title>Ambarket</title>
   <link rel="manifest" href="manifest.json">
-  <style id="splash-screen-style">
-    html {
-      height: 100%
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+
+  <style id="ambarket-boot-style">
+    :root {
+      --bg-charcoal: #0f1115;
+      --glow-red: rgba(229, 57, 53, 0.15);
+      --text-white: #f5f5f7;
+      --text-muted: #a1a1aa;
+      --accent-red: #e53935;
+      --accent-glow: #ff6b57;
+      --track-bg: rgba(255, 255, 255, 0.12);
     }
 
-    body {
+    html, body {
       margin: 0;
-      min-height: 100%;
-      background-color: #FFFFFF;
-          background-size: 100% 100%;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      background-color: var(--bg-charcoal);
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
     }
 
-    .center {
-      margin: 0;
+    /* Core Boot Loader Container */
+    #ambarket-boot-loader {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(to bottom, #111318, #0f1115);
+      z-index: 9999;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      will-change: opacity, transform;
+    }
+
+    #ambarket-boot-loader.boot-loader--exit {
+      opacity: 0;
+      transform: scale(1.01);
+      pointer-events: none;
+    }
+
+    /* Radial Glow */
+    .boot-background {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      -ms-transform: translate(-50%, -50%);
-      transform: translate(-50%, -50%);
+      inset: 0;
+      background: radial-gradient(circle at center, var(--glow-red) 0%, transparent 60%);
+      pointer-events: none;
     }
 
-    .contain {
-      display:block;
-      width:100%; height:100%;
-      object-fit: contain;
-    }
-
-    .stretch {
-      display:block;
-      width:100%; height:100%;
-    }
-
-    .cover {
-      display:block;
-      width:100%; height:100%;
-      object-fit: cover;
-    }
-
-    .bottom {
+    /* Network Grid (SVG Data URI) */
+    .boot-grid {
       position: absolute;
-      bottom: 0;
-      left: 50%;
-      -ms-transform: translate(-50%, 0);
-      transform: translate(-50%, 0);
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0V0zm30 30h30v30H30V30zM0 30h30v30H0V30zM30 0h30v30H30V0zM0 0h30v30H0V0z' fill='none' stroke='rgba(255,255,255,0.015)' stroke-width='1'/%3E%3C/svg%3E");
+      background-size: 60px 60px;
+      pointer-events: none;
     }
 
-    .bottomLeft {
+    /* Slow drifting nodes */
+    .boot-nodes {
       position: absolute;
-      bottom: 0;
-      left: 0;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
     }
 
-    .bottomRight {
+    .boot-node {
       position: absolute;
-      bottom: 0;
-      right: 0;
+      width: 4px;
+      height: 4px;
+      background-color: var(--accent-glow);
+      border-radius: 50%;
+      box-shadow: 0 0 10px 2px var(--accent-red);
+      opacity: 0.6;
+      animation: drift 10s infinite linear alternate;
+      will-change: transform;
+    }
+
+    .boot-node:nth-child(1) { top: 20%; left: 30%; animation-delay: 0s; }
+    .boot-node:nth-child(2) { top: 70%; left: 20%; animation-delay: -2s; animation-duration: 12s; }
+    .boot-node:nth-child(3) { top: 40%; right: 25%; animation-delay: -5s; animation-duration: 8s; }
+    .boot-node:nth-child(4) { top: 80%; right: 40%; animation-delay: -7s; animation-duration: 15s; }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(30px, -20px); }
+    }
+
+    /* Brand Content */
+    .boot-brand {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 400px;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    .boot-logo-container {
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUpIn 0.8s ease forwards;
+    }
+
+    /* SVG inline logo */
+    .boot-logo {
+      width: 64px;
+      height: 64px;
+      filter: drop-shadow(0 0 12px var(--glow-red));
+    }
+
+    .boot-wordmark {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-white);
+      letter-spacing: -0.5px;
+      margin: 0 0 8px 0;
+      opacity: 0;
+      animation: fadeUpIn 0.8s ease 0.1s forwards;
+    }
+
+    .boot-tagline {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin: 0 0 40px 0;
+      opacity: 0;
+      animation: fadeUpIn 0.8s ease 0.2s forwards;
+    }
+
+    /* Progress Indicator */
+    .boot-progress-container {
+      width: 220px;
+      height: 2px;
+      background-color: var(--track-bg);
+      border-radius: 1px;
+      overflow: hidden;
+      position: relative;
+      opacity: 0;
+      animation: fadeUpIn 0.8s ease 0.3s forwards;
+    }
+
+    .boot-progress-bar {
+      position: absolute;
+      top: 0;
+      left: -50%;
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, transparent, var(--accent-red), var(--accent-glow), transparent);
+      border-radius: 1px;
+      animation: indeterminate 1.8s infinite cubic-bezier(0.65, 0, 0.35, 1);
+      will-change: left;
+    }
+
+    @keyframes indeterminate {
+      0% { left: -50%; }
+      100% { left: 100%; }
+    }
+
+    .boot-status {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      opacity: 0;
+      animation: fadeUpIn 0.8s ease 0.4s forwards;
+    }
+
+    @keyframes fadeUpIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Fallback Error State */
+    .boot-error {
+      display: none;
+      margin-top: 24px;
+      padding: 12px 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .boot-error:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      .boot-node,
+      .boot-progress-bar {
+        animation: none;
+      }
+      .boot-progress-bar {
+        left: 0;
+        width: 100%;
+        opacity: 0.5;
+        animation: pulse 2s infinite alternate ease-in-out;
+      }
+      @keyframes pulse {
+        0% { opacity: 0.3; }
+        100% { opacity: 0.8; }
+      }
+      .boot-logo-container,
+      .boot-wordmark,
+      .boot-tagline,
+      .boot-progress-container,
+      .boot-status {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+      #ambarket-boot-loader.boot-loader--exit {
+        transform: none;
+      }
     }
   </style>
-  <script id="splash-screen-script">
-    function removeSplashFromWeb() {
-      document.getElementById("splash")?.remove();
-      document.getElementById("splash-branding")?.remove();
-      document.body.style.background = "transparent";
-    }
-  </script>
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
 <body>
-  <picture id="splash">
-      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
-      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
-      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
-  </picture>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async=""></script>
+  <div id="ambarket-boot-loader" aria-hidden="false">
+    <div class="boot-background" aria-hidden="true"></div>
+    <div class="boot-grid" aria-hidden="true"></div>
+    <div class="boot-nodes" aria-hidden="true">
+      <div class="boot-node"></div>
+      <div class="boot-node"></div>
+      <div class="boot-node"></div>
+      <div class="boot-node"></div>
+    </div>
 
+    <div class="boot-brand">
+      <div class="boot-logo-container">
+        <!-- Ambarket Inline SVG Logo (Tactical Red) -->
+        <svg class="boot-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Ambarket Logo" role="img">
+          <rect width="100" height="100" rx="20" fill="#0f1115" stroke="#e53935" stroke-width="2"/>
+          <path d="M30 70L50 30L70 70H55L50 60L45 70H30Z" fill="#ff6b57"/>
+          <path d="M50 45L40 65H60L50 45Z" fill="#0f1115"/>
+        </svg>
+      </div>
+      <h1 class="boot-wordmark">Ambarket</h1>
+      <p class="boot-tagline">Marketplace Preloved yang Lebih Cerdas</p>
 
-</body></html>
+      <div class="boot-progress-container" role="progressbar" aria-label="Loading">
+        <div class="boot-progress-bar"></div>
+      </div>
+
+      <div class="boot-status" aria-live="polite">Menyiapkan pengalaman belanja...</div>
+
+      <button class="boot-error" id="boot-error-btn" onclick="window.location.reload()">
+        Muat Ulang
+      </button>
+    </div>
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    // Fallback: If Flutter doesn't load within 20s, show error state
+    setTimeout(() => {
+      const loader = document.getElementById('ambarket-boot-loader');
+      if (loader && !loader.classList.contains('boot-loader--exit')) {
+        const errorBtn = document.getElementById('boot-error-btn');
+        const statusText = document.querySelector('.boot-status');
+        if (errorBtn && statusText) {
+          errorBtn.style.display = 'block';
+          statusText.textContent = 'Ambarket belum dapat dimuat.';
+        }
+      }
+    }, 20000);
+  </script>
+</body>
+</html>

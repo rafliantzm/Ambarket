@@ -10,14 +10,17 @@ final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   return SupabaseReviewRepository(Supabase.instance.client);
 });
 
-final sellerRatingSummaryProvider = FutureProvider.family<ReviewSummaryModel, String>((ref, sellerId) async {
-  return ref.watch(reviewRepositoryProvider).fetchSellerRatingSummary(sellerId);
-});
+final sellerRatingSummaryProvider =
+    FutureProvider.family<ReviewSummaryModel, String>((ref, sellerId) async {
+      return ref
+          .watch(reviewRepositoryProvider)
+          .fetchSellerRatingSummary(sellerId);
+    });
 
 class CreateReviewState {
   final bool isLoading;
   final String? error;
-  
+
   CreateReviewState({this.isLoading = false, this.error});
 }
 
@@ -39,14 +42,16 @@ class CreateReviewController extends Notifier<CreateReviewState> {
 
     state = CreateReviewState(isLoading: true, error: null);
     try {
-      await ref.read(reviewRepositoryProvider).createReview(
-        orderId: orderId,
-        productId: productId,
-        reviewerId: user.id,
-        reviewedUserId: reviewedUserId,
-        rating: rating,
-        comment: comment,
-      );
+      await ref
+          .read(reviewRepositoryProvider)
+          .createReview(
+            orderId: orderId,
+            productId: productId,
+            reviewerId: user.id,
+            reviewedUserId: reviewedUserId,
+            rating: rating,
+            comment: comment,
+          );
 
       // Invalidate orders so the UI updates to "Sudah Direview"
       ref.invalidate(buyerOrdersProvider);
@@ -62,6 +67,7 @@ class CreateReviewController extends Notifier<CreateReviewState> {
   }
 }
 
-final createReviewControllerProvider = NotifierProvider<CreateReviewController, CreateReviewState>(() {
-  return CreateReviewController();
-});
+final createReviewControllerProvider =
+    NotifierProvider<CreateReviewController, CreateReviewState>(() {
+      return CreateReviewController();
+    });

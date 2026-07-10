@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../marketplace/domain/models/product_model.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_glass_card.dart';
@@ -16,9 +17,12 @@ class SellerProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final imageUrl = product.images.isNotEmpty ? product.images.first.imageUrl : null;
-    final actionState = ref.watch(sellerProductActionControllerProvider);
-    final isLoading = actionState.isLoading;
+    final imageUrl = product.images.isNotEmpty
+        ? product.images.first.imageUrl
+        : null;
+    final isLoading = ref.watch(
+      sellerProductActionControllerProvider.select((state) => state.isLoading),
+    );
 
     return AppGlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -34,14 +38,25 @@ class SellerProductCard extends ConsumerWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: theme.colorScheme.surfaceContainerHighest,
-                  image: imageUrl != null
-                      ? DecorationImage(
-                          image: NetworkImage(imageUrl),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
                 ),
-                child: imageUrl == null ? const Icon(Icons.inventory_2, color: Colors.grey) : null,
+                clipBehavior: Clip.antiAlias,
+                child: imageUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        memCacheWidth:
+                            (80 * MediaQuery.devicePixelRatioOf(context))
+                                .round(),
+                        memCacheHeight:
+                            (80 * MediaQuery.devicePixelRatioOf(context))
+                                .round(),
+                        fadeInDuration: Duration.zero,
+                        fadeOutDuration: Duration.zero,
+                        placeholder: (context, url) => const SizedBox.shrink(),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.broken_image, color: Colors.grey),
+                      )
+                    : const Icon(Icons.inventory_2, color: Colors.grey),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -50,14 +65,18 @@ class SellerProductCard extends ConsumerWidget {
                   children: [
                     Text(
                       product.title,
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Rp ${product.price.toStringAsFixed(0)}',
-                      style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -68,7 +87,9 @@ class SellerProductCard extends ConsumerWidget {
                         if (product.condition.isNotEmpty)
                           Text(
                             product.condition,
-                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                       ],
                     ),
@@ -91,20 +112,25 @@ class SellerProductCard extends ConsumerWidget {
               ),
               if (product.status != 'rejected' && product.status != 'hidden')
                 OutlinedButton(
-                  onPressed: () => context.push('/seller/products/${product.id}/edit'),
+                  onPressed: () =>
+                      context.push('/seller/products/${product.id}/edit'),
                   child: const Text('Edit'),
                 ),
               if (product.status == 'active')
                 AppButton(
                   label: 'Arsipkan',
                   isLoading: isLoading,
-                  onPressed: isLoading ? () {} : () => _handleArchive(context, ref),
+                  onPressed: isLoading
+                      ? () {}
+                      : () => _handleArchive(context, ref),
                 ),
               if (product.status == 'archived')
                 AppButton(
                   label: 'Aktifkan',
                   isLoading: isLoading,
-                  onPressed: isLoading ? () {} : () => _handleReactivate(context, ref),
+                  onPressed: isLoading
+                      ? () {}
+                      : () => _handleReactivate(context, ref),
                 ),
             ],
           ),
@@ -155,7 +181,9 @@ class SellerProductCard extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Arsipkan Produk'),
-        content: const Text('Produk yang diarsipkan tidak akan tampil di pencarian pembeli. Anda yakin?'),
+        content: const Text(
+          'Produk yang diarsipkan tidak akan tampil di pencarian pembeli. Anda yakin?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -166,7 +194,10 @@ class SellerProductCard extends ConsumerWidget {
               Navigator.of(ctx).pop();
               _executeArchive(context, ref);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Arsipkan'),
           ),
         ],
@@ -179,7 +210,9 @@ class SellerProductCard extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Aktifkan Produk'),
-        content: const Text('Produk ini akan kembali tampil dan bisa dibeli oleh pembeli. Anda yakin?'),
+        content: const Text(
+          'Produk ini akan kembali tampil dan bisa dibeli oleh pembeli. Anda yakin?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -198,15 +231,22 @@ class SellerProductCard extends ConsumerWidget {
   }
 
   Future<void> _executeArchive(BuildContext context, WidgetRef ref) async {
-    final success = await ref.read(sellerProductActionControllerProvider.notifier).archiveProduct(product.id);
+    final success = await ref
+        .read(sellerProductActionControllerProvider.notifier)
+        .archiveProduct(product.id);
     if (!context.mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Produk berhasil diarsipkan.'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Produk berhasil diarsipkan.'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
-      final errorMsg = ref.read(sellerProductActionControllerProvider).error ?? 'Gagal mengarsipkan produk.';
+      final errorMsg =
+          ref.read(sellerProductActionControllerProvider).error ??
+          'Gagal mengarsipkan produk.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );
@@ -214,15 +254,22 @@ class SellerProductCard extends ConsumerWidget {
   }
 
   Future<void> _executeReactivate(BuildContext context, WidgetRef ref) async {
-    final success = await ref.read(sellerProductActionControllerProvider.notifier).reactivateProduct(product.id);
+    final success = await ref
+        .read(sellerProductActionControllerProvider.notifier)
+        .reactivateProduct(product.id);
     if (!context.mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Produk berhasil diaktifkan.'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Produk berhasil diaktifkan.'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else {
-      final errorMsg = ref.read(sellerProductActionControllerProvider).error ?? 'Gagal mengaktifkan produk.';
+      final errorMsg =
+          ref.read(sellerProductActionControllerProvider).error ??
+          'Gagal mengaktifkan produk.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );

@@ -14,8 +14,10 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
         .from('categories')
         .select()
         .order('name', ascending: true);
-    
-    return (response as List).map((json) => CategoryModel.fromJson(json)).toList();
+
+    return (response as List)
+        .map((json) => CategoryModel.fromJson(json))
+        .toList();
   }
 
   @override
@@ -26,7 +28,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
         .select('id')
         .eq('id', userId)
         .maybeSingle();
-        
+
     if (existing == null) {
       // Insert minimal profile
       await _client.from('profiles').insert({
@@ -38,87 +40,125 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }
 
   @override
-  Future<List<ProductModel>> getProducts({String? query, String? categoryId, String? condition, int offset = 0, int limit = 20}) async {
+  Future<List<ProductModel>> getProducts({
+    String? query,
+    String? categoryId,
+    String? condition,
+    int offset = 0,
+    int limit = 20,
+  }) async {
     var filter = _client
         .from('products')
         .select('*, categories(*), product_images(*)')
         .eq('status', 'active');
-        
+
     if (categoryId != null && categoryId.isNotEmpty) {
       filter = filter.eq('category_id', categoryId);
     }
-    
+
     if (condition != null && condition.isNotEmpty) {
       filter = filter.eq('condition', condition);
     }
-        
+
     if (query != null && query.isNotEmpty) {
-      filter = filter.or('title.ilike.%$query%,description.ilike.%$query%,brand.ilike.%$query%');
+      filter = filter.or(
+        'title.ilike.%$query%,description.ilike.%$query%,brand.ilike.%$query%',
+      );
     }
-    
+
     final response = await filter
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
-        
-    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
   }
 
   @override
-  Future<List<ProductModel>> fetchRecommendedProducts({int limit = 10, int offset = 0}) async {
+  Future<List<ProductModel>> fetchRecommendedProducts({
+    int limit = 10,
+    int offset = 0,
+  }) async {
     final response = await _client
         .from('products')
         .select('*, categories(*), product_images(*)')
         .eq('status', 'active')
-        .order('created_at', ascending: false) // Using latest as a proxy for recommended for now
+        .order(
+          'created_at',
+          ascending: false,
+        ) // Using latest as a proxy for recommended for now
         .range(offset, offset + limit - 1);
-        
-    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
   }
 
   @override
-  Future<List<ProductModel>> fetchLatestProducts({int limit = 10, int offset = 0}) async {
+  Future<List<ProductModel>> fetchLatestProducts({
+    int limit = 10,
+    int offset = 0,
+  }) async {
     final response = await _client
         .from('products')
         .select('*, categories(*), product_images(*)')
         .eq('status', 'active')
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
-        
-    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
   }
 
   @override
-  Future<List<ProductModel>> fetchBestDealProducts({int limit = 10, int offset = 0}) async {
+  Future<List<ProductModel>> fetchBestDealProducts({
+    int limit = 10,
+    int offset = 0,
+  }) async {
     final response = await _client
         .from('products')
         .select('*, categories(*), product_images(*)')
         .eq('status', 'active')
         .order('price', ascending: true) // Lowest price first
         .range(offset, offset + limit - 1);
-        
-    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
   }
 
   @override
-  Future<List<ProductModel>> fetchNearbyProducts(String? location, {int limit = 10, int offset = 0}) async {
+  Future<List<ProductModel>> fetchNearbyProducts(
+    String? location, {
+    int limit = 10,
+    int offset = 0,
+  }) async {
     var filter = _client
         .from('products')
         .select('*, categories(*), product_images(*)')
         .eq('status', 'active');
-        
+
     if (location != null && location.isNotEmpty) {
       filter = filter.ilike('location', '%$location%');
     }
-    
+
     final response = await filter
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
-        
-    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
   }
 
   @override
-  Future<List<ProductModel>> fetchRelatedProducts(String productId, String categoryId, {int limit = 6}) async {
+  Future<List<ProductModel>> fetchRelatedProducts(
+    String productId,
+    String categoryId, {
+    int limit = 6,
+  }) async {
     final response = await _client
         .from('products')
         .select('*, categories(*), product_images(*)')
@@ -128,7 +168,42 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
         .order('created_at', ascending: false)
         .limit(limit);
 
-    return (response as List).map((json) => ProductModel.fromJson(json)).toList();
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
+  }
+
+  @override
+  Future<List<ProductModel>> fetchSellerActiveProducts(
+    String sellerId, {
+    String? query,
+    String? categoryId,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    var filter = _client
+        .from('products')
+        .select('*, categories(*), product_images(*)')
+        .eq('status', 'active')
+        .eq('seller_id', sellerId);
+
+    if (categoryId != null && categoryId.isNotEmpty) {
+      filter = filter.eq('category_id', categoryId);
+    }
+
+    if (query != null && query.isNotEmpty) {
+      filter = filter.or(
+        'title.ilike.%$query%,description.ilike.%$query%,brand.ilike.%$query%',
+      );
+    }
+
+    final response = await filter
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
+
+    return (response as List)
+        .map((json) => ProductModel.fromJson(json))
+        .toList();
   }
 
   @override
@@ -138,47 +213,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
         .select('*, categories(*), product_images(*)')
         .eq('id', productId)
         .single();
-        
+
     return ProductModel.fromJson(response);
-  }
-
-  @override
-  Future<List<String>> fetchWishlistProductIds(String userId) async {
-    final response = await _client
-        .from('wishlists')
-        .select('product_id')
-        .eq('user_id', userId);
-        
-    return (response as List).map((json) => json['product_id'] as String).toList();
-  }
-
-  @override
-  Future<List<ProductModel>> fetchWishlistedProducts(String userId) async {
-    final response = await _client
-        .from('wishlists')
-        .select('products(*, categories(*), product_images(*))')
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
-
-    // The response is a list of wishlists, each containing a 'products' object
-    return (response as List)
-        .map((json) => json['products'] as Map<String, dynamic>?)
-        .where((productJson) => productJson != null)
-        .map((productJson) => ProductModel.fromJson(productJson!))
-        .toList();
-  }
-
-  @override
-  Future<void> toggleWishlist(String userId, String productId, bool isCurrentlyWishlisted) async {
-    if (isCurrentlyWishlisted) {
-      await _client
-          .from('wishlists')
-          .delete()
-          .match({'user_id': userId, 'product_id': productId});
-    } else {
-      await _client
-          .from('wishlists')
-          .insert({'user_id': userId, 'product_id': productId});
-    }
   }
 }

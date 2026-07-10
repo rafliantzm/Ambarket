@@ -14,16 +14,12 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            categoriesProvider.overrideWith((ref) => mockCategories),
-          ],
-          child: const MaterialApp(
-            home: AddProductScreen(),
-          ),
+          overrides: [categoriesProvider.overrideWith((ref) => mockCategories)],
+          child: const MaterialApp(home: AddProductScreen()),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       // Check fields exist
       expect(find.byType(TextFormField), findsWidgets);
@@ -33,7 +29,7 @@ void main() {
       final buttonFinder = find.text('Simpan Produk');
       await tester.ensureVisible(buttonFinder);
       await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       // Expect validation errors
       expect(find.text('Wajib diisi'), findsWidgets);

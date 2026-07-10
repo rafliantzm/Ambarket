@@ -29,7 +29,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _locationController = TextEditingController();
     _addressController = TextEditingController();
     _bioController = TextEditingController();
-    
+
     // Defer reading provider until after first frame or handle synchronously
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final profile = ref.read(currentProfileProvider).value;
@@ -60,16 +60,28 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     final data = {
       'name': _nameController.text.trim(),
-      'username': _usernameController.text.trim().isEmpty ? null : _usernameController.text.trim(),
-      'phone': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-      'location': _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
-      'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-      'bio': _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+      'username': _usernameController.text.trim().isEmpty
+          ? null
+          : _usernameController.text.trim(),
+      'phone': _phoneController.text.trim().isEmpty
+          ? null
+          : _phoneController.text.trim(),
+      'location': _locationController.text.trim().isEmpty
+          ? null
+          : _locationController.text.trim(),
+      'address': _addressController.text.trim().isEmpty
+          ? null
+          : _addressController.text.trim(),
+      'bio': _bioController.text.trim().isEmpty
+          ? null
+          : _bioController.text.trim(),
     };
 
     try {
-      await ref.read(editProfileControllerProvider.notifier).updateProfile(data);
-      
+      await ref
+          .read(editProfileControllerProvider.notifier)
+          .updateProfile(data);
+
       if (mounted) {
         // Checking for errors
         final editState = ref.read(editProfileControllerProvider);
@@ -105,9 +117,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final isLoading = editState.isLoading;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-      ),
+      appBar: AppBar(title: const Text('Edit Profile')),
       body: SingleChildScrollView(
         child: Center(
           child: ConstrainedBox(
@@ -133,7 +143,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       },
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    
+
                     TextFormField(
                       controller: _usernameController,
                       decoration: const InputDecoration(
@@ -142,14 +152,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         prefixText: '@',
                       ),
                       validator: (value) {
-                        if (value != null && value.trim().isNotEmpty && value.trim().length < 3) {
+                        if (value != null &&
+                            value.trim().isNotEmpty &&
+                            value.trim().length < 3) {
                           return 'Username must be at least 3 characters';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    
+
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
@@ -159,7 +171,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    
+
                     TextFormField(
                       controller: _locationController,
                       decoration: const InputDecoration(
@@ -168,7 +180,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    
+
                     TextFormField(
                       controller: _addressController,
                       maxLines: 2,
@@ -179,7 +191,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    
+
                     TextFormField(
                       controller: _bioController,
                       maxLines: 3,
@@ -190,9 +202,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         alignLabelWithHint: true,
                       ),
                     ),
-                    
+
                     const SizedBox(height: AppSpacing.xl),
-                    
+
                     ElevatedButton(
                       onPressed: isLoading ? null : _saveProfile,
                       child: isLoading

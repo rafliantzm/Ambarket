@@ -6,16 +6,20 @@ class ReportTargetCard extends ConsumerWidget {
   final String targetType;
   final String targetId;
 
-  const ReportTargetCard({super.key, required this.targetType, required this.targetId});
+  const ReportTargetCard({
+    super.key,
+    required this.targetType,
+    required this.targetId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (targetType == 'product') {
       final productsAsync = ref.watch(adminProductsProvider);
       return productsAsync.when(
-        data: (products) {
+        data: (paginatedState) {
           try {
-            final p = products.firstWhere((e) => e.id == targetId);
+            final p = paginatedState.items.firstWhere((e) => e.id == targetId);
             return Card(
               child: ListTile(
                 title: Text(p.title),
@@ -24,17 +28,37 @@ class ReportTargetCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (p.status != 'hidden')
-                      IconButton(icon: const Icon(Icons.visibility_off, color: Colors.orange), onPressed: () => ref.read(adminActionControllerProvider.notifier).hideProduct(p.id, 'Reported')),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.visibility_off,
+                          color: Colors.orange,
+                        ),
+                        onPressed: () => ref
+                            .read(adminActionControllerProvider.notifier)
+                            .hideProduct(p.id, 'Reported'),
+                      ),
                     if (p.status != 'rejected')
-                      IconButton(icon: const Icon(Icons.block, color: Colors.red), onPressed: () => ref.read(adminActionControllerProvider.notifier).rejectProduct(p.id, 'Reported')),
+                      IconButton(
+                        icon: const Icon(Icons.block, color: Colors.red),
+                        onPressed: () => ref
+                            .read(adminActionControllerProvider.notifier)
+                            .rejectProduct(p.id, 'Reported'),
+                      ),
                     if (p.status == 'hidden' || p.status == 'rejected')
-                      IconButton(icon: const Icon(Icons.restore, color: Colors.green), onPressed: () => ref.read(adminActionControllerProvider.notifier).restoreProduct(p.id)),
+                      IconButton(
+                        icon: const Icon(Icons.restore, color: Colors.green),
+                        onPressed: () => ref
+                            .read(adminActionControllerProvider.notifier)
+                            .restoreProduct(p.id),
+                      ),
                   ],
                 ),
               ),
             );
           } catch (e) {
-            return const Card(child: ListTile(title: Text('Produk tidak ditemukan')));
+            return const Card(
+              child: ListTile(title: Text('Produk tidak ditemukan')),
+            );
           }
         },
         loading: () => const CircularProgressIndicator(),
@@ -43,9 +67,9 @@ class ReportTargetCard extends ConsumerWidget {
     } else if (targetType == 'user') {
       final usersAsync = ref.watch(adminUsersProvider);
       return usersAsync.when(
-        data: (users) {
+        data: (paginatedState) {
           try {
-            final u = users.firstWhere((e) => e.id == targetId);
+            final u = paginatedState.items.firstWhere((e) => e.id == targetId);
             return Card(
               child: ListTile(
                 title: Text(u.username ?? 'Unknown'),
@@ -54,15 +78,30 @@ class ReportTargetCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (!u.isSuspended)
-                      IconButton(icon: const Icon(Icons.block, color: Colors.red), onPressed: () => ref.read(adminActionControllerProvider.notifier).suspendUser(u.id, 'Reported')),
+                      IconButton(
+                        icon: const Icon(Icons.block, color: Colors.red),
+                        onPressed: () => ref
+                            .read(adminActionControllerProvider.notifier)
+                            .suspendUser(u.id, 'Reported'),
+                      ),
                     if (u.isSuspended)
-                      IconButton(icon: const Icon(Icons.check_circle, color: Colors.green), onPressed: () => ref.read(adminActionControllerProvider.notifier).unsuspendUser(u.id)),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                        ),
+                        onPressed: () => ref
+                            .read(adminActionControllerProvider.notifier)
+                            .unsuspendUser(u.id),
+                      ),
                   ],
                 ),
               ),
             );
           } catch (e) {
-            return const Card(child: ListTile(title: Text('Pengguna tidak ditemukan')));
+            return const Card(
+              child: ListTile(title: Text('Pengguna tidak ditemukan')),
+            );
           }
         },
         loading: () => const CircularProgressIndicator(),
@@ -71,9 +110,9 @@ class ReportTargetCard extends ConsumerWidget {
     } else if (targetType == 'review') {
       final reviewsAsync = ref.watch(adminReviewsProvider);
       return reviewsAsync.when(
-        data: (reviews) {
+        data: (paginatedState) {
           try {
-            final r = reviews.firstWhere((e) => e.id == targetId);
+            final r = paginatedState.items.firstWhere((e) => e.id == targetId);
             return Card(
               child: ListTile(
                 title: Text('Rating: ${r.rating}'),
@@ -82,15 +121,30 @@ class ReportTargetCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (!r.isHidden)
-                      IconButton(icon: const Icon(Icons.visibility_off, color: Colors.red), onPressed: () => ref.read(adminActionControllerProvider.notifier).hideReview(r.id, 'Reported')),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.visibility_off,
+                          color: Colors.red,
+                        ),
+                        onPressed: () => ref
+                            .read(adminActionControllerProvider.notifier)
+                            .hideReview(r.id, 'Reported'),
+                      ),
                     if (r.isHidden)
-                      IconButton(icon: const Icon(Icons.restore, color: Colors.green), onPressed: () => ref.read(adminActionControllerProvider.notifier).restoreReview(r.id)),
+                      IconButton(
+                        icon: const Icon(Icons.restore, color: Colors.green),
+                        onPressed: () => ref
+                            .read(adminActionControllerProvider.notifier)
+                            .restoreReview(r.id),
+                      ),
                   ],
                 ),
               ),
             );
           } catch (e) {
-            return const Card(child: ListTile(title: Text('Ulasan tidak ditemukan')));
+            return const Card(
+              child: ListTile(title: Text('Ulasan tidak ditemukan')),
+            );
           }
         },
         loading: () => const CircularProgressIndicator(),

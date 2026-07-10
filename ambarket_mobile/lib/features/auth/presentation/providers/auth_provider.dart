@@ -19,7 +19,8 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
 
 final currentUserProvider = Provider<User?>((ref) {
   final authStateAsync = ref.watch(authStateProvider);
-  return authStateAsync.value?.session?.user ?? Supabase.instance.client.auth.currentUser;
+  return authStateAsync.value?.session?.user ??
+      Supabase.instance.client.auth.currentUser;
 });
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, void>(() {
@@ -46,10 +47,18 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
-  Future<AuthResponse?> signUp(String email, String password, String name) async {
+  Future<AuthResponse?> signUp(
+    String email,
+    String password,
+    String name,
+  ) async {
     state = const AsyncLoading();
     try {
-      final response = await _authRepository.signUpWithEmailPassword(email, password, name: name);
+      final response = await _authRepository.signUpWithEmailPassword(
+        email,
+        password,
+        name: name,
+      );
       state = const AsyncData(null);
       return response;
     } catch (e, st) {

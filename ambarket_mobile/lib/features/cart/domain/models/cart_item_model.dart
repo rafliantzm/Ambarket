@@ -8,7 +8,7 @@ class CartItemModel {
   final int quantity;
   final DateTime createdAt;
   final DateTime updatedAt;
-  
+
   final ProductModel? product;
   final ProfileModel? user;
 
@@ -31,8 +31,12 @@ class CartItemModel {
       quantity: json['quantity'] as int? ?? 1,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      product: json['product'] != null ? ProductModel.fromJson(json['product'] as Map<String, dynamic>) : null,
-      user: json['user'] != null ? ProfileModel.fromJson(json['user'] as Map<String, dynamic>) : null,
+      product: json['product'] != null
+          ? ProductModel.fromJson(json['product'] as Map<String, dynamic>)
+          : null,
+      user: json['user'] != null
+          ? ProfileModel.fromJson(json['user'] as Map<String, dynamic>)
+          : null,
     );
   }
 

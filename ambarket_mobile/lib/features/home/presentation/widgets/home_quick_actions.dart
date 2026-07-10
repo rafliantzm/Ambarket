@@ -10,7 +10,7 @@ class HomeQuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -18,25 +18,25 @@ class HomeQuickActions extends StatelessWidget {
             context,
             icon: Icons.add_circle_outline,
             label: 'Jual Barang',
-            onTap: () => context.push('/seller/add_product'),
+            onTap: () => context.push('/seller/products/new'),
           ),
           _buildActionItem(
             context,
             icon: Icons.shopping_bag_outlined,
             label: 'Pesanan Saya',
-            onTap: () => context.push('/buyer_orders'),
+            onTap: () => context.push('/buyer-orders'),
           ),
           _buildActionItem(
             context,
             icon: Icons.local_offer_outlined,
             label: 'Tawaran Saya',
-            onTap: () => context.push('/my_offers'),
+            onTap: () => context.push('/offers'),
           ),
           _buildActionItem(
             context,
-            icon: Icons.favorite_border,
-            label: 'Wishlist',
-            onTap: () => context.push('/wishlist'),
+            icon: Icons.shopping_cart_outlined,
+            label: 'Keranjang',
+            onTap: () => context.push('/cart'),
           ),
         ],
       ),
@@ -54,20 +54,16 @@ class HomeQuickActions extends StatelessWidget {
       child: Column(
         children: [
           AppGlassCard(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 28,
-            ),
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Icon(icon, color: context.colors.primary, size: 28),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
+              color: context.colors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),

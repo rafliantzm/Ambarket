@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ambarket_mobile/features/admin/presentation/providers/admin_provider.dart';
 import 'package:ambarket_mobile/core/theme/app_spacing.dart';
+import 'package:ambarket_mobile/core/widgets/ambarket_scaffold.dart';
+import 'package:ambarket_mobile/core/widgets/premium_surface_card.dart';
+import 'package:ambarket_mobile/core/widgets/premium_empty_state.dart';
+import 'package:ambarket_mobile/core/widgets/premium_status_badge.dart';
 
 class AdminUsersScreen extends ConsumerStatefulWidget {
   const AdminUsersScreen({super.key});
@@ -16,10 +20,20 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   @override
   Widget build(BuildContext context) {
     final usersAsync = ref.watch(adminUsersProvider);
-    final actionState = ref.watch(adminActionControllerProvider);
+    final isLoading = ref.watch(
+      adminActionControllerProvider.select((state) => state.isLoading),
+    );
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Moderasi Pengguna')),
+    return AmbarketScaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(
+        title: const Text(
+          'Moderasi Pengguna',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: Column(
         children: [
           Padding(
@@ -30,53 +44,155 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
-              onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+              onChanged: (value) =>
+                  setState(() => _searchQuery = value.toLowerCase()),
             ),
           ),
           Expanded(
             child: usersAsync.when(
-              data: (users) {
-                final filtered = users.where((u) => 
-                  (u.name?.toLowerCase().contains(_searchQuery) ?? false) || 
-                  (u.username?.toLowerCase().contains(_searchQuery) ?? false)
-                ).toList();
-                
+              data: (paginatedState) {
+                final users = paginatedState.items;
+                final filtered = users
+                    .where(
+                      (u) =>
+                          (u.name?.toLowerCase().contains(_searchQuery) ??
+                              false) ||
+                          (u.username?.toLowerCase().contains(_searchQuery) ??
+                              false),
+                    )
+                    .toList();
+
                 if (filtered.isEmpty) {
-                  return const Center(child: Text('Tidak ada pengguna ditemukan.'));
+                  return const PremiumEmptyState(
+                    icon: Icons.people_outline,
+                    title: 'Tidak ada pengguna',
+                    message: 'Tidak ada pengguna yang ditemukan.',
+                  );
                 }
 
                 return RefreshIndicator(
                   onRefresh: () async => ref.refresh(adminUsersProvider.future),
-                  child: ListView.separated(
-                    itemCount: filtered.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final user = filtered[index];
-                      return ListTile(
-                        leading: CircleAvatar(child: Text(user.username?[0].toUpperCase() ?? '?')),
-                        title: Text(user.name ?? user.username ?? 'Unknown'),
-                        subtitle: Text('Role: ${user.role} | Suspended: ${user.isSuspended}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!user.isSuspended && user.role != 'admin')
-                              IconButton(
-                                icon: const Icon(Icons.block, color: Colors.red),
-                                onPressed: actionState.isLoading ? null : () => _showActionDialog('Suspend', () {
-                                  ref.read(adminActionControllerProvider.notifier).suspendUser(user.id, 'Suspended by admin');
-                                }),
-                              ),
-                            if (user.isSuspended)
-                              IconButton(
-                                icon: const Icon(Icons.check_circle, color: Colors.green),
-                                onPressed: actionState.isLoading ? null : () => _showActionDialog('Unsuspend', () {
-                                  ref.read(adminActionControllerProvider.notifier).unsuspendUser(user.id);
-                                }),
-                              ),
-                          ],
-                        ),
-                      );
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (ScrollNotification scrollInfo) {
+                      if (!paginatedState.hasMore) return false;
+                      if (scrollInfo.metrics.pixels ==
+                          scrollInfo.metrics.maxScrollExtent) {
+                        ref.read(adminUsersProvider.notifier).loadMore();
+                      }
+                      return false;
                     },
+                    child: ListView.separated(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      cacheExtent: 800,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      addAutomaticKeepAlives: false,
+                      addRepaintBoundaries: true,
+                      itemCount:
+                          filtered.length + (paginatedState.hasMore ? 1 : 0),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: AppSpacing.sm),
+                      itemBuilder: (context, index) {
+                        if (index == filtered.length) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(AppSpacing.md),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+
+                        final user = filtered[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
+                          child: PremiumSurfaceCard(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.sm,
+                            ),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                child: Text(
+                                  user.username?[0].toUpperCase() ?? '?',
+                                ),
+                              ),
+                              title: Text(
+                                user.name ?? user.username ?? 'Unknown',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Row(
+                                  children: [
+                                    Text('Role: ${user.role}'),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    PremiumStatusBadge(
+                                      label: user.isSuspended
+                                          ? 'Suspended'
+                                          : 'Active',
+                                      status: user.isSuspended
+                                          ? PremiumBadgeStatus.error
+                                          : PremiumBadgeStatus.success,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (!user.isSuspended && user.role != 'admin')
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.block,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: isLoading
+                                          ? null
+                                          : () => _showActionDialog(
+                                              'Suspend',
+                                              () {
+                                                ref
+                                                    .read(
+                                                      adminActionControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .suspendUser(
+                                                      user.id,
+                                                      'Suspended by admin',
+                                                    );
+                                              },
+                                            ),
+                                    ),
+                                  if (user.isSuspended)
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green,
+                                      ),
+                                      onPressed: isLoading
+                                          ? null
+                                          : () => _showActionDialog(
+                                              'Unsuspend',
+                                              () {
+                                                ref
+                                                    .read(
+                                                      adminActionControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .unsuspendUser(user.id);
+                                              },
+                                            ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 );
               },
@@ -96,14 +212,17 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
         title: Text('$actionName Pengguna?'),
         content: const Text('Tindakan ini akan dicatat dalam audit logs.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               onConfirm();
             },
             child: const Text('Ya'),
-          )
+          ),
         ],
       ),
     );

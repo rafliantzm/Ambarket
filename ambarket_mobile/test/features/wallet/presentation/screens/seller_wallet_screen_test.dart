@@ -11,8 +11,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ambarket_mobile/features/auth/presentation/providers/auth_provider.dart';
 
 void main() {
-  final mockUser = User(id: 'user1', appMetadata: {}, userMetadata: {}, aud: 'authenticated', createdAt: DateTime.now().toIso8601String());
-  
+  final mockUser = User(
+    id: 'user1',
+    appMetadata: {},
+    userMetadata: {},
+    aud: 'authenticated',
+    createdAt: DateTime.now().toIso8601String(),
+  );
+
   final mockSummary = SellerWalletSummary(
     availableBalance: 500000,
     pendingBalance: 150000,
@@ -57,24 +63,28 @@ void main() {
             sellerWalletSummaryProvider.overrideWith((ref) => mockSummary),
             sellerWithdrawalsProvider.overrideWith((ref) => mockWithdrawals),
           ],
-          child: const MaterialApp(
-            home: SellerWalletScreen(),
-          ),
+          child: const MaterialApp(home: SellerWalletScreen()),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       // Header and description
       expect(find.byType(CustomScrollView), findsOneWidget);
       expect(find.text('Wallet Seller'), findsOneWidget);
-      expect(find.text('Pantau saldo simulasi dan riwayat penarikan dana dummy.'), findsOneWidget);
+      expect(
+        find.text('Pantau saldo simulasi dan riwayat penarikan dana dummy.'),
+        findsOneWidget,
+      );
 
       // Summary
       expect(find.text('Saldo Tersedia'), findsOneWidget);
       expect(find.text('Rp500.000'), findsOneWidget);
       expect(find.text('Pending Settlement'), findsOneWidget);
-      expect(find.text('Rp150.000'), findsWidgets); // Summary pending and withdrawal list
+      expect(
+        find.text('Rp150.000'),
+        findsWidgets,
+      ); // Summary pending and withdrawal list
       expect(find.text('Total Pendapatan'), findsOneWidget);
       expect(find.text('Rp1.500.000'), findsOneWidget);
       expect(find.text('Penarikan Pending'), findsOneWidget);
@@ -82,7 +92,7 @@ void main() {
 
       // Withdrawals
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
       expect(find.text('Riwayat Penarikan Dummy'), findsOneWidget);
       expect(find.text('Rp1.000.000'), findsOneWidget);
       expect(find.text('Disetujui'), findsOneWidget);
@@ -90,7 +100,9 @@ void main() {
       expect(find.text('Catatan: Butuh cepat'), findsOneWidget);
     });
 
-    testWidgets('renders empty state for withdrawals', (WidgetTester tester) async {
+    testWidgets('renders empty state for withdrawals', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -98,21 +110,21 @@ void main() {
             sellerWalletSummaryProvider.overrideWith((ref) => mockSummary),
             sellerWithdrawalsProvider.overrideWith((ref) => []),
           ],
-          child: const MaterialApp(
-            home: SellerWalletScreen(),
-          ),
+          child: const MaterialApp(home: SellerWalletScreen()),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
       expect(find.byType(AppEmptyState), findsOneWidget);
       expect(find.text('Belum ada riwayat penarikan'), findsOneWidget);
     });
 
-    testWidgets('Ajukan Penarikan Dummy button disabled if balance is zero', (WidgetTester tester) async {
+    testWidgets('Ajukan Penarikan Dummy button disabled if balance is zero', (
+      WidgetTester tester,
+    ) async {
       final zeroSummary = SellerWalletSummary(
         availableBalance: 0,
         pendingBalance: 0,
@@ -129,13 +141,11 @@ void main() {
             sellerWalletSummaryProvider.overrideWith((ref) => zeroSummary),
             sellerWithdrawalsProvider.overrideWith((ref) => []),
           ],
-          child: const MaterialApp(
-            home: SellerWalletScreen(),
-          ),
+          child: const MaterialApp(home: SellerWalletScreen()),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       final button = tester.widget<AppButton>(find.byType(AppButton));
       expect(button.onPressed, isNull); // Disabled
@@ -149,43 +159,47 @@ void main() {
             sellerWalletSummaryProvider.overrideWith((ref) => mockSummary),
             sellerWithdrawalsProvider.overrideWith((ref) => []),
           ],
-          child: const MaterialApp(
-            home: SellerWalletScreen(),
-          ),
+          child: const MaterialApp(home: SellerWalletScreen()),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       // Tap button
       await tester.tap(find.text('Ajukan Penarikan Dummy'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('Penarikan Dummy (Simulasi)'), findsOneWidget);
       expect(find.text('Saldo Tersedia: Rp500000'), findsOneWidget);
 
       // Try submit empty
       await tester.tap(find.text('Ajukan'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
       expect(find.text('Wajib diisi'), findsWidgets);
 
       // Try amount too big
-      await tester.enterText(find.byType(TextFormField).at(0), '1000000'); // Nominal
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        '1000000',
+      ); // Nominal
       await tester.tap(find.text('Ajukan'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
       expect(find.text('Melebihi saldo'), findsOneWidget);
 
       // Valid form
       await tester.enterText(find.byType(TextFormField).at(0), '50000');
       await tester.enterText(find.byType(TextFormField).at(1), 'BCA'); // Bank
-      await tester.enterText(find.byType(TextFormField).at(2), '1234567890'); // No rek
-      await tester.enterText(find.byType(TextFormField).at(3), 'Test User'); // Name
-      
+      await tester.enterText(
+        find.byType(TextFormField).at(2),
+        '1234567890',
+      ); // No rek
+      await tester.enterText(
+        find.byType(TextFormField).at(3),
+        'Test User',
+      ); // Name
+
       await tester.tap(find.text('Ajukan'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
     });
   });
 }
-
-
-

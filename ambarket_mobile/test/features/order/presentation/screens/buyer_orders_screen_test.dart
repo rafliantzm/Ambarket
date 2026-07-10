@@ -8,7 +8,9 @@ import 'package:ambarket_mobile/features/marketplace/domain/models/product_model
 import 'package:ambarket_mobile/features/profile/domain/models/profile_model.dart';
 
 void main() {
-  testWidgets('BuyerOrdersScreen renders actions based on status', (WidgetTester tester) async {
+  testWidgets('BuyerOrdersScreen renders actions based on status', (
+    WidgetTester tester,
+  ) async {
     final mockProduct = ProductModel(
       id: 'p1',
       sellerId: 's1',
@@ -23,8 +25,18 @@ void main() {
       createdAt: DateTime.now(),
       images: [],
     );
-    final mockBuyer = ProfileModel(id: 'b1', name: 'Buyer', role: 'user', createdAt: DateTime.now());
-    final mockSeller = ProfileModel(id: 's1', name: 'Seller', role: 'user', createdAt: DateTime.now());
+    final mockBuyer = ProfileModel(
+      id: 'b1',
+      name: 'Buyer',
+      role: 'user',
+      createdAt: DateTime.now(),
+    );
+    final mockSeller = ProfileModel(
+      id: 's1',
+      name: 'Seller',
+      role: 'user',
+      createdAt: DateTime.now(),
+    );
 
     final mockOrders = [
       OrderModel(
@@ -76,22 +88,18 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          buyerOrdersProvider.overrideWith((ref) => mockOrders),
-        ],
-        child: const MaterialApp(
-          home: BuyerOrdersScreen(),
-        ),
+        overrides: [buyerOrdersProvider.overrideWith((ref) => mockOrders)],
+        child: const MaterialApp(home: BuyerOrdersScreen()),
       ),
     );
 
     await tester.pumpAndSettle();
 
     expect(find.text('Pesanan Saya'), findsOneWidget);
-    
+
     expect(find.text('Belum Dibayar'), findsOneWidget);
     expect(find.text('Dikirim'), findsOneWidget);
-    
+
     // Check buttons
     expect(find.text('Bayar Sekarang'), findsOneWidget);
     expect(find.text('Lacak'), findsWidgets);

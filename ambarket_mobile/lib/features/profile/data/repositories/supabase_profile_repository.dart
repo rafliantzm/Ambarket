@@ -18,7 +18,10 @@ class SupabaseProfileRepository implements ProfileRepository {
   }
 
   @override
-  Future<ProfileModel> updateProfile(String userId, Map<String, dynamic> data) async {
+  Future<ProfileModel> updateProfile(
+    String userId,
+    Map<String, dynamic> data,
+  ) async {
     // Exclude protected fields
     data.remove('id');
     data.remove('role');
@@ -30,7 +33,7 @@ class SupabaseProfileRepository implements ProfileRepository {
         .eq('id', userId)
         .select()
         .single();
-        
+
     return ProfileModel.fromJson(response);
   }
 }

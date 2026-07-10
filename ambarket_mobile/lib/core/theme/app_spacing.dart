@@ -6,7 +6,7 @@ class AppSpacing {
   static const double xl = 32.0;
   static const double xxl = 48.0;
   static const double huge = 64.0;
-  
+
   // Luxury whitespace (70%+) adapted from huashu-design
   static const double section = 80.0;
 }

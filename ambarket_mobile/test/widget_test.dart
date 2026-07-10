@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ambarket_mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ambarket_mobile/main.dart';
 import 'package:ambarket_mobile/core/router/app_router.dart';
 import 'package:go_router/go_router.dart';
@@ -15,16 +16,15 @@ void main() {
       routes: [
         GoRoute(
           path: '/login',
-          builder: (context, state) => const Scaffold(body: Text('Login Screen')),
+          builder: (context, state) =>
+              const Scaffold(body: Text('Login Screen')),
         ),
       ],
     );
-    
+
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          appRouterProvider.overrideWithValue(mockRouter),
-        ],
+        overrides: [appRouterProvider.overrideWithValue(mockRouter)],
         child: const AmbarketApp(),
       ),
     );
@@ -34,7 +34,9 @@ void main() {
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 
-  testWidgets('ProductCard should render correctly with mock data', (WidgetTester tester) async {
+  testWidgets('ProductCard should render correctly with mock data', (
+    WidgetTester tester,
+  ) async {
     final mockProduct = ProductModel(
       id: '1',
       sellerId: 'user1',
@@ -52,6 +54,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [currentUserProvider.overrideWithValue(null)],
         child: MaterialApp(
           home: Scaffold(
             body: Center(

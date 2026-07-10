@@ -7,7 +7,7 @@ abstract class OrderRepository {
     required String buyerId,
     required String sellerId,
     required double totalPrice,
-    
+
     required String receiverName,
     required String receiverPhone,
     required String shippingAddress,
@@ -28,7 +28,11 @@ abstract class OrderRepository {
   Future<List<OrderModel>> fetchSellerOrders(String sellerId);
 
   /// Fetch orders received by the current user with filters
-  Future<List<OrderModel>> fetchSellerOrdersFiltered(String sellerId, {String? status, String? paymentStatus});
+  Future<List<OrderModel>> fetchSellerOrdersFiltered(
+    String sellerId, {
+    String? status,
+    String? paymentStatus,
+  });
 
   /// Update order status
   Future<void> updateOrderStatus(String orderId, String newStatus);

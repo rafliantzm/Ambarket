@@ -9,7 +9,9 @@ import 'package:ambarket_mobile/features/chat/domain/models/conversation_model.d
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
-  testWidgets('ChatDetailScreen shows empty state', (WidgetTester tester) async {
+  testWidgets('ChatDetailScreen shows empty state', (
+    WidgetTester tester,
+  ) async {
     final mockUser = User(
       id: 'user1',
       appMetadata: {},
@@ -31,8 +33,12 @@ void main() {
       ProviderScope(
         overrides: [
           currentUserProvider.overrideWithValue(mockUser),
-          conversationDetailProvider('conv1').overrideWith((ref) => Future.value(mockConversation)),
-          messagesStreamProvider('conv1').overrideWith((ref) => Stream.value([])),
+          conversationDetailProvider(
+            'conv1',
+          ).overrideWith((ref) => Future.value(mockConversation)),
+          messagesStreamProvider(
+            'conv1',
+          ).overrideWith((ref) => Stream.value([])),
         ],
         child: const MaterialApp(
           home: ChatDetailScreen(conversationId: 'conv1'),
@@ -40,13 +46,15 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('Belum ada pesan. Mulai sapa sekarang!'), findsOneWidget);
+    expect(find.text('Belum ada pesan.\nMulai sapa sekarang!'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
   });
 
-  testWidgets('ChatDetailScreen validates empty message', (WidgetTester tester) async {
+  testWidgets('ChatDetailScreen validates empty message', (
+    WidgetTester tester,
+  ) async {
     final mockUser = User(
       id: 'user1',
       appMetadata: {},
@@ -68,8 +76,12 @@ void main() {
       ProviderScope(
         overrides: [
           currentUserProvider.overrideWithValue(mockUser),
-          conversationDetailProvider('conv1').overrideWith((ref) => Future.value(mockConversation)),
-          messagesStreamProvider('conv1').overrideWith((ref) => Stream.value([])),
+          conversationDetailProvider(
+            'conv1',
+          ).overrideWith((ref) => Future.value(mockConversation)),
+          messagesStreamProvider(
+            'conv1',
+          ).overrideWith((ref) => Stream.value([])),
         ],
         child: const MaterialApp(
           home: ChatDetailScreen(conversationId: 'conv1'),
@@ -77,16 +89,16 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     // Tap send without typing
-    await tester.tap(find.byIcon(Icons.send));
-    await tester.pumpAndSettle();
-    
+    await tester.tap(find.byIcon(Icons.send_rounded));
+    await tester.pump(const Duration(seconds: 1));
+
     // Type spaces and tap send
     await tester.enterText(find.byType(TextField), '   ');
-    await tester.tap(find.byIcon(Icons.send));
-    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.send_rounded));
+    await tester.pump(const Duration(seconds: 1));
 
     // Ensure it doesn't clear the field (meaning it returned early)
     // Actually, our code does NOT clear the field if it returns early!

@@ -6,7 +6,9 @@ import 'package:ambarket_mobile/features/order/domain/models/order_model.dart';
 import 'package:ambarket_mobile/features/order/presentation/providers/order_provider.dart';
 
 void main() {
-  testWidgets('PaymentDummyScreen renders payment instruction', (WidgetTester tester) async {
+  testWidgets('PaymentDummyScreen renders payment instruction', (
+    WidgetTester tester,
+  ) async {
     final mockOrder = OrderModel(
       id: 'order_uuid',
       productId: 'p1',
@@ -41,10 +43,12 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Pembayaran'), findsOneWidget);
-    expect(find.text('Instruksi Pembayaran Dummy:'), findsOneWidget);
+    expect(find.text('Selesaikan Pembayaran'), findsOneWidget);
+    expect(find.text('Nomor Virtual Account'), findsOneWidget);
     expect(find.text('Saya Sudah Bayar'), findsOneWidget);
   });
 }

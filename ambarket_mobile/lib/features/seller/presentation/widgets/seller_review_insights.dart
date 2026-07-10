@@ -11,19 +11,26 @@ import '../../../review/presentation/providers/review_provider.dart';
 import '../../../review/domain/models/review_summary_model.dart';
 import '../../../review/domain/models/review_model.dart';
 
-final sellerReviewSummaryProvider = FutureProvider.autoDispose<ReviewSummaryModel>((ref) async {
-  final user = ref.watch(currentUserProvider);
-  if (user == null) throw Exception('Not authenticated');
-  return ref.read(reviewRepositoryProvider).fetchSellerRatingSummary(user.id);
-});
+final sellerReviewSummaryProvider =
+    FutureProvider.autoDispose<ReviewSummaryModel>((ref) async {
+      final user = ref.watch(currentUserProvider);
+      if (user == null) throw Exception('Not authenticated');
+      return ref
+          .read(reviewRepositoryProvider)
+          .fetchSellerRatingSummary(user.id);
+    });
 
-final sellerRecentReviewsProvider = FutureProvider.autoDispose<List<ReviewModel>>((ref) async {
+final sellerRecentReviewsProvider = FutureProvider.autoDispose<List<ReviewModel>>((
+  ref,
+) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) throw Exception('Not authenticated');
-  
+
   // Actually we only want reviews about the seller. The repository fetchReviewsForUser currently might be getting reviews for buyer, but let's assume it fetches reviews about the user if they are the seller, or we'll filter it.
   // We'll limit it manually to 3 for recent reviews.
-  final allReviews = await ref.read(reviewRepositoryProvider).fetchReviewsForUser(user.id);
+  final allReviews = await ref
+      .read(reviewRepositoryProvider)
+      .fetchReviewsForUser(user.id);
   // Sort descending
   allReviews.sort((a, b) => b.createdAt.compareTo(a.createdAt));
   return allReviews.take(3).toList();
@@ -47,7 +54,9 @@ class SellerReviewInsights extends ConsumerWidget {
             children: [
               Text(
                 'Ulasan Toko',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Icon(Icons.star, color: Colors.amber),
             ],
@@ -64,7 +73,8 @@ class SellerReviewInsights extends ConsumerWidget {
               }
               return _buildSummaryRow(context, summary);
             },
-            loading: () => const AppLoadingSkeleton(width: double.infinity, height: 80),
+            loading: () =>
+                const AppLoadingSkeleton(width: double.infinity, height: 80),
             error: (error, stack) => AppErrorState(
               message: ErrorMapper.getFriendlyMessage(error),
               onRetry: () => ref.refresh(sellerReviewSummaryProvider),
@@ -79,14 +89,17 @@ class SellerReviewInsights extends ConsumerWidget {
                 children: [
                   Text(
                     'Ulasan Terbaru',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   ...reviews.map((review) => _buildReviewItem(context, review)),
                 ],
               );
             },
-            loading: () => const AppLoadingSkeleton(width: double.infinity, height: 100),
+            loading: () =>
+                const AppLoadingSkeleton(width: double.infinity, height: 100),
             error: (e, st) => const SizedBox.shrink(),
           ),
         ],
@@ -113,7 +126,9 @@ class SellerReviewInsights extends ConsumerWidget {
             Row(
               children: List.generate(5, (index) {
                 return Icon(
-                  index < summary.averageRating.round() ? Icons.star : Icons.star_border,
+                  index < summary.averageRating.round()
+                      ? Icons.star
+                      : Icons.star_border,
                   color: Colors.amber,
                   size: 20,
                 );
@@ -122,7 +137,9 @@ class SellerReviewInsights extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               'Berdasarkan ${summary.totalReviews} ulasan',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -156,7 +173,9 @@ class SellerReviewInsights extends ConsumerWidget {
               const Spacer(),
               Text(
                 '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
-                style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -168,7 +187,7 @@ class SellerReviewInsights extends ConsumerWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ]
+          ],
         ],
       ),
     );

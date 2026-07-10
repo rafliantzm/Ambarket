@@ -11,18 +11,22 @@ final offerRepositoryProvider = Provider<OfferRepository>((ref) {
   return SupabaseOfferRepository(ref.watch(supabaseClientProvider));
 });
 
-final mySentOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((ref) async {
+final mySentOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((
+  ref,
+) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return [];
-  
+
   final repo = ref.watch(offerRepositoryProvider);
   return repo.fetchMySentOffers(user.id);
 });
 
-final myReceivedOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((ref) async {
+final myReceivedOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((
+  ref,
+) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return [];
-  
+
   final repo = ref.watch(offerRepositoryProvider);
   return repo.fetchMyReceivedOffers(user.id);
 });
@@ -31,24 +35,39 @@ final myReceivedOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((r
 class SellerOfferStatusFilter extends Notifier<String> {
   @override
   String build() => 'all';
-  
+
   void setFilter(String val) => state = val;
 }
-final sellerOfferStatusFilterProvider = NotifierProvider<SellerOfferStatusFilter, String>(() => SellerOfferStatusFilter());
 
-final filteredReceivedOffersProvider = FutureProvider.autoDispose<List<OfferModel>>((ref) async {
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return [];
-  
-  final statusFilter = ref.watch(sellerOfferStatusFilterProvider);
-  
-  final repo = ref.watch(offerRepositoryProvider);
-  return repo.fetchReceivedOffersFiltered(user.id, status: statusFilter);
-});
+final sellerOfferStatusFilterProvider =
+    NotifierProvider<SellerOfferStatusFilter, String>(
+      () => SellerOfferStatusFilter(),
+    );
 
-final createOfferControllerProvider = AsyncNotifierProvider<CreateOfferController, void>(() {
-  return CreateOfferController();
-});
+final filteredReceivedOffersProvider =
+    FutureProvider.autoDispose<List<OfferModel>>((ref) async {
+      final user = ref.watch(currentUserProvider);
+      if (user == null) return [];
+
+      final statusFilter = ref.watch(sellerOfferStatusFilterProvider);
+
+      final repo = ref.watch(offerRepositoryProvider);
+      return repo.fetchReceivedOffersFiltered(user.id, status: statusFilter);
+    });
+
+final validAcceptedOfferProvider = FutureProvider.family
+    .autoDispose<OfferModel?, String>((ref, productId) async {
+      final user = ref.watch(currentUserProvider);
+      if (user == null) return null;
+
+      final repo = ref.watch(offerRepositoryProvider);
+      return repo.fetchValidAcceptedOffer(productId, user.id);
+    });
+
+final createOfferControllerProvider =
+    AsyncNotifierProvider<CreateOfferController, void>(() {
+      return CreateOfferController();
+    });
 
 class CreateOfferController extends AsyncNotifier<void> {
   late final OfferRepository _repo;
@@ -65,17 +84,22 @@ class CreateOfferController extends AsyncNotifier<void> {
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
       await _repo.createOffer(user.id, input);
-      
+
       // Notify seller
-      final productState = ref.read(productDetailProvider(input.productId)).value;
+      final productState = ref
+          .read(productDetailProvider(input.productId))
+          .value;
       if (productState != null) {
-        ref.read(notificationRepositoryProvider).createDummyNotification(
-          userId: productState.sellerId,
-          type: 'offer_received',
-          title: 'Tawaran Baru',
-          body: 'Anda mendapat tawaran baru untuk produk ${productState.title}',
-          relatedType: 'offer',
-        );
+        ref
+            .read(notificationRepositoryProvider)
+            .createDummyNotification(
+              userId: productState.sellerId,
+              type: 'offer_received',
+              title: 'Tawaran Baru',
+              body:
+                  'Anda mendapat tawaran baru untuk produk ${productState.title}',
+              relatedType: 'offer',
+            );
       }
 
       ref.invalidate(mySentOffersProvider);
@@ -86,9 +110,10 @@ class CreateOfferController extends AsyncNotifier<void> {
   }
 }
 
-final offerActionControllerProvider = AsyncNotifierProvider<OfferActionController, void>(() {
-  return OfferActionController();
-});
+final offerActionControllerProvider =
+    AsyncNotifierProvider<OfferActionController, void>(() {
+      return OfferActionController();
+    });
 
 class OfferActionController extends AsyncNotifier<void> {
   late final OfferRepository _repo;
@@ -119,19 +144,22 @@ class OfferActionController extends AsyncNotifier<void> {
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
       await _repo.acceptOffer(offerId, user.id);
-      
+
       // Notify buyer
       final offers = ref.read(myReceivedOffersProvider).value ?? [];
       final offer = offers.where((o) => o.id == offerId).firstOrNull;
       if (offer != null) {
-        ref.read(notificationRepositoryProvider).createDummyNotification(
-          userId: offer.buyerId,
-          type: 'offer_accepted',
-          title: 'Tawaran Diterima!',
-          body: 'Tawaran Anda telah diterima oleh penjual. Segera lakukan pembayaran.',
-          relatedType: 'offer',
-          relatedId: offer.id,
-        );
+        ref
+            .read(notificationRepositoryProvider)
+            .createDummyNotification(
+              userId: offer.buyerId,
+              type: 'offer_accepted',
+              title: 'Tawaran Diterima!',
+              body:
+                  'Tawaran Anda telah diterima oleh penjual. Segera lakukan pembayaran.',
+              relatedType: 'offer',
+              relatedId: offer.id,
+            );
       }
 
       ref.invalidate(myReceivedOffersProvider);
@@ -149,19 +177,21 @@ class OfferActionController extends AsyncNotifier<void> {
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
       await _repo.rejectOffer(offerId, user.id);
-      
+
       // Notify buyer
       final offers = ref.read(myReceivedOffersProvider).value ?? [];
       final offer = offers.where((o) => o.id == offerId).firstOrNull;
       if (offer != null) {
-        ref.read(notificationRepositoryProvider).createDummyNotification(
-          userId: offer.buyerId,
-          type: 'offer_rejected',
-          title: 'Tawaran Ditolak',
-          body: 'Maaf, tawaran Anda ditolak oleh penjual.',
-          relatedType: 'offer',
-          relatedId: offer.id,
-        );
+        ref
+            .read(notificationRepositoryProvider)
+            .createDummyNotification(
+              userId: offer.buyerId,
+              type: 'offer_rejected',
+              title: 'Tawaran Ditolak',
+              body: 'Maaf, tawaran Anda ditolak oleh penjual.',
+              relatedType: 'offer',
+              relatedId: offer.id,
+            );
       }
 
       ref.invalidate(myReceivedOffersProvider);

@@ -7,6 +7,8 @@ import 'package:ambarket_mobile/features/auth/presentation/providers/auth_provid
 import 'package:ambarket_mobile/features/order/domain/models/checkout_models.dart';
 import 'package:ambarket_mobile/features/marketplace/presentation/providers/marketplace_provider.dart';
 import 'package:ambarket_mobile/features/notification/presentation/providers/notification_provider.dart';
+import 'package:ambarket_mobile/features/seller/presentation/providers/seller_provider.dart';
+import 'package:ambarket_mobile/features/cart/presentation/providers/cart_provider.dart';
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   return SupabaseOrderRepository(Supabase.instance.client);
@@ -21,31 +23,41 @@ final buyerOrdersProvider = FutureProvider<List<OrderModel>>((ref) async {
 class SellerOrderStatusFilter extends Notifier<String> {
   @override
   String build() => 'all';
-  
+
   void setFilter(String val) => state = val;
 }
-final sellerOrderStatusFilterProvider = NotifierProvider<SellerOrderStatusFilter, String>(() => SellerOrderStatusFilter());
+
+final sellerOrderStatusFilterProvider =
+    NotifierProvider<SellerOrderStatusFilter, String>(
+      () => SellerOrderStatusFilter(),
+    );
 
 class SellerPaymentStatusFilter extends Notifier<String> {
   @override
   String build() => 'all';
-  
+
   void setFilter(String val) => state = val;
 }
-final sellerPaymentStatusFilterProvider = NotifierProvider<SellerPaymentStatusFilter, String>(() => SellerPaymentStatusFilter());
+
+final sellerPaymentStatusFilterProvider =
+    NotifierProvider<SellerPaymentStatusFilter, String>(
+      () => SellerPaymentStatusFilter(),
+    );
 
 final sellerOrdersProvider = FutureProvider<List<OrderModel>>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return [];
-  
+
   final statusFilter = ref.watch(sellerOrderStatusFilterProvider);
   final paymentFilter = ref.watch(sellerPaymentStatusFilterProvider);
-  
-  return ref.watch(orderRepositoryProvider).fetchSellerOrdersFiltered(
-    user.id,
-    status: statusFilter,
-    paymentStatus: paymentFilter,
-  );
+
+  return ref
+      .watch(orderRepositoryProvider)
+      .fetchSellerOrdersFiltered(
+        user.id,
+        status: statusFilter,
+        paymentStatus: paymentFilter,
+      );
 });
 
 class OrderActionState {
@@ -74,9 +86,11 @@ class OrderActionController extends Notifier<OrderActionState> {
 
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final productState = ref.read(productDetailProvider(input.productId)).value;
+      final productState = ref
+          .read(productDetailProvider(input.productId))
+          .value;
       if (productState == null) throw Exception('Product not found');
-      
+
       final repo = ref.read(orderRepositoryProvider);
       final order = await repo.createOrder(
         productId: input.productId,
@@ -98,16 +112,41 @@ class OrderActionController extends Notifier<OrderActionState> {
 
       ref.invalidate(buyerOrdersProvider);
       ref.invalidate(productDetailProvider(input.productId));
-      
+
+      // Remove from cart if it was there
+      try {
+        await ref
+            .read(cartRepositoryProvider)
+            .removeProductFromCart(user.id, input.productId);
+        ref.invalidate(cartItemsProvider);
+        ref.invalidate(cartCountProvider);
+      } catch (_) {}
+
       // Notify seller
-      ref.read(notificationRepositoryProvider).createDummyNotification(
-        userId: productState.sellerId,
-        type: 'order_created',
-        title: 'Pesanan Baru',
-        body: 'Anda mendapat pesanan baru untuk produk ${productState.title}',
-        relatedType: 'order',
-        relatedId: order.id,
-      );
+      ref
+          .read(notificationRepositoryProvider)
+          .createDummyNotification(
+            userId: productState.sellerId,
+            type: 'order_received',
+            title: 'Pesanan Baru',
+            body:
+                'Anda mendapat pesanan baru untuk produk ${productState.title}',
+            relatedType: 'order',
+            relatedId: order.id,
+          );
+
+      // Notify buyer
+      ref
+          .read(notificationRepositoryProvider)
+          .createDummyNotification(
+            userId: user.id,
+            type: 'order_created',
+            title: 'Pesanan Berhasil Dibuat',
+            body:
+                'Pesanan Anda untuk ${productState.title} berhasil dibuat dan menunggu konfirmasi/pembayaran.',
+            relatedType: 'order',
+            relatedId: order.id,
+          );
 
       state = state.copyWith(isLoading: false);
       return order;
@@ -121,19 +160,24 @@ class OrderActionController extends Notifier<OrderActionState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await ref.read(orderRepositoryProvider).simulatePayment(orderId);
-      
+
       // Notify seller
-      final allOrders = [...(ref.read(buyerOrdersProvider).value ?? []), ...(ref.read(sellerOrdersProvider).value ?? [])];
+      final allOrders = [
+        ...(ref.read(buyerOrdersProvider).value ?? []),
+        ...(ref.read(sellerOrdersProvider).value ?? []),
+      ];
       final order = allOrders.where((o) => o.id == orderId).firstOrNull;
       if (order != null) {
-        ref.read(notificationRepositoryProvider).createDummyNotification(
-          userId: order.sellerId,
-          type: 'payment_paid',
-          title: 'Pembayaran Diterima',
-          body: 'Pembeli telah membayar pesanan. Segera proses pengiriman.',
-          relatedType: 'order',
-          relatedId: order.id,
-        );
+        ref
+            .read(notificationRepositoryProvider)
+            .createDummyNotification(
+              userId: order.sellerId,
+              type: 'payment_paid',
+              title: 'Pembayaran Diterima',
+              body: 'Pembeli telah membayar pesanan. Segera proses pengiriman.',
+              relatedType: 'order',
+              relatedId: order.id,
+            );
       }
 
       ref.invalidate(buyerOrdersProvider);
@@ -149,10 +193,15 @@ class OrderActionController extends Notifier<OrderActionState> {
   Future<bool> updateStatus(String orderId, String newStatus) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await ref.read(orderRepositoryProvider).updateOrderStatus(orderId, newStatus);
-      
+      await ref
+          .read(orderRepositoryProvider)
+          .updateOrderStatus(orderId, newStatus);
+
       // Notify buyer
-      final allOrders = [...(ref.read(buyerOrdersProvider).value ?? []), ...(ref.read(sellerOrdersProvider).value ?? [])];
+      final allOrders = [
+        ...(ref.read(buyerOrdersProvider).value ?? []),
+        ...(ref.read(sellerOrdersProvider).value ?? []),
+      ];
       final order = allOrders.where((o) => o.id == orderId).firstOrNull;
       if (order != null) {
         String title = 'Status Pesanan Diperbarui';
@@ -167,21 +216,34 @@ class OrderActionController extends Notifier<OrderActionState> {
           title = 'Pesanan Selesai';
           body = 'Pesanan telah selesai. Terima kasih!';
         }
-        
-        ref.read(notificationRepositoryProvider).createDummyNotification(
-          userId: order.buyerId,
-          type: 'order_$newStatus',
-          title: title,
-          body: body,
-          relatedType: 'order',
-          relatedId: order.id,
-        );
+
+        ref
+            .read(notificationRepositoryProvider)
+            .createDummyNotification(
+              userId: order.buyerId,
+              type: 'order_$newStatus',
+              title: title,
+              body: body,
+              relatedType: 'order',
+              relatedId: order.id,
+            );
       }
 
       ref.invalidate(buyerOrdersProvider);
       ref.invalidate(sellerOrdersProvider);
-      // Invalidate seller dashboard stats if needed
-      // ref.invalidate(sellerDashboardStatsProvider); // Will be handled in screens or directly
+
+      if (newStatus == 'completed' && order != null) {
+        // Also refresh marketplace and product detail because the DB trigger just marked it as 'sold'
+        ref.invalidate(productsProvider);
+        ref.invalidate(productDetailProvider(order.productId));
+
+        // If the current user happens to be the seller (e.g., testing with same account or just to be safe)
+        ref.invalidate(myProductsProvider);
+      }
+
+      // Invalidate seller dashboard stats to update sold/active counts
+      ref.invalidate(sellerDashboardStatsProvider);
+
       state = state.copyWith(isLoading: false);
       return true;
     } catch (e) {
@@ -196,20 +258,27 @@ class OrderActionController extends Notifier<OrderActionState> {
 
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await ref.read(orderRepositoryProvider).cancelSellerOrder(orderId, user.id);
-      
+      await ref
+          .read(orderRepositoryProvider)
+          .cancelSellerOrder(orderId, user.id);
+
       // Notify buyer
-      final allOrders = [...(ref.read(buyerOrdersProvider).value ?? []), ...(ref.read(sellerOrdersProvider).value ?? [])];
+      final allOrders = [
+        ...(ref.read(buyerOrdersProvider).value ?? []),
+        ...(ref.read(sellerOrdersProvider).value ?? []),
+      ];
       final order = allOrders.where((o) => o.id == orderId).firstOrNull;
       if (order != null) {
-        ref.read(notificationRepositoryProvider).createDummyNotification(
-          userId: order.buyerId,
-          type: 'order_cancelled',
-          title: 'Pesanan Dibatalkan',
-          body: 'Penjual membatalkan pesanan Anda.',
-          relatedType: 'order',
-          relatedId: order.id,
-        );
+        ref
+            .read(notificationRepositoryProvider)
+            .createDummyNotification(
+              userId: order.buyerId,
+              type: 'order_cancelled',
+              title: 'Pesanan Dibatalkan',
+              body: 'Penjual membatalkan pesanan Anda.',
+              relatedType: 'order',
+              relatedId: order.id,
+            );
       }
 
       ref.invalidate(sellerOrdersProvider);
@@ -222,6 +291,7 @@ class OrderActionController extends Notifier<OrderActionState> {
   }
 }
 
-final orderActionControllerProvider = NotifierProvider<OrderActionController, OrderActionState>(() {
-  return OrderActionController();
-});
+final orderActionControllerProvider =
+    NotifierProvider<OrderActionController, OrderActionState>(() {
+      return OrderActionController();
+    });

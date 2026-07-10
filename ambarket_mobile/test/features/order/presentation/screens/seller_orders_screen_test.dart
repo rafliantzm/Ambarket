@@ -8,7 +8,9 @@ import 'package:ambarket_mobile/features/marketplace/domain/models/product_model
 import 'package:ambarket_mobile/features/profile/domain/models/profile_model.dart';
 
 void main() {
-  testWidgets('SellerOrdersScreen renders actions based on status', (WidgetTester tester) async {
+  testWidgets('SellerOrdersScreen renders actions based on status', (
+    WidgetTester tester,
+  ) async {
     final mockProduct = ProductModel(
       id: 'p1',
       sellerId: 's1',
@@ -80,12 +82,8 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sellerOrdersProvider.overrideWith((ref) => orders),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(body: SellerOrdersScreen()),
-        ),
+        overrides: [sellerOrdersProvider.overrideWith((ref) => orders)],
+        child: const MaterialApp(home: Scaffold(body: SellerOrdersScreen())),
       ),
     );
 
@@ -95,6 +93,9 @@ void main() {
     expect(find.text('Pesanan Masuk'), findsOneWidget);
     expect(find.text('Tandai Dikemas'), findsOneWidget); // For 'paid' order
     expect(find.text('Tandai Dikirim'), findsOneWidget); // For 'packed' order
-    expect(find.text('Batalkan'), findsOneWidget); // For 'paid' order (can cancel)
+    expect(
+      find.text('Batalkan'),
+      findsOneWidget,
+    ); // For 'paid' order (can cancel)
   });
 }

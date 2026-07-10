@@ -4,20 +4,23 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_animated_background.dart';
+import '../../../../core/widgets/app_glass_card.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'package:ambarket_mobile/features/offer/presentation/widgets/make_offer_dialog.dart';
+import 'package:ambarket_mobile/features/offer/domain/models/offer_model.dart';
+import 'package:ambarket_mobile/features/offer/presentation/providers/offer_provider.dart';
 
 import 'package:ambarket_mobile/features/cart/presentation/providers/cart_provider.dart';
 import 'package:ambarket_mobile/features/chat/presentation/providers/chat_provider.dart';
 import '../../../report/presentation/widgets/report_dialog.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/product_detail/product_image_gallery.dart';
-import '../widgets/product_detail/product_purchase_panel.dart';
+import '../widgets/product_detail/product_header_section.dart';
 import '../widgets/product_detail/product_seller_card.dart';
 import '../widgets/product_detail/product_info_section.dart';
-import '../widgets/product_detail/product_condition_section.dart';
 import '../widgets/product_detail/product_safety_section.dart';
+import '../widgets/product_detail/product_bottom_action_bar.dart';
 import '../widgets/product_detail/product_related_section.dart';
 import '../../domain/models/product_model.dart';
 
@@ -37,17 +40,19 @@ class ProductDetailScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text('Detail Produk'),
+          title: Text('Detail Produk'),
           actions: [
             IconButton(
-              icon: const Icon(Icons.share, color: AppColors.textPrimary),
+              icon: Icon(Icons.share, color: context.colors.textPrimary),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur bagikan segera hadir!')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Fitur bagikan segera hadir!')),
+                );
               },
             ),
             if (user != null)
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
+                icon: Icon(Icons.more_vert, color: context.colors.textPrimary),
                 onSelected: (value) {
                   if (value == 'report') {
                     showDialog(
@@ -61,7 +66,7 @@ class ProductDetailScreen extends ConsumerWidget {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'report',
                     child: Text('Laporkan Produk'),
                   ),
@@ -71,46 +76,44 @@ class ProductDetailScreen extends ConsumerWidget {
         ),
         body: productAsync.when(
           data: (product) {
-            final wishlistsState = ref.watch(wishlistProductIdsProvider);
-            final isWishlisted = wishlistsState.maybeWhen(
-              data: (wishlists) => wishlists.contains(product.id),
-              orElse: () => false,
+            final validOfferState = ref.watch(
+              validAcceptedOfferProvider(product.id),
             );
+            final validOffer = validOfferState.value;
             final isOwner = user?.id == product.sellerId;
-
-            void handleToggleWishlist() async {
-              try {
-                await ref.read(wishlistProductIdsProvider.notifier).toggleWishlist(product.id);
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-                  );
-                }
-              }
-            }
 
             void handleChat() async {
               if (user == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Silakan login terlebih dahulu')),
+                );
                 return;
               }
               try {
-                final chat = await ref.read(chatActionControllerProvider.notifier)
-                    .createOrGetConversation(product.id, user.id, product.sellerId);
+                final chat = await ref
+                    .read(chatActionControllerProvider.notifier)
+                    .createOrGetConversation(
+                      product.id,
+                      user.id,
+                      product.sellerId,
+                    );
                 if (context.mounted) {
                   context.push('/chats/${chat.id}');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membuat chat: $e')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Gagal membuat chat: $e')),
+                  );
                 }
               }
             }
 
             void handleOffer() {
               if (user == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Silakan login terlebih dahulu')),
+                );
                 return;
               }
               showModalBottomSheet(
@@ -128,22 +131,32 @@ class ProductDetailScreen extends ConsumerWidget {
 
             void handleAddToCart() {
               if (user == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Silakan login terlebih dahulu')),
+                );
                 return;
               }
-              ref.read(cartActionControllerProvider.notifier).addToCart(product.id, 1).then((_) {
-                if (context.mounted && !ref.read(cartActionControllerProvider).hasError) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Produk ditambahkan ke keranjang.'),
-                    backgroundColor: Colors.green,
-                  ));
-                }
-              });
+              ref
+                  .read(cartActionControllerProvider.notifier)
+                  .addToCart(product.id, 1)
+                  .then((_) {
+                    if (context.mounted &&
+                        !ref.read(cartActionControllerProvider).hasError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Produk ditambahkan ke keranjang.'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  });
             }
 
             void handleBuy() {
               if (user == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Silakan login terlebih dahulu')),
+                );
                 return;
               }
               context.push('/checkout/product/${product.id}');
@@ -153,9 +166,10 @@ class ProductDetailScreen extends ConsumerWidget {
               return _buildDesktopLayout(
                 context,
                 product: product,
+                validOffer: validOffer,
                 isOwner: isOwner,
-                isWishlisted: isWishlisted,
-                onToggleWishlist: handleToggleWishlist,
+                isWishlisted: false,
+                onToggleWishlist: () {},
                 onChatPressed: handleChat,
                 onOfferPressed: handleOffer,
                 onCartPressed: handleAddToCart,
@@ -163,19 +177,22 @@ class ProductDetailScreen extends ConsumerWidget {
               );
             }
 
-              return _buildMobileLayout(
-                context,
-                product: product,
-                isOwner: isOwner,
-                isWishlisted: isWishlisted,
-                onToggleWishlist: handleToggleWishlist,
-                onChatPressed: handleChat,
-                onOfferPressed: handleOffer,
-                onCartPressed: handleAddToCart,
-                onBuyPressed: handleBuy,
-              );
+            return _buildMobileLayout(
+              context,
+              product: product,
+              validOffer: validOffer,
+              isOwner: isOwner,
+              isWishlisted: false,
+              onToggleWishlist: () {},
+              onChatPressed: handleChat,
+              onOfferPressed: handleOffer,
+              onCartPressed: handleAddToCart,
+              onBuyPressed: handleBuy,
+            );
           },
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => Center(
+            child: CircularProgressIndicator(color: context.colors.primary),
+          ),
           error: (e, st) => Center(
             child: AppErrorState(
               message: e.toString(),
@@ -190,6 +207,7 @@ class ProductDetailScreen extends ConsumerWidget {
   Widget _buildDesktopLayout(
     BuildContext context, {
     required ProductModel product,
+    required OfferModel? validOffer,
     required bool isOwner,
     required bool isWishlisted,
     required VoidCallback onToggleWishlist,
@@ -199,10 +217,10 @@ class ProductDetailScreen extends ConsumerWidget {
     required VoidCallback onBuyPressed,
   }) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 64, vertical: AppSpacing.xl),
+      padding: EdgeInsets.symmetric(horizontal: 64, vertical: AppSpacing.xl),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
+          constraints: BoxConstraints(maxWidth: 1200),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -211,29 +229,24 @@ class ProductDetailScreen extends ConsumerWidget {
                 flex: 5,
                 child: ProductImageGallery(images: product.images),
               ),
-              const SizedBox(width: AppSpacing.xxl),
+              SizedBox(width: AppSpacing.xxl),
               // Right Column: Details & Actions
               Expanded(
                 flex: 4,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ProductPurchasePanel(
+                    ProductHeaderSection(
                       product: product,
-                      isOwner: isOwner,
-                      isWishlisted: isWishlisted,
-                      onToggleWishlist: onToggleWishlist,
-                      onChatPressed: onChatPressed,
-                      onOfferPressed: onOfferPressed,
-                      onCartPressed: onCartPressed,
-                      onBuyPressed: onBuyPressed,
-                      isMobile: false,
+                      validOffer: validOffer,
                     ),
-                    const SizedBox(height: AppSpacing.xl),
+                    SizedBox(height: AppSpacing.xl),
                     ProductSellerCard(
                       sellerId: product.sellerId,
                       isOwner: isOwner,
-                      onVisitProfile: () {},
+                      onVisitProfile: () {
+                        context.push('/seller-profile/${product.sellerId}');
+                      },
                       onReport: () {
                         showDialog(
                           context: context,
@@ -245,15 +258,23 @@ class ProductDetailScreen extends ConsumerWidget {
                         );
                       },
                     ),
-                    const SizedBox(height: AppSpacing.xl),
-                    _buildDescription(context, product.description),
-                    const SizedBox(height: AppSpacing.xl),
-                    ProductInfoSection(product: product),
-                    const SizedBox(height: AppSpacing.xl),
-                    ProductConditionSection(product: product),
-                    const SizedBox(height: AppSpacing.xl),
-                    const ProductSafetySection(),
-                    const SizedBox(height: AppSpacing.xxl),
+                    SizedBox(height: AppSpacing.xl),
+                    AppGlassCard(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      variant: AppGlassCardVariant.elevated,
+                      child: _ExpandableDescription(
+                        description: product.description,
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.xl),
+                    AppGlassCard(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      variant: AppGlassCardVariant.elevated,
+                      child: ProductInfoSection(product: product),
+                    ),
+                    SizedBox(height: AppSpacing.xl),
+                    ProductSafetySection(),
+                    SizedBox(height: AppSpacing.xxl),
                     ProductRelatedSection(product: product),
                   ],
                 ),
@@ -268,6 +289,7 @@ class ProductDetailScreen extends ConsumerWidget {
   Widget _buildMobileLayout(
     BuildContext context, {
     required ProductModel product,
+    required OfferModel? validOffer,
     required bool isOwner,
     required bool isWishlisted,
     required VoidCallback onToggleWishlist,
@@ -279,29 +301,30 @@ class ProductDetailScreen extends ConsumerWidget {
     return Stack(
       children: [
         SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 120), // Space for sticky bottom bar
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).padding.bottom + 140,
+          ), // Space for sticky bottom bar
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ProductImageGallery(images: product.images),
-              ProductPurchasePanel(
-                product: product,
-                isOwner: isOwner,
-                isWishlisted: isWishlisted,
-                onToggleWishlist: onToggleWishlist,
-                onChatPressed: onChatPressed,
-                onOfferPressed: onOfferPressed,
-                onCartPressed: onCartPressed,
-                onBuyPressed: onBuyPressed,
-                isMobile: true,
-              ),
-              const SizedBox(height: AppSpacing.md),
+              SizedBox(height: AppSpacing.md),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: ProductHeaderSection(
+                  product: product,
+                  validOffer: validOffer,
+                ),
+              ),
+              SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: ProductSellerCard(
                   sellerId: product.sellerId,
                   isOwner: isOwner,
-                  onVisitProfile: () {},
+                  onVisitProfile: () {
+                    context.push('/seller-profile/${product.sellerId}');
+                  },
                   onReport: () {
                     showDialog(
                       context: context,
@@ -314,31 +337,30 @@ class ProductDetailScreen extends ConsumerWidget {
                   },
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
+              SizedBox(height: AppSpacing.md),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: _buildDescription(context, product.description),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: ProductInfoSection(product: product),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: ProductConditionSection(product: product),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              const Padding(
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: ProductSafetySection(),
+                child: AppGlassCard(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  variant: AppGlassCardVariant.elevated,
+                  child: _ExpandableDescription(
+                    description: product.description,
+                  ),
+                ),
               ),
-              const SizedBox(height: AppSpacing.xxl),
+              SizedBox(height: AppSpacing.md),
               Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.md),
-                child: ProductRelatedSection(product: product),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: AppGlassCard(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  variant: AppGlassCardVariant.elevated,
+                  child: ProductInfoSection(product: product),
+                ),
               ),
+              SizedBox(height: AppSpacing.md),
+              ProductSafetySection(),
+              SizedBox(height: AppSpacing.xxl),
+              ProductRelatedSection(product: product),
             ],
           ),
         ),
@@ -347,10 +369,11 @@ class ProductDetailScreen extends ConsumerWidget {
           bottom: 0,
           left: 0,
           right: 0,
-          child: _buildMobileBottomBar(
-            context,
+          child: ProductBottomActionBar(
             product: product,
             isOwner: isOwner,
+            isWishlisted: isWishlisted,
+            onToggleWishlist: onToggleWishlist,
             onChatPressed: onChatPressed,
             onOfferPressed: onOfferPressed,
             onCartPressed: onCartPressed,
@@ -360,130 +383,98 @@ class ProductDetailScreen extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildDescription(BuildContext context, String description) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Deskripsi Produk',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          description.trim().isEmpty ? 'Penjual belum menambahkan deskripsi detail.' : description,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: description.trim().isEmpty ? AppColors.textSecondary : AppColors.textPrimary,
+class _ExpandableDescription extends StatefulWidget {
+  final String description;
+  const _ExpandableDescription({required this.description});
+
+  @override
+  State<_ExpandableDescription> createState() => _ExpandableDescriptionState();
+}
+
+class _ExpandableDescriptionState extends State<_ExpandableDescription> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isEmpty = widget.description.trim().isEmpty;
+    final text = isEmpty
+        ? 'Penjual belum menambahkan deskripsi detail.'
+        : widget.description;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final span = TextSpan(
+          text: text,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: isEmpty
+                ? context.colors.textSecondary
+                : context.colors.textPrimary,
             height: 1.5,
           ),
-        ),
-      ],
-    );
-  }
+        );
 
-  Widget _buildMobileBottomBar(
-    BuildContext context, {
-    required ProductModel product,
-    required bool isOwner,
-    required VoidCallback onChatPressed,
-    required VoidCallback onOfferPressed,
-    required VoidCallback onCartPressed,
-    required VoidCallback onBuyPressed,
-  }) {
-    bool isActive = product.status == 'active';
-    bool isNegotiable = product.isNegotiable;
+        final tp = TextPainter(
+          text: span,
+          maxLines: 3,
+          textDirection: TextDirection.ltr,
+        );
 
-    String? offerDisabledReason;
-    if (isOwner) {
-      offerDisabledReason = 'Produk milik Anda';
-    } else if (!isActive) {
-      offerDisabledReason = 'Produk tidak aktif';
-    } else if (!isNegotiable) {
-      offerDisabledReason = 'Harga pas / tidak bisa ditawar';
-    }
+        tp.layout(maxWidth: constraints.maxWidth);
+        final isLongText = tp.didExceedMaxLines;
 
-    String? buyDisabledReason;
-    if (isOwner) {
-      buyDisabledReason = 'Produk milik Anda';
-    } else if (!isActive) {
-      buyDisabledReason = 'Produk tidak aktif';
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundDarker.withValues(alpha: 0.9),
-        border: const Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: SafeArea(
-        child: Row(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              flex: 1,
-              child: OutlinedButton(
-                onPressed: isOwner ? null : onChatPressed,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: const BorderSide(color: AppColors.borderStrong),
-                  foregroundColor: AppColors.textPrimary,
-                ),
-                child: const Icon(Icons.chat_bubble_outline),
+            Text(
+              'Deskripsi Produk',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              flex: 1,
-              child: OutlinedButton(
-                onPressed: buyDisabledReason != null
-                    ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(buyDisabledReason!)))
-                    : onCartPressed,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: const BorderSide(color: AppColors.borderStrong),
-                  foregroundColor: AppColors.textPrimary,
-                ),
-                child: const Icon(Icons.add_shopping_cart),
-              ),
+            SizedBox(height: AppSpacing.sm),
+            Text.rich(
+              span,
+              maxLines: _isExpanded ? null : 3,
+              overflow: _isExpanded ? null : TextOverflow.ellipsis,
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: offerDisabledReason != null
-                    ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(offerDisabledReason!)))
-                    : onOfferPressed,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: offerDisabledReason != null ? AppColors.surfaceHighlight : AppColors.primary,
-                  foregroundColor: offerDisabledReason != null ? AppColors.textMuted : AppColors.background,
+            if (isLongText) ...[
+              SizedBox(height: AppSpacing.sm),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _isExpanded ? 'Sembunyikan' : 'Selengkapnya',
+                      style: TextStyle(
+                        color: context.colors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Icon(
+                      _isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: context.colors.primary,
+                      size: 16,
+                    ),
+                  ],
                 ),
-                child: const Text('Tawar', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: buyDisabledReason != null
-                    ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(buyDisabledReason!)))
-                    : onBuyPressed,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: buyDisabledReason != null ? AppColors.surfaceHighlight : AppColors.accent,
-                  foregroundColor: buyDisabledReason != null ? AppColors.textMuted : Colors.white,
-                ),
-                child: const Text('Beli', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
+            ],
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
-
-
-

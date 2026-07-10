@@ -13,7 +13,7 @@ final cartRepositoryProvider = Provider<CartRepository>((ref) {
 final cartItemsProvider = FutureProvider<List<CartItemModel>>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return [];
-  
+
   final repository = ref.watch(cartRepositoryProvider);
   return repository.fetchCartItems(user.id);
 });
@@ -32,7 +32,7 @@ class CartActionController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       final user = ref.read(currentUserProvider);
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
-      
+
       final repo = ref.read(cartRepositoryProvider);
       await repo.addToCart(user.id, productId);
       ref.invalidate(cartItemsProvider);
@@ -53,7 +53,7 @@ class CartActionController extends AsyncNotifier<void> {
     state = await AsyncValue.guard(() async {
       final user = ref.read(currentUserProvider);
       if (user == null) return;
-      
+
       final repo = ref.read(cartRepositoryProvider);
       await repo.clearCart(user.id);
       ref.invalidate(cartItemsProvider);
@@ -61,6 +61,7 @@ class CartActionController extends AsyncNotifier<void> {
   }
 }
 
-final cartActionControllerProvider = AsyncNotifierProvider<CartActionController, void>(() {
-  return CartActionController();
-});
+final cartActionControllerProvider =
+    AsyncNotifierProvider<CartActionController, void>(() {
+      return CartActionController();
+    });

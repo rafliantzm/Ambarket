@@ -26,6 +26,7 @@ ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_status_check;
 ALTER TABLE public.products ADD CONSTRAINT products_status_check CHECK (status in ('active', 'sold', 'archived', 'reserved', 'hidden', 'rejected'));
 
 -- Product Admin Policy
+DROP POLICY IF EXISTS "Admins can update all products" ON public.products;
 CREATE POLICY "Admins can update all products"
 ON public.products FOR UPDATE
 USING (public.is_admin());
@@ -36,12 +37,13 @@ ADD COLUMN IF NOT EXISTS is_hidden boolean DEFAULT false,
 ADD COLUMN IF NOT EXISTS moderation_note text,
 ADD COLUMN IF NOT EXISTS moderated_at timestamptz;
 
+DROP POLICY IF EXISTS "Admins can update reviews" ON public.reviews;
 CREATE POLICY "Admins can update reviews"
 ON public.reviews FOR UPDATE
 USING (public.is_admin());
 
 -- Admin Audit Logs
-CREATE TABLE public.admin_audit_logs (
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
     action text NOT NULL,
@@ -53,10 +55,12 @@ CREATE TABLE public.admin_audit_logs (
 
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins can insert audit logs" ON public.admin_audit_logs;
 CREATE POLICY "Admins can insert audit logs"
 ON public.admin_audit_logs FOR INSERT
 WITH CHECK (public.is_admin() AND auth.uid() = admin_id);
 
+DROP POLICY IF EXISTS "Admins can read audit logs" ON public.admin_audit_logs;
 CREATE POLICY "Admins can read audit logs"
 ON public.admin_audit_logs FOR SELECT
 USING (public.is_admin());

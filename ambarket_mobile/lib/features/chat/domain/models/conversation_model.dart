@@ -43,13 +43,23 @@ class ConversationModel {
       sellerId: json['seller_id'],
       offerId: json['offer_id'],
       lastMessage: json['last_message'],
-      lastMessageAt: json['last_message_at'] != null ? DateTime.parse(json['last_message_at']).toLocal() : null,
+      lastMessageAt: json['last_message_at'] != null
+          ? DateTime.parse(json['last_message_at']).toLocal()
+          : null,
       createdAt: DateTime.parse(json['created_at']).toLocal(),
       updatedAt: DateTime.parse(json['updated_at']).toLocal(),
-      product: json['products'] != null ? ProductModel.fromJson(json['products']) : null,
-      buyer: json['buyer'] != null ? ProfileModel.fromJson(json['buyer']) : null,
-      seller: json['seller'] != null ? ProfileModel.fromJson(json['seller']) : null,
-      offer: json['offers'] != null ? OfferModel.fromJson(json['offers']) : null,
+      product: json['products'] != null
+          ? ProductModel.fromJson(json['products'])
+          : null,
+      buyer: json['buyer'] != null
+          ? ProfileModel.fromJson(json['buyer'])
+          : null,
+      seller: json['seller'] != null
+          ? ProfileModel.fromJson(json['seller'])
+          : null,
+      offer: json['offers'] != null
+          ? OfferModel.fromJson(json['offers'])
+          : null,
     );
   }
 }

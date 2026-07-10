@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:ambarket_mobile/core/theme/app_colors.dart';
+import 'package:ambarket_mobile/core/widgets/ambarket_loaders.dart';
 
 enum AppButtonVariant { primary, outline, ghost }
 
@@ -25,11 +26,11 @@ class AppButton extends StatelessWidget {
       return OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.primary),
-          foregroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          side: BorderSide(color: context.colors.primary),
+          foregroundColor: context.colors.primary,
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(100),
           ),
         ),
         child: _buildContent(),
@@ -40,10 +41,10 @@ class AppButton extends StatelessWidget {
       return TextButton(
         onPressed: isLoading ? null : onPressed,
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.textPrimary,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          foregroundColor: context.colors.textPrimary,
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(100),
           ),
         ),
         child: _buildContent(),
@@ -54,21 +55,24 @@ class AppButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: onPressed == null 
-              ? [AppColors.surfaceHighlight, AppColors.surfaceHighlight]
-              : [AppColors.primary, AppColors.primaryDark],
+          colors: onPressed == null
+              ? [
+                  context.colors.surfaceHighlight,
+                  context.colors.surfaceHighlight,
+                ]
+              : [context.colors.primary, context.colors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: onPressed == null 
-            ? null 
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: onPressed == null
+            ? null
             : [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                )
+                  color: context.colors.primary.withValues(alpha: 0.16),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
               ],
       ),
       child: ElevatedButton(
@@ -77,7 +81,7 @@ class AppButton extends StatelessWidget {
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -89,14 +93,7 @@ class AppButton extends StatelessWidget {
 
   Widget _buildContent() {
     if (isLoading) {
-      return const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      );
+      return const AmbarketActionLoader();
     }
 
     if (icon != null) {
@@ -105,13 +102,12 @@ class AppButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 18),
-          const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          SizedBox(width: 8),
+          Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
         ],
       );
     }
 
-    return Text(label, style: const TextStyle(fontWeight: FontWeight.w600));
+    return Text(label, style: TextStyle(fontWeight: FontWeight.w600));
   }
 }
-

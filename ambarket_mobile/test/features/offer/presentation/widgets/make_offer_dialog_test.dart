@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ambarket_mobile/features/offer/presentation/widgets/make_offer_dialog.dart';
 
 void main() {
-  testWidgets('Make Offer dialog renders correctly', (WidgetTester tester) async {
+  testWidgets('Make Offer dialog renders correctly', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(

@@ -9,7 +9,10 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/marketplace/presentation/screens/product_detail_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
-import '../../features/profile/presentation/screens/wishlist_screen.dart';
+
+import '../../features/profile/presentation/screens/vouchers_screen.dart';
+import '../../features/profile/presentation/screens/seller_public_profile_screen.dart';
+import '../../features/marketplace/presentation/screens/products_list_screen.dart';
 
 import '../../features/seller/presentation/screens/seller_dashboard_screen.dart';
 import '../../features/seller/presentation/screens/add_product_screen.dart';
@@ -31,6 +34,8 @@ import 'package:ambarket_mobile/features/notification/presentation/screens/notif
 import '../../features/chat/presentation/screens/chat_list_screen.dart';
 import '../../features/chat/presentation/screens/chat_detail_screen.dart';
 import 'package:ambarket_mobile/features/report/presentation/screens/my_reports_screen.dart';
+import 'package:ambarket_mobile/features/report/presentation/screens/create_report_screen.dart';
+import 'package:ambarket_mobile/features/report/presentation/screens/report_detail_screen.dart';
 
 import 'package:ambarket_mobile/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:ambarket_mobile/features/admin/presentation/screens/admin_reports_screen.dart';
@@ -39,6 +44,8 @@ import 'package:ambarket_mobile/features/admin/presentation/screens/admin_audit_
 import 'package:ambarket_mobile/features/admin/presentation/screens/admin_products_screen.dart';
 import 'package:ambarket_mobile/features/admin/presentation/screens/admin_users_screen.dart';
 import 'package:ambarket_mobile/features/admin/presentation/screens/admin_reviews_screen.dart';
+import 'package:ambarket_mobile/features/admin/presentation/screens/admin_vouchers_screen.dart';
+import 'package:ambarket_mobile/features/admin/presentation/screens/admin_create_voucher_screen.dart';
 import 'package:ambarket_mobile/features/profile/presentation/providers/profile_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -50,13 +57,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
+          GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
           GoRoute(
-            path: '/',
-            builder: (context, state) => const HomeScreen(),
-          ),
-          GoRoute(
-            path: '/wishlist',
-            builder: (context, state) => const WishlistScreen(),
+            path: '/cart',
+            builder: (context, state) => const CartScreen(),
           ),
           GoRoute(
             path: '/seller',
@@ -72,13 +76,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/products',
+        builder: (context, state) => const ProductsListScreen(),
       ),
       GoRoute(
         path: '/products/:id',
@@ -92,12 +97,41 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const EditProfileScreen(),
       ),
       GoRoute(
+        path: '/vouchers',
+        builder: (context, state) => const VouchersScreen(),
+      ),
+      GoRoute(
+        path: '/seller-profile/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return SellerPublicProfileScreen(sellerId: id);
+        },
+      ),
+      GoRoute(
         path: '/offers',
         builder: (context, state) => const MyOffersScreen(),
       ),
       GoRoute(
         path: '/reports',
         builder: (context, state) => const MyReportsScreen(),
+      ),
+      GoRoute(
+        path: '/reports/new',
+        builder: (context, state) {
+          final targetType = state.uri.queryParameters['targetType'];
+          final targetId = state.uri.queryParameters['targetId'];
+          return CreateReportScreen(
+            initialTargetType: targetType,
+            initialTargetId: targetId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/reports/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ReportDetailScreen(reportId: id);
+        },
       ),
       GoRoute(
         path: '/chats/:id',
@@ -124,7 +158,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/checkout',
         builder: (context, state) {
-          return CheckoutScreen(productId: state.pathParameters['id'] ?? '', offerId: null);
+          return CheckoutScreen(
+            productId: state.pathParameters['id'] ?? '',
+            offerId: null,
+          );
         },
       ),
       GoRoute(
@@ -179,37 +216,51 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AdminReviewsScreen(),
       ),
       GoRoute(
-        path: '/cart',
-        builder: (context, state) => const CartScreen(),
+        path: '/admin/vouchers',
+        builder: (context, state) => const AdminVouchersScreen(),
       ),
       GoRoute(
+        path: '/admin/vouchers/new',
+        builder: (context, state) => const AdminCreateVoucherScreen(),
+      ),
+
+      GoRoute(
         path: '/checkout/product/:id',
-        builder: (context, state) => CheckoutScreen(productId: state.pathParameters['id']),
+        builder: (context, state) =>
+            CheckoutScreen(productId: state.pathParameters['id']),
       ),
       GoRoute(
         path: '/payment/:orderId',
-        builder: (context, state) => PaymentDummyScreen(orderId: state.pathParameters['orderId']!),
+        builder: (context, state) =>
+            PaymentDummyScreen(orderId: state.pathParameters['orderId']!),
       ),
       GoRoute(
         path: '/orders/:id/invoice',
-        builder: (context, state) => InvoiceScreen(orderId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            InvoiceScreen(orderId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/orders/:id/tracking',
-        builder: (context, state) => OrderTrackingScreen(orderId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            OrderTrackingScreen(orderId: state.pathParameters['id']!),
       ),
     ],
     redirect: (context, state) {
-      final session = authState?.session ?? Supabase.instance.client.auth.currentSession;
+      final session =
+          authState?.session ?? Supabase.instance.client.auth.currentSession;
       final isAuthenticated = session != null;
-      
+
       final isGoingToLogin = state.matchedLocation == '/login';
       final isGoingToRegister = state.matchedLocation == '/register';
-      
-      if (!isAuthenticated && !isGoingToLogin && !isGoingToRegister && !state.matchedLocation.startsWith('/products') && state.matchedLocation != '/') {
+
+      if (!isAuthenticated &&
+          !isGoingToLogin &&
+          !isGoingToRegister &&
+          !state.matchedLocation.startsWith('/products') &&
+          state.matchedLocation != '/') {
         return '/login';
       }
-      
+
       if (isAuthenticated && (isGoingToLogin || isGoingToRegister)) {
         return '/';
       }
@@ -221,7 +272,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return '/';
         }
       }
-      
+
       return null;
     },
   );

@@ -65,6 +65,7 @@ class UpdateProductInput {
   final String? completeness;
   final String? usageDuration;
   final String status;
+  final List<Uint8List> newImageBytesList;
 
   UpdateProductInput({
     required this.title,
@@ -79,6 +80,7 @@ class UpdateProductInput {
     this.completeness,
     this.usageDuration,
     required this.status,
+    this.newImageBytesList = const [],
   });
 
   Map<String, dynamic> toJson() {
