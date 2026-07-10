@@ -5,7 +5,7 @@ _flutter.loader.load({
   onEntrypointLoaded: async function(engineInitializer) {
     const appRunner = await engineInitializer.initializeEngine();
     await appRunner.runApp();
-    
+
     // Remove the boot loader after flutter app is running
     const loader = document.getElementById('ambarket-boot-loader');
     if (loader) {

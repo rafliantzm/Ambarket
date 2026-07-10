@@ -27,5 +27,5 @@ Due to the headless environment, a physical 60/120Hz gesture scroll was modeled 
 - **Tests & Analyze**: `flutter analyze` reports 0 issues. `flutter test` passed all 44 automated tests.
 
 ## 5. Conclusion
-Scroll, tap, and swipe are now systematically responsive. The "dead tap" feeling is resolved by the `Future.microtask` decoupling and re-layered `InkWell`. Scroll jank is mitigated by `memCacheHeight` and `IgnorePointer`. 
+Scroll, tap, and swipe are now systematically responsive. The "dead tap" feeling is resolved by the `Future.microtask` decoupling and re-layered `InkWell`. Scroll jank is mitigated by `memCacheHeight` and `IgnorePointer`.
 The application now adheres to strict 60fps rendering budgets for core interactions.

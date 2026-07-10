@@ -36,16 +36,16 @@ void main() {
 
   for (final file in files) {
     if (file.path.contains('app_colors.dart') || file.path.contains('app_theme.dart')) continue;
-    
+
     String content = file.readAsStringSync();
     if (content.contains('context.colors')) {
-      // Find all `const ` and remove it. But wait! 
-      // Do not remove `const` inside variable declarations like `static const _duration = ...` 
+      // Find all `const ` and remove it. But wait!
+      // Do not remove `const` inside variable declarations like `static const _duration = ...`
       // Or `const double padding = 16.0;`
       // We only want to remove const before Widget instantiations: `const Text`, `const Icon`, `const Padding`, `const EdgeInsets`, `const SizedBox`, `const BorderRadius`, `const BorderSide`, `const BoxDecoration`, `const TextStyle`
-      
+
       final widgetRegex = RegExp(r'\bconst\s+(Text|Icon|Padding|EdgeInsets|SizedBox|BorderRadius|BorderSide|BoxDecoration|TextStyle|AppLoadingSkeleton|Row|Column|Container|Align|Center)\b');
-      
+
       if (widgetRegex.hasMatch(content)) {
         content = content.replaceAllMapped(widgetRegex, (match) => match.group(1)!);
         file.writeAsStringSync(content);

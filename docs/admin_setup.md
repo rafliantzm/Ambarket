@@ -1,6 +1,6 @@
 # Panduan Setup Admin Ambarket
 
-Aplikasi Ambarket didesain agar role `admin` tidak bisa di-set dari sisi klien (Flutter) untuk alasan keamanan. Role ini harus diberikan secara manual langsung ke database. 
+Aplikasi Ambarket didesain agar role `admin` tidak bisa di-set dari sisi klien (Flutter) untuk alasan keamanan. Role ini harus diberikan secara manual langsung ke database.
 
 Berikut adalah cara mengubah sebuah akun pengguna biasa menjadi **Admin** menggunakan Supabase SQL Editor.
 
@@ -18,8 +18,8 @@ Berikut adalah cara mengubah sebuah akun pengguna biasa menjadi **Admin** menggu
 UPDATE public.profiles
 SET role = 'admin'
 WHERE id = (
-    SELECT id 
-    FROM auth.users 
+    SELECT id
+    FROM auth.users
     WHERE email = 'email_pengguna@domain.com'
 );
 ```

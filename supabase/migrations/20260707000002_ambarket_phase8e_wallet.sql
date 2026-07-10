@@ -13,17 +13,17 @@ CREATE TABLE IF NOT EXISTS public.seller_wallets (
 -- RLS for seller_wallets
 ALTER TABLE public.seller_wallets ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Sellers can view own wallet" 
-  ON public.seller_wallets 
-  FOR SELECT 
+CREATE POLICY "Sellers can view own wallet"
+  ON public.seller_wallets
+  FOR SELECT
   USING (auth.uid() = seller_id);
 
 -- Sellers cannot update wallet directly, so no update policy.
--- Note: insert will be handled by the repository using supabase RPC if needed, 
+-- Note: insert will be handled by the repository using supabase RPC if needed,
 -- but actually we'll just allow insert for creating the wallet if it doesn't exist.
-CREATE POLICY "Sellers can insert own wallet" 
-  ON public.seller_wallets 
-  FOR INSERT 
+CREATE POLICY "Sellers can insert own wallet"
+  ON public.seller_wallets
+  FOR INSERT
   WITH CHECK (auth.uid() = seller_id);
 
 -- 2. Create seller_withdrawals table
@@ -43,14 +43,14 @@ CREATE TABLE IF NOT EXISTS public.seller_withdrawals (
 -- RLS for seller_withdrawals
 ALTER TABLE public.seller_withdrawals ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Sellers can view own withdrawals" 
-  ON public.seller_withdrawals 
-  FOR SELECT 
+CREATE POLICY "Sellers can view own withdrawals"
+  ON public.seller_withdrawals
+  FOR SELECT
   USING (auth.uid() = seller_id);
 
-CREATE POLICY "Sellers can insert own withdrawals" 
-  ON public.seller_withdrawals 
-  FOR INSERT 
+CREATE POLICY "Sellers can insert own withdrawals"
+  ON public.seller_withdrawals
+  FOR INSERT
   WITH CHECK (auth.uid() = seller_id);
 
 -- Admins can view and update withdrawals (Assuming admin role logic)

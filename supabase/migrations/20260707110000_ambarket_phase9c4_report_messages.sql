@@ -1,11 +1,11 @@
 -- Add new fields to public.reports
-ALTER TABLE public.reports 
+ALTER TABLE public.reports
 ADD COLUMN IF NOT EXISTS final_resolution text,
 ADD COLUMN IF NOT EXISTS resolved_by uuid REFERENCES public.profiles(id);
 
 -- Update status check constraint to include 'in_discussion'
 ALTER TABLE public.reports DROP CONSTRAINT IF EXISTS reports_status_check;
-ALTER TABLE public.reports ADD CONSTRAINT reports_status_check 
+ALTER TABLE public.reports ADD CONSTRAINT reports_status_check
 CHECK (status IN ('pending', 'reviewed', 'in_discussion', 'resolved', 'rejected'));
 
 -- Create public.report_messages table
@@ -27,8 +27,8 @@ CREATE POLICY "Users can select their own report messages"
 ON public.report_messages FOR SELECT
 USING (
     EXISTS (
-        SELECT 1 FROM public.reports 
-        WHERE public.reports.id = report_id 
+        SELECT 1 FROM public.reports
+        WHERE public.reports.id = report_id
         AND public.reports.reporter_id = auth.uid()
     )
 );
@@ -40,8 +40,8 @@ WITH CHECK (
     sender_id = auth.uid() AND
     sender_role = 'user' AND
     EXISTS (
-        SELECT 1 FROM public.reports 
-        WHERE public.reports.id = report_id 
+        SELECT 1 FROM public.reports
+        WHERE public.reports.id = report_id
         AND public.reports.reporter_id = auth.uid()
         AND public.reports.status NOT IN ('resolved', 'rejected')
     )
@@ -52,7 +52,7 @@ CREATE POLICY "Admins can select all report messages"
 ON public.report_messages FOR SELECT
 USING (
     EXISTS (
-        SELECT 1 FROM public.profiles 
+        SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND role = 'admin'
     )
 );
@@ -64,7 +64,7 @@ WITH CHECK (
     sender_id = auth.uid() AND
     sender_role = 'admin' AND
     EXISTS (
-        SELECT 1 FROM public.profiles 
+        SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND role = 'admin'
     )
 );
@@ -76,7 +76,7 @@ CREATE POLICY "Admins can update reports"
 ON public.reports FOR UPDATE
 USING (
     EXISTS (
-        SELECT 1 FROM public.profiles 
+        SELECT 1 FROM public.profiles
         WHERE id = auth.uid() AND role = 'admin'
     )
 );

@@ -13,22 +13,22 @@ void main() {
   for (final path in files) {
     final file = File(path);
     if (!file.existsSync()) continue;
-    
+
     var content = file.readAsStringSync();
-    
+
     // In profile_screen.dart
     if (path.contains('profile_screen.dart')) {
       content = content.replaceAll('Widget _buildMenuTile({', 'Widget _buildMenuTile(BuildContext context, {');
       content = content.replaceAll('_buildMenuTile(', '_buildMenuTile(context, ');
       content = content.replaceAll('Widget _buildMenuTile(BuildContext context, BuildContext context, {', 'Widget _buildMenuTile(BuildContext context, {');
     }
-    
+
     // In seller_dashboard_screen.dart
     if (path.contains('seller_dashboard_screen.dart')) {
       content = content.replaceAll('Widget _buildMetricTile({', 'Widget _buildMetricTile(BuildContext context, {');
       content = content.replaceAll('_buildMetricTile(', '_buildMetricTile(context, ');
     }
-    
+
     // In notifications_screen.dart
     if (path.contains('notifications_screen.dart')) {
       content = content.replaceAll('Widget _buildNotificationItem(NotificationModel notification) {', 'Widget _buildNotificationItem(BuildContext context, NotificationModel notification) {');
@@ -49,7 +49,7 @@ void main() {
        // Actually, we can just change context.colors to AppColors.dark in this file because it's an animated background that might be hard to adapt.
        // But wait, we want it to adapt. Let's see what is on line 79.
     }
-    
+
     file.writeAsStringSync(content);
   }
 }

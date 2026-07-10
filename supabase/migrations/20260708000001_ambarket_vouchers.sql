@@ -31,32 +31,32 @@ ALTER TABLE public.user_vouchers ENABLE ROW LEVEL SECURITY;
 
 -- 4. Policies for vouchers
 -- Anyone can view active vouchers
-CREATE POLICY "Anyone can view active vouchers" 
-  ON public.vouchers FOR SELECT 
+CREATE POLICY "Anyone can view active vouchers"
+  ON public.vouchers FOR SELECT
   USING (is_active = true OR (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   ));
 
 -- Only admins can insert/update vouchers
-CREATE POLICY "Admins can insert vouchers" 
-  ON public.vouchers FOR INSERT 
+CREATE POLICY "Admins can insert vouchers"
+  ON public.vouchers FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
-CREATE POLICY "Admins can update vouchers" 
-  ON public.vouchers FOR UPDATE 
+CREATE POLICY "Admins can update vouchers"
+  ON public.vouchers FOR UPDATE
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- 5. Policies for user_vouchers
-CREATE POLICY "Users can view own claimed vouchers" 
-  ON public.user_vouchers FOR SELECT 
+CREATE POLICY "Users can view own claimed vouchers"
+  ON public.user_vouchers FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can claim vouchers" 
-  ON public.user_vouchers FOR INSERT 
+CREATE POLICY "Users can claim vouchers"
+  ON public.user_vouchers FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own claimed vouchers (mark used)" 
-  ON public.user_vouchers FOR UPDATE 
+CREATE POLICY "Users can update own claimed vouchers (mark used)"
+  ON public.user_vouchers FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- 6. RPC for Admin to create voucher and notify all users
@@ -96,12 +96,12 @@ BEGIN
   INSERT INTO public.notifications (
     user_id, type, title, body, related_type, related_id
   )
-  SELECT 
-    id, 
-    'voucher', 
-    'Kupon Baru: ' || p_title, 
-    p_description, 
-    'voucher', 
+  SELECT
+    id,
+    'voucher',
+    'Kupon Baru: ' || p_title,
+    p_description,
+    'voucher',
     v_voucher_id
   FROM public.profiles
   WHERE role != 'admin'; -- Optional: exclude admins themselves if you want

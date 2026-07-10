@@ -56,7 +56,7 @@ BEGIN
   IF NOT v_is_authorized AND p_related_type = 'order' AND p_related_id IS NOT NULL THEN
     SELECT EXISTS (
       SELECT 1 FROM public.orders
-      WHERE id = p_related_id 
+      WHERE id = p_related_id
       AND (buyer_id = auth.uid() OR seller_id = auth.uid())
       AND (buyer_id = p_user_id OR seller_id = p_user_id)
     ) INTO v_is_authorized;
@@ -66,7 +66,7 @@ BEGIN
   IF NOT v_is_authorized AND p_related_type = 'offer' AND p_related_id IS NOT NULL THEN
     SELECT EXISTS (
       SELECT 1 FROM public.offers
-      WHERE id = p_related_id 
+      WHERE id = p_related_id
       AND (buyer_id = auth.uid() OR seller_id = auth.uid())
       AND (buyer_id = p_user_id OR seller_id = p_user_id)
     ) INTO v_is_authorized;
@@ -85,7 +85,7 @@ BEGIN
   IF NOT v_is_authorized THEN
     RAISE EXCEPTION 'Unauthorized to send notification to this user';
   END IF;
-  
+
   INSERT INTO public.notifications (user_id, type, title, body, related_type, related_id)
   VALUES (p_user_id, p_type, p_title, p_body, p_related_type, p_related_id);
 END;

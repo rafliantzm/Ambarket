@@ -24,7 +24,7 @@ This document records the baseline performance metrics and structural audits of 
 * **Affected Files:** `HomeScreen`, `MainShell`
 
 ### D. Supabase Queries & Caching
-* **Before:** Repeated fetching of the same product/seller data. Lack of query limitations/pagination in some admin/seller views. 
+* **Before:** Repeated fetching of the same product/seller data. Lack of query limitations/pagination in some admin/seller views.
 * **Target:** Utilize `select('id, title, price, ...')` instead of `select('*')`. Implement `autoDispose` correctly and use `keepAlive()` for static references (e.g., categories).
 * **Suspected Cause:** Missing `.select()` constraints, un-debounced searches.
 * **Affected Files:** `supabase_marketplace_repository.dart`, `supabase_seller_repository.dart`
