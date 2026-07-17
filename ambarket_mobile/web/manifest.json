@@ -1,11 +1,11 @@
 {
-    "name": "ambarket_mobile",
-    "short_name": "ambarket_mobile",
+    "name": "Ambarket",
+    "short_name": "Ambarket",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0f172a",
-    "theme_color": "#0f172a",
-    "description": "A new Flutter project.",
+    "background_color": "#F1FFF9",
+    "theme_color": "#10B981",
+    "description": "Marketplace preloved berkualitas untuk belanja lebih percaya.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

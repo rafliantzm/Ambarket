@@ -41,7 +41,7 @@ class SellerWalletScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Pantau saldo simulasi dan riwayat penarikan dana dummy.',
+                    'Pantau saldo seller dan riwayat penarikan dana.',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -58,7 +58,7 @@ class SellerWalletScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             sliver: SliverToBoxAdapter(
               child: Text(
-                'Riwayat Penarikan Dummy',
+                'Riwayat Penarikan',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -85,7 +85,7 @@ class SellerWalletScreen extends ConsumerWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              'Fitur saldo dan penarikan dana masih simulasi untuk kebutuhan MVP. Tidak ada transaksi uang asli yang diproses.',
+              'Saldo diambil dari data wallet seller. Penarikan dana masih simulasi untuk kebutuhan MVP dan tidak memproses uang asli.',
               style: theme.textTheme.bodyMedium,
             ),
           ),
@@ -178,6 +178,13 @@ class SellerWalletScreen extends ConsumerWidget {
           currencyFormatter.format(summary.pendingBalance),
           Icons.pending_actions,
           Colors.orange,
+        ),
+        _buildStatCard(
+          context,
+          'Dana Sengketa',
+          currencyFormatter.format(summary.disputedBalance),
+          Icons.gavel_outlined,
+          Colors.redAccent,
         ),
         _buildStatCard(
           context,

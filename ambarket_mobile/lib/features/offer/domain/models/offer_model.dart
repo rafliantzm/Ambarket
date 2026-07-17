@@ -37,31 +37,23 @@ class OfferModel {
   });
 
   factory OfferModel.fromJson(Map<String, dynamic> json) {
+    final createdAt = _parseDate(json['created_at']);
+
     return OfferModel(
-      id: json['id'] as String,
-      productId: json['product_id'] as String,
-      buyerId: json['buyer_id'] as String,
-      sellerId: json['seller_id'] as String,
-      offerPrice: (json['offer_price'] as num).toDouble(),
-      message: json['message'] as String?,
-      status: json['status'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      acceptedAt: json['accepted_at'] != null
-          ? DateTime.parse(json['accepted_at'] as String)
-          : null,
-      expiresAt: json['expires_at'] != null
-          ? DateTime.parse(json['expires_at'] as String)
-          : null,
-      product: json['products'] != null
-          ? ProductModel.fromJson(json['products'] as Map<String, dynamic>)
-          : null,
-      buyer: json['buyer'] != null
-          ? ProfileModel.fromJson(json['buyer'] as Map<String, dynamic>)
-          : null,
-      seller: json['seller'] != null
-          ? ProfileModel.fromJson(json['seller'] as Map<String, dynamic>)
-          : null,
+      id: _stringValue(json['id'], fallback: 'unknown-offer'),
+      productId: _stringValue(json['product_id']),
+      buyerId: _stringValue(json['buyer_id']),
+      sellerId: _stringValue(json['seller_id']),
+      offerPrice: _doubleValue(json['offer_price']),
+      message: _nullableString(json['message']),
+      status: _stringValue(json['status'], fallback: 'pending'),
+      createdAt: createdAt,
+      updatedAt: _parseDate(json['updated_at'], fallback: createdAt),
+      acceptedAt: _parseNullableDate(json['accepted_at']),
+      expiresAt: _parseNullableDate(json['expires_at']),
+      product: _parseProduct(json['products']),
+      buyer: _parseProfile(json['buyer']),
+      seller: _parseProfile(json['seller']),
     );
   }
 
@@ -79,6 +71,79 @@ class OfferModel {
       if (acceptedAt != null) 'accepted_at': acceptedAt!.toIso8601String(),
       if (expiresAt != null) 'expires_at': expiresAt!.toIso8601String(),
     };
+  }
+}
+
+String _stringValue(dynamic value, {String fallback = ''}) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return fallback;
+}
+
+String? _nullableString(dynamic value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return null;
+}
+
+double _doubleValue(dynamic value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value) ?? 0;
+  }
+  return 0;
+}
+
+DateTime _parseDate(dynamic value, {DateTime? fallback}) {
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value) ??
+        fallback ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return fallback ?? DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+DateTime? _parseNullableDate(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value);
+  }
+  return null;
+}
+
+ProductModel? _parseProduct(dynamic value) {
+  if (value is! Map<String, dynamic>) {
+    return null;
+  }
+
+  try {
+    return ProductModel.fromJson(value);
+  } catch (_) {
+    return null;
+  }
+}
+
+ProfileModel? _parseProfile(dynamic value) {
+  if (value is! Map<String, dynamic>) {
+    return null;
+  }
+
+  try {
+    return ProfileModel.fromJson(value);
+  } catch (_) {
+    return null;
   }
 }
 

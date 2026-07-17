@@ -9,40 +9,114 @@ final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
   return SupabaseNotificationRepository(Supabase.instance.client);
 });
 
-final notificationsProvider =
-    StreamProvider.autoDispose<List<NotificationModel>>((ref) {
-      final client = Supabase.instance.client;
-      final user = ref.watch(currentUserProvider);
-      if (user == null) return Stream.value([]);
+const notificationRefreshInterval = Duration(seconds: 3);
 
-      return client
-          .from('notifications')
-          .stream(primaryKey: ['id'])
-          .eq('user_id', user.id)
-          .map((events) {
-            final sortedEvents = List<Map<String, dynamic>>.from(events);
-            sortedEvents.sort(
-              (a, b) => DateTime.parse(
-                b['created_at'],
-              ).compareTo(DateTime.parse(a['created_at'])),
-            );
-            return sortedEvents
-                .map((json) => NotificationModel.fromJson(json))
-                .toList();
-          });
+final notificationsProvider =
+    StreamProvider.autoDispose<List<NotificationModel>>((ref) async* {
+      final repository = ref.watch(notificationRepositoryProvider);
+      final user = ref.watch(currentUserProvider);
+      if (user == null) {
+        yield [];
+        return;
+      }
+
+      yield* watchNotificationList(repository);
     });
 
-final unreadNotificationCountProvider = StreamProvider.autoDispose<int>((ref) {
-  final client = Supabase.instance.client;
+final unreadNotificationCountProvider = StreamProvider.autoDispose<int>((
+  ref,
+) async* {
+  final repository = ref.watch(notificationRepositoryProvider);
   final user = ref.watch(currentUserProvider);
-  if (user == null) return Stream.value(0);
+  if (user == null) {
+    yield 0;
+    return;
+  }
 
-  return client
-      .from('notifications')
-      .stream(primaryKey: ['id'])
-      .eq('user_id', user.id)
-      .map((events) => events.where((e) => e['is_read'] == false).length);
+  yield* watchUnreadNotificationCount(repository);
 });
+
+List<NotificationModel> parseNotificationEvents(
+  List<Map<String, dynamic>> events,
+) {
+  final notifications = events
+      .map(NotificationModel.fromJson)
+      .toList(growable: false);
+
+  return sortNotifications(notifications);
+}
+
+Stream<List<NotificationModel>> watchNotificationList(
+  NotificationRepository repository, {
+  Duration refreshInterval = notificationRefreshInterval,
+}) async* {
+  var lastSignature = '';
+  var hasYielded = false;
+
+  while (true) {
+    try {
+      final notifications = await repository.fetchNotifications();
+      final sorted = sortNotifications(notifications);
+      final signature = _notificationSignature(sorted);
+
+      if (!hasYielded || signature != lastSignature) {
+        yield sorted;
+        lastSignature = signature;
+        hasYielded = true;
+      }
+    } catch (_) {
+      if (!hasYielded) {
+        yield const [];
+        hasYielded = true;
+      }
+    }
+
+    await Future<void>.delayed(refreshInterval);
+  }
+}
+
+Stream<int> watchUnreadNotificationCount(
+  NotificationRepository repository, {
+  Duration refreshInterval = notificationRefreshInterval,
+}) async* {
+  int? lastCount;
+  var hasYielded = false;
+
+  while (true) {
+    try {
+      final count = await repository.fetchUnreadCount();
+
+      if (!hasYielded || count != lastCount) {
+        yield count;
+        lastCount = count;
+        hasYielded = true;
+      }
+    } catch (_) {
+      if (!hasYielded) {
+        yield 0;
+        lastCount = 0;
+        hasYielded = true;
+      }
+    }
+
+    await Future<void>.delayed(refreshInterval);
+  }
+}
+
+List<NotificationModel> sortNotifications(
+  List<NotificationModel> notifications,
+) {
+  return [...notifications]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+}
+
+String _notificationSignature(List<NotificationModel> notifications) {
+  return notifications
+      .map(
+        (notification) =>
+            '${notification.id}:${notification.isRead}:${notification.createdAt.microsecondsSinceEpoch}',
+      )
+      .join('|');
+}
 
 class NotificationActionState {
   final bool isLoading;

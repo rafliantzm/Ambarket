@@ -6,6 +6,7 @@ import 'package:ambarket_mobile/core/router/app_router.dart';
 import 'package:ambarket_mobile/features/profile/presentation/providers/profile_provider.dart';
 import 'package:ambarket_mobile/features/profile/domain/models/profile_model.dart';
 import 'package:ambarket_mobile/features/auth/presentation/providers/auth_provider.dart';
+import 'package:ambarket_mobile/features/cart/presentation/providers/cart_provider.dart';
 
 void main() {
   testWidgets('Non-admin user trying to access /admin redirects to /', (
@@ -138,5 +139,115 @@ void main() {
     final location = lastMatch.matchedLocation;
 
     expect(location, equals('/admin'));
+  });
+
+  testWidgets('Direct /checkout without offer context redirects to cart', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final mockSession = supabase.Session(
+      accessToken: 'token',
+      tokenType: 'bearer',
+      user: supabase.User(
+        id: 'buyer1',
+        appMetadata: {},
+        userMetadata: {},
+        aud: 'authenticated',
+        createdAt: DateTime.now().toIso8601String(),
+      ),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        authStateProvider.overrideWith(
+          (ref) => Stream.value(
+            supabase.AuthState(supabase.AuthChangeEvent.signedIn, mockSession),
+          ),
+        ),
+        cartItemsProvider.overrideWith((ref) => []),
+      ],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: Consumer(
+          builder: (context, ref, child) {
+            final router = ref.watch(appRouterProvider);
+            return MaterialApp.router(routerConfig: router);
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    final router = container.read(appRouterProvider);
+
+    router.go('/checkout');
+    await tester.pump();
+
+    final lastMatch = router.routerDelegate.currentConfiguration.last;
+    final location = lastMatch.matchedLocation;
+
+    expect(location, equals('/cart'));
+  });
+
+  testWidgets('Legacy /seller-orders redirects to seller orders route', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final mockSession = supabase.Session(
+      accessToken: 'token',
+      tokenType: 'bearer',
+      user: supabase.User(
+        id: 'seller1',
+        appMetadata: {},
+        userMetadata: {},
+        aud: 'authenticated',
+        createdAt: DateTime.now().toIso8601String(),
+      ),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        authStateProvider.overrideWith(
+          (ref) => Stream.value(
+            supabase.AuthState(supabase.AuthChangeEvent.signedIn, mockSession),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: Consumer(
+          builder: (context, ref, child) {
+            final router = ref.watch(appRouterProvider);
+            return MaterialApp.router(routerConfig: router);
+          },
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    final router = container.read(appRouterProvider);
+    router.go('/seller-orders');
+    await tester.pump();
+
+    final lastMatch = router.routerDelegate.currentConfiguration.last;
+    final location = lastMatch.matchedLocation;
+
+    expect(location, equals('/seller/orders'));
   });
 }

@@ -52,87 +52,100 @@ class PremiumPromoCard extends StatelessWidget {
             horizontal: AppSpacing.md,
             vertical: AppSpacing.lg,
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 32, color: primaryColor),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: primaryColor,
-                        letterSpacing: 0.5,
-                      ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: claimed
-                            ? context.colors.textSecondary
-                            : context.colors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.colors.textSecondary,
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              ElevatedButton(
-                onPressed: claimed ? null : onPressed,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: context.colors.surfaceHighlight,
-                  disabledForegroundColor: context.colors.textMuted,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 0,
+                    child: Icon(icon, size: 32, color: primaryColor),
                   ),
-                  minimumSize: const Size(0, 36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      claimed ? 'DIKLAIM' : ctaText,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (label.isNotEmpty) ...[
+                          Text(
+                            label.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                color: claimed
+                                    ? context.colors.textSecondary
+                                    : context.colors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: context.colors.textSecondary,
+                                fontSize: 12,
+                                height: 1.3,
+                              ),
+                        ),
+                      ],
                     ),
-                    if (!claimed) ...[
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward_rounded, size: 16),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton(
+                  onPressed: claimed ? null : onPressed,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: context.colors.surfaceHighlight,
+                    disabledForegroundColor: context.colors.textMuted,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 0,
+                    ),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        claimed ? 'DIKLAIM' : ctaText,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (!claimed) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_forward_rounded, size: 16),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ],

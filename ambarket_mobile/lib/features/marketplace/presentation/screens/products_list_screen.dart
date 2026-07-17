@@ -121,7 +121,7 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
             },
             child: GridView.builder(
               controller: _scrollController,
-              cacheExtent: 900,
+              cacheExtent: 420,
               addAutomaticKeepAlives: false,
               addRepaintBoundaries: true,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -134,11 +134,12 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
               ),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                childAspectRatio: 0.58,
+                childAspectRatio: 0.5,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 16,
               ),
-              itemCount: products.products.length + (products.hasMore ? 1 : 0),
+              itemCount:
+                  products.products.length + (products.isFetchingMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index >= products.products.length) {
                   return const AmbarketLoadMoreIndicator();

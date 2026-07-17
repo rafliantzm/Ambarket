@@ -8,13 +8,17 @@ void main() {
     return;
   }
 
-  final files = libDir.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart'));
+  final files = libDir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'));
 
   int modifiedCount = 0;
 
   for (final file in files) {
     // Skip app_colors.dart and app_theme.dart
-    if (file.path.contains('app_colors.dart') || file.path.contains('app_theme.dart')) {
+    if (file.path.contains('app_colors.dart') ||
+        file.path.contains('app_theme.dart')) {
       continue;
     }
 

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ambarket_mobile/core/error/error_mapper.dart';
 import 'package:ambarket_mobile/core/theme/app_spacing.dart';
+import 'package:ambarket_mobile/core/widgets/app_error_state.dart';
 import 'package:ambarket_mobile/features/order/presentation/providers/order_provider.dart';
 import 'package:ambarket_mobile/features/order/domain/models/order_model.dart';
 import 'package:ambarket_mobile/features/review/presentation/widgets/create_review_dialog.dart';
+import 'package:ambarket_mobile/features/order/presentation/widgets/refund_request_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 class BuyerOrdersScreen extends ConsumerWidget {
@@ -43,7 +46,11 @@ class BuyerOrdersScreen extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, st) => Center(child: Text('Error: $err')),
+          error: (err, st) => AppErrorState(
+            title: 'Pesanan Belum Dapat Dimuat',
+            message: ErrorMapper.getFriendlyMessage(err),
+            onRetry: () => ref.invalidate(buyerOrdersProvider),
+          ),
         ),
       ),
     );
@@ -78,6 +85,10 @@ class _OrderCard extends ConsumerWidget {
         statusColor = Colors.blue;
         statusText = 'Dibayar';
         break;
+      case 'packed':
+        statusColor = Colors.orange;
+        statusText = 'Dikemas';
+        break;
       case 'shipped':
         statusColor = Colors.purple;
         statusText = 'Dikirim';
@@ -85,6 +96,22 @@ class _OrderCard extends ConsumerWidget {
       case 'completed':
         statusColor = Colors.green;
         statusText = 'Selesai';
+        break;
+      case 'delivered':
+        statusColor = Colors.teal;
+        statusText = 'Diterima';
+        break;
+      case 'disputed':
+        statusColor = Colors.redAccent;
+        statusText = 'Sengketa';
+        break;
+      case 'refunded':
+        statusColor = Colors.blueGrey;
+        statusText = 'Refund';
+        break;
+      case 'partially_refunded':
+        statusColor = Colors.blueGrey;
+        statusText = 'Refund Sebagian';
         break;
       case 'cancelled':
         statusColor = Colors.red;
@@ -142,7 +169,7 @@ class _OrderCard extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'ID Pesanan: ${order.id.substring(0, 8).toUpperCase()}',
+              'ID Pesanan: ${_shortOrderId(order.id)}',
               style: theme.textTheme.bodySmall,
             ),
             Text(
@@ -190,6 +217,7 @@ class _OrderCard extends ConsumerWidget {
                 const Spacer(),
                 if (order.status != 'pending_payment' &&
                     order.status != 'cancelled' &&
+                    order.status != 'refunded' &&
                     order.status != 'completed')
                   TextButton.icon(
                     onPressed: () =>
@@ -264,12 +292,12 @@ class _OrderCard extends ConsumerWidget {
                               _showConfirmation(
                                 context,
                                 'Pesanan Diterima',
-                                'Konfirmasi bahwa Anda telah menerima pesanan dengan baik?',
+                                'Konfirmasi barang sudah diterima. Dana seller masih ditahan sampai transaksi diselesaikan atau admin memutuskan refund.',
                                 () => ref
                                     .read(
                                       orderActionControllerProvider.notifier,
                                     )
-                                    .updateStatus(order.id, 'completed'),
+                                    .updateStatus(order.id, 'delivered'),
                               );
                             },
                       style: ElevatedButton.styleFrom(
@@ -278,7 +306,53 @@ class _OrderCard extends ConsumerWidget {
                       ),
                       child: const Text('Pesanan Diterima'),
                     ),
+                  if (isBuyer && order.status == 'delivered')
+                    ElevatedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              _showConfirmation(
+                                context,
+                                'Selesaikan Pesanan',
+                                'Jika barang sudah aman dan tidak ada komplain, dana akan dicairkan ke seller.',
+                                () => ref
+                                    .read(
+                                      orderActionControllerProvider.notifier,
+                                    )
+                                    .updateStatus(order.id, 'completed'),
+                              );
+                            },
+                      child: const Text('Selesaikan'),
+                    ),
                 ],
+              ),
+            ],
+            if (isBuyer && order.canBuyerRequestRefund) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => RefundRequestDialog(order: order),
+                          );
+                        },
+                  icon: const Icon(Icons.gavel_outlined),
+                  label: const Text('Ajukan Refund'),
+                ),
+              ),
+            ],
+            if (isBuyer && order.hasActiveRefundRequest) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Refund sedang ditinjau admin.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
             if (isBuyer && order.status == 'completed') ...[
@@ -326,6 +400,14 @@ class _OrderCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _shortOrderId(String value) {
+    if (value.isEmpty) {
+      return '-';
+    }
+    final length = value.length < 8 ? value.length : 8;
+    return value.substring(0, length).toUpperCase();
   }
 
   void _showConfirmation(

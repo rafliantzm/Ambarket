@@ -23,16 +23,30 @@ class NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      id: json['id'],
-      userId: json['user_id'],
-      type: json['type'],
-      title: json['title'],
-      body: json['body'],
-      relatedType: json['related_type'],
-      relatedId: json['related_id'],
-      isRead: json['is_read'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
+      id: _stringOrFallback(json['id'], 'unknown'),
+      userId: _stringOrFallback(json['user_id'], ''),
+      type: _stringOrFallback(json['type'], 'general'),
+      title: _stringOrFallback(json['title'], 'Notifikasi'),
+      body: _stringOrFallback(json['body'], 'Ada pembaruan baru.'),
+      relatedType: _nullableString(json['related_type']),
+      relatedId: _nullableString(json['related_id']),
+      isRead: json['is_read'] as bool? ?? false,
+      createdAt:
+          DateTime.tryParse(_stringOrFallback(json['created_at'], '')) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
+  }
+
+  static String _stringOrFallback(dynamic value, String fallback) {
+    if (value == null) return fallback;
+    final text = value.toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+
+  static String? _nullableString(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
   }
 
   Map<String, dynamic> toJson() {

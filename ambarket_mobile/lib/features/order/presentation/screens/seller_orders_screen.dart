@@ -29,18 +29,24 @@ class SellerOrdersScreen extends ConsumerWidget {
     return AmbarketScaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
+        toolbarHeight: 88,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               'Pesanan Masuk',
               style: TextStyle(fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
               'Kelola pesanan pembeli dari pembayaran hingga pengiriman.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -66,6 +72,8 @@ class SellerOrdersScreen extends ConsumerWidget {
       'paid': 'Dibayar',
       'packed': 'Dikemas',
       'shipped': 'Dikirim',
+      'delivered': 'Diterima',
+      'disputed': 'Sengketa',
       'completed': 'Selesai',
       'cancelled': 'Dibatalkan',
     };
@@ -249,6 +257,22 @@ class SellerOrderCard extends ConsumerWidget {
         statusColor = PremiumBadgeStatus.success;
         statusText = 'Selesai';
         break;
+      case 'delivered':
+        statusColor = PremiumBadgeStatus.info;
+        statusText = 'Diterima';
+        break;
+      case 'disputed':
+        statusColor = PremiumBadgeStatus.error;
+        statusText = 'Sengketa';
+        break;
+      case 'refunded':
+        statusColor = PremiumBadgeStatus.neutral;
+        statusText = 'Refund';
+        break;
+      case 'partially_refunded':
+        statusColor = PremiumBadgeStatus.neutral;
+        statusText = 'Refund Sebagian';
+        break;
       case 'cancelled':
         statusColor = PremiumBadgeStatus.error;
         statusText = 'Dibatalkan';
@@ -283,30 +307,33 @@ class SellerOrderCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Status and Date
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 PremiumStatusBadge(label: statusText, status: statusColor),
-                Text(
-                  dateFormat.format(order.createdAt),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                const SizedBox(width: AppSpacing.sm),
+                Flexible(
+                  child: Text(
+                    dateFormat.format(order.createdAt),
+                    textAlign: TextAlign.right,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
 
-            // Product & Buyer Info
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
-                    width: 80,
-                    height: 80,
+                    width: 72,
+                    height: 72,
                     child: imageUrl != null
                         ? CachedNetworkImage(
                             imageUrl: imageUrl,
@@ -346,13 +373,15 @@ class SellerOrderCard extends ConsumerWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Pembeli: ${order.buyer?.name ?? order.buyer?.username ?? "Unknown"}',
                         style: theme.textTheme.bodyMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -368,11 +397,15 @@ class SellerOrderCard extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // Order Details Grid
             Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withValues(alpha: 0.3),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.28,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -390,50 +423,43 @@ class SellerOrderCard extends ConsumerWidget {
                     '${order.shippingMethod ?? "-"} (${currencyFormat.format(order.shippingCost)})',
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Alamat',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          order.shippingAddress ?? "Alamat tidak tersedia",
-                          style: theme.textTheme.bodyMedium,
-                          textAlign: TextAlign.right,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  _buildAddressBlock(
+                    context,
+                    order.shippingAddress ?? "Alamat tidak tersedia",
                   ),
                   const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        'Pembayaran',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      SizedBox(
+                        width: 126,
+                        child: Text(
+                          'Pembayaran',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            order.paymentMethod.toUpperCase(),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(width: 8),
-                          PremiumStatusBadge(
-                            label: payStatusText,
-                            status: payStatusColor,
-                          ),
-                        ],
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Wrap(
+                          alignment: WrapAlignment.end,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.xs,
+                          children: [
+                            Text(
+                              order.paymentMethod.toUpperCase(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            PremiumStatusBadge(
+                              label: payStatusText,
+                              status: payStatusColor,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -443,58 +469,84 @@ class SellerOrderCard extends ConsumerWidget {
 
             const SizedBox(height: AppSpacing.md),
 
-            // Action Buttons
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              alignment: WrapAlignment.end,
-              crossAxisAlignment: WrapCrossAlignment.end,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (order.status != 'pending_payment' &&
-                    order.status != 'cancelled')
-                  OutlinedButton.icon(
+                    order.status != 'cancelled' &&
+                    order.status != 'completed') ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildOutlinedAction(
+                          context,
+                          icon: Icons.receipt_long,
+                          label: 'Invoice',
+                          onPressed: () =>
+                              context.push('/orders/${order.id}/invoice'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _buildOutlinedAction(
+                          context,
+                          icon: Icons.local_shipping,
+                          label: 'Lacak',
+                          onPressed: () =>
+                              context.push('/orders/${order.id}/tracking'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ] else if (order.status != 'pending_payment' &&
+                    order.status != 'cancelled') ...[
+                  _buildOutlinedAction(
+                    context,
+                    icon: Icons.receipt_long,
+                    label: 'Invoice',
                     onPressed: () =>
                         context.push('/orders/${order.id}/invoice'),
-                    icon: const Icon(Icons.receipt_long, size: 18),
-                    label: const Text('Invoice'),
                   ),
-                if (order.status != 'pending_payment' &&
-                    order.status != 'cancelled' &&
-                    order.status != 'completed')
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        context.push('/orders/${order.id}/tracking'),
-                    icon: const Icon(Icons.local_shipping, size: 18),
-                    label: const Text('Lacak'),
-                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
 
-                // State-specific actions
                 if (order.status == 'pending_payment' || order.status == 'paid')
-                  TextButton(
-                    onPressed: isLoading
-                        ? null
-                        : () => _handleCancel(context, ref),
-                    style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    child: const Text('Batalkan'),
-                  ),
-
-                if (order.status == 'paid' ||
-                    (order.paymentMethod == 'cod' &&
-                        order.status == 'pending_payment'))
-                  PremiumButton(
-                    label: 'Tandai Dikemas',
-                    onPressed: isLoading
-                        ? () {}
-                        : () => _showProcessOrderModal(context, ref),
-                    isLoading: isLoading,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => _handleCancel(context, ref),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.error,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text('Batalkan'),
+                        ),
+                      ),
+                      if (order.status == 'paid' ||
+                          (order.paymentMethod == 'cod' &&
+                              order.status == 'pending_payment')) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          flex: 2,
+                          child: PremiumButton(
+                            label: 'Tandai Dikemas',
+                            onPressed: () =>
+                                _showProcessOrderModal(context, ref),
+                            isLoading: isLoading,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
 
                 if (order.status == 'packed')
                   PremiumButton(
                     label: 'Tandai Dikirim',
-                    onPressed: isLoading
-                        ? () {}
-                        : () => _showShippingModal(context, ref),
+                    onPressed: () => _showShippingModal(context, ref),
                     isLoading: isLoading,
                   ),
               ],
@@ -510,25 +562,87 @@ class SellerOrderCard extends ConsumerWidget {
     String label,
     String value, {
     bool isBold = false,
+    int maxLines = 1,
+    TextAlign valueTextAlign = TextAlign.right,
   }) {
     final theme = Theme.of(context);
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 126,
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: valueTextAlign,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: isBold ? theme.colorScheme.primary : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddressBlock(BuildContext context, String value) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          'Alamat',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-            color: isBold ? theme.colorScheme.primary : null,
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Text(
+            value,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildOutlinedAction(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
     );
   }
 

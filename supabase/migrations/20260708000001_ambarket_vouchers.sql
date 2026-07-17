@@ -31,6 +31,7 @@ ALTER TABLE public.user_vouchers ENABLE ROW LEVEL SECURITY;
 
 -- 4. Policies for vouchers
 -- Anyone can view active vouchers
+DROP POLICY IF EXISTS "Anyone can view active vouchers" ON public.vouchers;
 CREATE POLICY "Anyone can view active vouchers"
   ON public.vouchers FOR SELECT
   USING (is_active = true OR (
@@ -38,23 +39,28 @@ CREATE POLICY "Anyone can view active vouchers"
   ));
 
 -- Only admins can insert/update vouchers
+DROP POLICY IF EXISTS "Admins can insert vouchers" ON public.vouchers;
 CREATE POLICY "Admins can insert vouchers"
   ON public.vouchers FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
+DROP POLICY IF EXISTS "Admins can update vouchers" ON public.vouchers;
 CREATE POLICY "Admins can update vouchers"
   ON public.vouchers FOR UPDATE
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- 5. Policies for user_vouchers
+DROP POLICY IF EXISTS "Users can view own claimed vouchers" ON public.user_vouchers;
 CREATE POLICY "Users can view own claimed vouchers"
   ON public.user_vouchers FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can claim vouchers" ON public.user_vouchers;
 CREATE POLICY "Users can claim vouchers"
   ON public.user_vouchers FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own claimed vouchers (mark used)" ON public.user_vouchers;
 CREATE POLICY "Users can update own claimed vouchers (mark used)"
   ON public.user_vouchers FOR UPDATE
   USING (auth.uid() = user_id);

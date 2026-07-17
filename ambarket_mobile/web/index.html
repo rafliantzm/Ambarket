@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
+<!DOCTYPE html><html><head>
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
@@ -35,12 +33,12 @@
 
   <style id="ambarket-boot-style">
     :root {
-      --bg-charcoal: #0f1115;
-      --glow-red: rgba(229, 57, 53, 0.15);
+      --bg-charcoal: #061512;
+      --glow-red: rgba(16, 185, 129, 0.18);
       --text-white: #f5f5f7;
-      --text-muted: #a1a1aa;
-      --accent-red: #e53935;
-      --accent-glow: #ff6b57;
+      --text-muted: #a7d8c8;
+      --accent-red: #10b981;
+      --accent-glow: #bff8e3;
       --track-bg: rgba(255, 255, 255, 0.12);
     }
 
@@ -65,7 +63,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(to bottom, #111318, #0f1115);
+      background:
+        radial-gradient(circle at 50% 42%, rgba(16, 185, 129, 0.16), transparent 42%),
+        linear-gradient(160deg, #061512 0%, #08251f 48%, #03110e 100%);
       z-index: 9999;
       transition: opacity 0.35s ease, transform 0.35s ease;
       will-change: opacity, transform;
@@ -104,11 +104,11 @@
 
     .boot-node {
       position: absolute;
-      width: 4px;
-      height: 4px;
+      width: 5px;
+      height: 5px;
       background-color: var(--accent-glow);
       border-radius: 50%;
-      box-shadow: 0 0 10px 2px var(--accent-red);
+      box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.65);
       opacity: 0.6;
       animation: drift 10s infinite linear alternate;
       will-change: transform;
@@ -144,8 +144,8 @@
 
     /* SVG inline logo */
     .boot-logo {
-      width: 64px;
-      height: 64px;
+      width: 96px;
+      height: 96px;
       filter: drop-shadow(0 0 12px var(--glow-red));
     }
 
@@ -257,8 +257,84 @@
       }
     }
   </style>
+  <style id="splash-screen-style">
+    html {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background-color: #F6FFFB;
+          background-size: 100% 100%;
+    }
+
+    .center {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+    }
+
+    .contain {
+      display:block;
+      width:100%; height:100%;
+      object-fit: contain;
+    }
+
+    .stretch {
+      display:block;
+      width:100%; height:100%;
+    }
+
+    .cover {
+      display:block;
+      width:100%; height:100%;
+      object-fit: cover;
+    }
+
+    .bottom {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      -ms-transform: translate(-50%, 0);
+      transform: translate(-50%, 0);
+    }
+
+    .bottomLeft {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    .bottomRight {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #061512;
+          }
+    }
+  </style>
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      document.getElementById("splash")?.remove();
+      document.getElementById("splash-branding")?.remove();
+      document.body.style.background = "transparent";
+    }
+  </script>
 </head>
 <body>
+  <picture id="splash">
+      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
+      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
+      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
+  </picture>
 
   <div id="ambarket-boot-loader" aria-hidden="false">
     <div class="boot-background" aria-hidden="true"></div>
@@ -272,15 +348,25 @@
 
     <div class="boot-brand">
       <div class="boot-logo-container">
-        <!-- Ambarket Inline SVG Logo (Tactical Red) -->
-        <svg class="boot-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Ambarket Logo" role="img">
-          <rect width="100" height="100" rx="20" fill="#0f1115" stroke="#e53935" stroke-width="2"/>
-          <path d="M30 70L50 30L70 70H55L50 60L45 70H30Z" fill="#ff6b57"/>
-          <path d="M50 45L40 65H60L50 45Z" fill="#0f1115"/>
+        <!-- Ambarket Inline SVG Logo (Preloved Marketplace) -->
+        <svg class="boot-logo" fill="none" aria-label="Ambarket Logo" role="img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="88" height="88" rx="22" fill="url(#ambarketGradient)"></rect>
+          <path d="M30 39H70C75.5228 39 80 43.4772 80 49V74C80 79.5228 75.5228 84 70 84H30C24.4772 84 20 79.5228 20 74V49C20 43.4772 24.4772 39 30 39Z" stroke="white" stroke-width="5.5" stroke-linejoin="round"></path>
+          <path d="M37 39V31C37 23.8203 42.8203 18 50 18C57.1797 18 63 23.8203 63 31V39" stroke="white" stroke-width="5.5" stroke-linecap="round"></path>
+          <path d="M31 61C36 53 47 53 52 61C57 69 68 69 73 61" stroke="#BFF8E3" stroke-width="5.5" stroke-linecap="round"></path>
+          <path d="M31 67C36 75 47 75 52 67C57 59 68 59 73 67" stroke="#BFF8E3" stroke-width="5.5" stroke-linecap="round"></path>
+          <path d="M70 54L82 66L70 78L58 66L70 54Z" fill="#BFF8E3"></path>
+          <circle cx="70" cy="66" r="2.5" fill="#063E35"></circle>
+          <defs>
+            <linearGradient id="ambarketGradient" x1="8" y1="10" x2="94" y2="94" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#06544E"></stop>
+              <stop offset="1" stop-color="#10B981"></stop>
+            </linearGradient>
+          </defs>
         </svg>
       </div>
       <h1 class="boot-wordmark">Ambarket</h1>
-      <p class="boot-tagline">Marketplace Preloved yang Lebih Cerdas</p>
+      <p class="boot-tagline">Preloved berkualitas, belanja lebih percaya</p>
 
       <div class="boot-progress-container" role="progressbar" aria-label="Loading">
         <div class="boot-progress-bar"></div>
@@ -288,16 +374,22 @@
 
       <div class="boot-status" aria-live="polite">Menyiapkan pengalaman belanja...</div>
 
-      <button class="boot-error" id="boot-error-btn" onclick="window.location.reload()">
+      <button class="boot-error" id="boot-error-btn" onclick="window.ambarketReload()">
         Muat Ulang
       </button>
     </div>
   </div>
 
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js" async=""></script>
 
   <script>
-    // Fallback: If Flutter doesn't load within 20s, show error state
+    window.ambarketReload = function() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_ambarketReload', Date.now().toString());
+      window.location.replace(url.toString());
+    };
+
+    // Fallback: If Flutter doesn't load within 60s, show error state
     setTimeout(() => {
       const loader = document.getElementById('ambarket-boot-loader');
       if (loader && !loader.classList.contains('boot-loader--exit')) {
@@ -308,7 +400,8 @@
           statusText.textContent = 'Ambarket belum dapat dimuat.';
         }
       }
-    }, 20000);
+    }, 60000);
   </script>
-</body>
-</html>
+
+
+</body></html>

@@ -3,10 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ambarket_mobile/features/wallet/presentation/screens/seller_wallet_screen.dart';
 import 'package:ambarket_mobile/features/wallet/presentation/providers/seller_wallet_provider.dart';
+import 'package:ambarket_mobile/features/wallet/presentation/widgets/dummy_withdrawal_dialog.dart';
+import 'package:ambarket_mobile/features/wallet/domain/models/dummy_withdrawal_input.dart';
 import 'package:ambarket_mobile/features/wallet/domain/models/seller_wallet_summary.dart';
 import 'package:ambarket_mobile/features/wallet/domain/models/seller_withdrawal_model.dart';
+import 'package:ambarket_mobile/features/wallet/domain/repositories/seller_wallet_repository.dart';
 import 'package:ambarket_mobile/core/widgets/app_empty_state.dart';
 import 'package:ambarket_mobile/core/widgets/app_button.dart';
+import 'package:ambarket_mobile/features/notification/domain/models/notification_model.dart';
+import 'package:ambarket_mobile/features/notification/domain/repositories/notification_repository.dart';
+import 'package:ambarket_mobile/features/notification/presentation/providers/notification_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ambarket_mobile/features/auth/presentation/providers/auth_provider.dart';
 
@@ -73,7 +79,7 @@ void main() {
       expect(find.byType(CustomScrollView), findsOneWidget);
       expect(find.text('Wallet Seller'), findsOneWidget);
       expect(
-        find.text('Pantau saldo simulasi dan riwayat penarikan dana dummy.'),
+        find.text('Pantau saldo seller dan riwayat penarikan dana.'),
         findsOneWidget,
       );
 
@@ -93,7 +99,7 @@ void main() {
       // Withdrawals
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text('Riwayat Penarikan Dummy'), findsOneWidget);
+      expect(find.text('Riwayat Penarikan'), findsOneWidget);
       expect(find.text('Rp1.000.000'), findsOneWidget);
       expect(find.text('Disetujui'), findsOneWidget);
       expect(find.text('Pending'), findsWidgets);
@@ -201,5 +207,159 @@ void main() {
       await tester.tap(find.text('Ajukan'));
       await tester.pump(const Duration(seconds: 1));
     });
+
+    testWidgets(
+      'withdrawal submit syncs wallet and shows success only on save',
+      (WidgetTester tester) async {
+        final repository = _FakeSellerWalletRepository();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentUserProvider.overrideWith((ref) => mockUser),
+              sellerWalletRepositoryProvider.overrideWithValue(repository),
+              notificationRepositoryProvider.overrideWithValue(
+                _FakeNotificationRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(
+                body: DummyWithdrawalDialog(availableBalance: 500000),
+              ),
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextFormField).at(0), '50000');
+        await tester.enterText(find.byType(TextFormField).at(1), 'BCA');
+        await tester.enterText(find.byType(TextFormField).at(2), '1234567890');
+        await tester.enterText(find.byType(TextFormField).at(3), 'Test User');
+        await tester.tap(find.text('Ajukan'));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(repository.ensureWalletCalls, 1);
+        expect(repository.syncWalletCalls, 1);
+        expect(repository.requestedAmounts, [50000]);
+        expect(
+          find.text('Pengajuan penarikan dummy berhasil dibuat.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('withdrawal submit keeps dialog open when save fails', (
+      WidgetTester tester,
+    ) async {
+      final repository = _FakeSellerWalletRepository(shouldFailRequest: true);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserProvider.overrideWith((ref) => mockUser),
+            sellerWalletRepositoryProvider.overrideWithValue(repository),
+            notificationRepositoryProvider.overrideWithValue(
+              _FakeNotificationRepository(),
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: DummyWithdrawalDialog(availableBalance: 500000),
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextFormField).at(0), '50000');
+      await tester.enterText(find.byType(TextFormField).at(1), 'BCA');
+      await tester.enterText(find.byType(TextFormField).at(2), '1234567890');
+      await tester.enterText(find.byType(TextFormField).at(3), 'Test User');
+      await tester.tap(find.text('Ajukan'));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Penarikan Dummy (Simulasi)'), findsOneWidget);
+      expect(find.textContaining('Database gagal menyimpan'), findsOneWidget);
+      expect(
+        find.text('Pengajuan penarikan dummy berhasil dibuat.'),
+        findsNothing,
+      );
+    });
   });
+}
+
+class _FakeSellerWalletRepository implements SellerWalletRepository {
+  _FakeSellerWalletRepository({this.shouldFailRequest = false});
+
+  final bool shouldFailRequest;
+  int ensureWalletCalls = 0;
+  int syncWalletCalls = 0;
+  final List<double> requestedAmounts = [];
+
+  @override
+  Future<void> calculateSellerEarningsFromCompletedOrders(
+    String sellerId,
+  ) async {
+    syncWalletCalls++;
+  }
+
+  @override
+  Future<void> ensureSellerWalletExists(String sellerId) async {
+    ensureWalletCalls++;
+  }
+
+  @override
+  Future<SellerWalletSummary> fetchSellerWalletSummary(String sellerId) async =>
+      SellerWalletSummary.empty();
+
+  @override
+  Future<List<SellerWithdrawalModel>> fetchSellerWithdrawals(
+    String sellerId,
+  ) async => [];
+
+  @override
+  Future<SellerWithdrawalModel> requestDummyWithdrawal(
+    String sellerId,
+    DummyWithdrawalInput input,
+  ) async {
+    if (shouldFailRequest) {
+      throw Exception('Database gagal menyimpan pengajuan.');
+    }
+    requestedAmounts.add(input.amount);
+    final now = DateTime(2026, 7, 11, 23);
+    return SellerWithdrawalModel(
+      id: 'withdrawal-1',
+      sellerId: sellerId,
+      amount: input.amount,
+      status: 'pending',
+      bankName: input.bankName,
+      accountNumber: input.accountNumber,
+      accountHolder: input.accountHolder,
+      note: input.note,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+}
+
+class _FakeNotificationRepository implements NotificationRepository {
+  @override
+  Future<void> createDummyNotification({
+    required String userId,
+    required String type,
+    required String title,
+    required String body,
+    String? relatedType,
+    String? relatedId,
+  }) async {}
+
+  @override
+  Future<List<NotificationModel>> fetchNotifications() async => [];
+
+  @override
+  Future<int> fetchUnreadCount() async => 0;
+
+  @override
+  Future<void> markAllAsRead() async {}
+
+  @override
+  Future<void> markAsRead(String id) async {}
 }

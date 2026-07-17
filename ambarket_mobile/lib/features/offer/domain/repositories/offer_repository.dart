@@ -11,6 +11,7 @@ abstract class OfferRepository {
   });
   Future<List<OfferModel>> fetchOffersForProduct(String productId);
   Future<OrderModel?> findOrderByOfferId(String offerId);
+  Future<Map<String, String>> findOrderIdsByOfferIds(List<String> offerIds);
   Future<void> cancelOffer(String offerId, String buyerId);
   Future<void> acceptOffer(String offerId, String sellerId);
   Future<void> rejectOffer(String offerId, String sellerId);

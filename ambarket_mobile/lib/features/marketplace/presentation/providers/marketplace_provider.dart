@@ -24,7 +24,10 @@ class SearchQueryNotifier extends Notifier<String> {
   Timer? _debounceTimer;
 
   @override
-  String build() => '';
+  String build() {
+    ref.onDispose(() => _debounceTimer?.cancel());
+    return '';
+  }
 
   void updateQuery(String query) {
     _debounceTimer?.cancel();
@@ -71,12 +74,29 @@ final selectedConditionProvider =
 class PaginatedProductsState {
   final List<ProductModel> products;
   final bool hasMore;
+  final bool isFetchingMore;
 
-  PaginatedProductsState({required this.products, required this.hasMore});
+  PaginatedProductsState({
+    required this.products,
+    required this.hasMore,
+    this.isFetchingMore = false,
+  });
+
+  PaginatedProductsState copyWith({
+    List<ProductModel>? products,
+    bool? hasMore,
+    bool? isFetchingMore,
+  }) {
+    return PaginatedProductsState(
+      products: products ?? this.products,
+      hasMore: hasMore ?? this.hasMore,
+      isFetchingMore: isFetchingMore ?? this.isFetchingMore,
+    );
+  }
 }
 
 class ProductsNotifier extends AsyncNotifier<PaginatedProductsState> {
-  static const int _limit = 20;
+  static const int _limit = 12;
   int _offset = 0;
 
   @override
@@ -107,11 +127,14 @@ class ProductsNotifier extends AsyncNotifier<PaginatedProductsState> {
 
   Future<void> fetchMore() async {
     final currentState = state.value;
-    if (currentState == null || !currentState.hasMore || state.isLoading) {
+    if (currentState == null ||
+        !currentState.hasMore ||
+        currentState.isFetchingMore ||
+        state.isLoading) {
       return;
     }
 
-    state = const AsyncLoading();
+    state = AsyncData(currentState.copyWith(isFetchingMore: true));
     try {
       _offset += _limit;
       final repo = ref.read(marketplaceRepositoryProvider);
@@ -133,8 +156,9 @@ class ProductsNotifier extends AsyncNotifier<PaginatedProductsState> {
           hasMore: newProducts.length == _limit,
         ),
       );
-    } catch (e, st) {
-      state = AsyncError(e, st);
+    } catch (_) {
+      _offset -= _limit;
+      state = AsyncData(currentState.copyWith(isFetchingMore: false));
     }
   }
 

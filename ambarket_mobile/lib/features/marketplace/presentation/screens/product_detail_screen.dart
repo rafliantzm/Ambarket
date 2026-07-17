@@ -116,16 +116,41 @@ class ProductDetailScreen extends ConsumerWidget {
                 );
                 return;
               }
-              showModalBottomSheet(
+              FocusManager.instance.primaryFocus?.unfocus();
+              showGeneralDialog(
                 context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (ctx) => MakeOfferDialog(
-                  productId: product.id,
-                  sellerId: product.sellerId,
-                  originalPrice: product.price,
-                  productName: product.title,
-                ),
+                barrierDismissible: true,
+                barrierLabel: MaterialLocalizations.of(
+                  context,
+                ).modalBarrierDismissLabel,
+                barrierColor: Colors.black.withValues(alpha: 0.38),
+                transitionDuration: const Duration(milliseconds: 120),
+                pageBuilder: (ctx, animation, secondaryAnimation) =>
+                    RepaintBoundary(
+                      child: MakeOfferDialog(
+                        productId: product.id,
+                        sellerId: product.sellerId,
+                        originalPrice: product.price,
+                        productName: product.title,
+                      ),
+                    ),
+                transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+                  final curvedAnimation = CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                    reverseCurve: Curves.easeInCubic,
+                  );
+                  return FadeTransition(
+                    opacity: curvedAnimation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.08),
+                        end: Offset.zero,
+                      ).animate(curvedAnimation),
+                      child: child,
+                    ),
+                  );
+                },
               );
             }
 

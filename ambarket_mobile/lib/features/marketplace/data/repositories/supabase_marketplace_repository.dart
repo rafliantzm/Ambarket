@@ -5,6 +5,20 @@ import '../../domain/repositories/marketplace_repository.dart';
 
 class SupabaseMarketplaceRepository implements MarketplaceRepository {
   final SupabaseClient _client;
+  static const _productListSelect = '''
+    id,
+    seller_id,
+    category_id,
+    title,
+    price,
+    condition,
+    is_negotiable,
+    status,
+    created_at,
+    categories (id, name, icon, created_at),
+    product_images (id, product_id, image_url, is_primary, created_at)
+  ''';
+  static const _productDetailSelect = '*, categories(*), product_images(*)';
 
   SupabaseMarketplaceRepository(this._client);
 
@@ -49,7 +63,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }) async {
     var filter = _client
         .from('products')
-        .select('*, categories(*), product_images(*)')
+        .select(_productListSelect)
         .eq('status', 'active');
 
     if (categoryId != null && categoryId.isNotEmpty) {
@@ -82,7 +96,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }) async {
     final response = await _client
         .from('products')
-        .select('*, categories(*), product_images(*)')
+        .select(_productListSelect)
         .eq('status', 'active')
         .order(
           'created_at',
@@ -102,7 +116,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }) async {
     final response = await _client
         .from('products')
-        .select('*, categories(*), product_images(*)')
+        .select(_productListSelect)
         .eq('status', 'active')
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
@@ -119,7 +133,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }) async {
     final response = await _client
         .from('products')
-        .select('*, categories(*), product_images(*)')
+        .select(_productListSelect)
         .eq('status', 'active')
         .order('price', ascending: true) // Lowest price first
         .range(offset, offset + limit - 1);
@@ -137,7 +151,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }) async {
     var filter = _client
         .from('products')
-        .select('*, categories(*), product_images(*)')
+        .select(_productListSelect)
         .eq('status', 'active');
 
     if (location != null && location.isNotEmpty) {
@@ -161,7 +175,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }) async {
     final response = await _client
         .from('products')
-        .select('*, categories(*), product_images(*)')
+        .select(_productListSelect)
         .eq('status', 'active')
         .eq('category_id', categoryId)
         .neq('id', productId)
@@ -183,7 +197,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   }) async {
     var filter = _client
         .from('products')
-        .select('*, categories(*), product_images(*)')
+        .select(_productListSelect)
         .eq('status', 'active')
         .eq('seller_id', sellerId);
 
@@ -210,7 +224,7 @@ class SupabaseMarketplaceRepository implements MarketplaceRepository {
   Future<ProductModel> fetchProductDetail(String productId) async {
     final response = await _client
         .from('products')
-        .select('*, categories(*), product_images(*)')
+        .select(_productDetailSelect)
         .eq('id', productId)
         .single();
 

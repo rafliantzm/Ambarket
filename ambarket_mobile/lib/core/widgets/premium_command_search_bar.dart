@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import '../theme/app_colors.dart';
@@ -41,6 +40,7 @@ class _PremiumCommandSearchBarState extends State<PremiumCommandSearchBar> {
   }
 
   void _onFocusChange() {
+    if (_isFocused == _focusNode.hasFocus) return;
     setState(() {
       _isFocused = _focusNode.hasFocus;
     });
@@ -57,14 +57,9 @@ class _PremiumCommandSearchBarState extends State<PremiumCommandSearchBar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDesktop =
-        kIsWeb ||
-        defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.macOS ||
-        defaultTargetPlatform == TargetPlatform.linux;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 120),
       curve: Curves.easeOutCubic,
       height: 48,
       decoration: BoxDecoration(
@@ -79,16 +74,16 @@ class _PremiumCommandSearchBarState extends State<PremiumCommandSearchBar> {
         boxShadow: _isFocused
             ? [
                 BoxShadow(
-                  color: context.colors.primary.withValues(alpha: 0.15),
-                  blurRadius: 12,
-                  spreadRadius: 2,
+                  color: context.colors.primary.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  spreadRadius: 0,
                   offset: const Offset(0, 4),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 8,
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 4,
                   spreadRadius: 0,
                   offset: const Offset(0, 2),
                 ),
@@ -165,26 +160,7 @@ class _PremiumCommandSearchBarState extends State<PremiumCommandSearchBar> {
               ),
             ),
           ),
-          if (isDesktop && !_isFocused)
-            Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.sm),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: context.colors.background,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: context.colors.border),
-                ),
-                child: Text(
-                  'Ctrl+K',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: context.colors.textMuted,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ),
+
           if (widget.onFilterTap != null)
             Padding(
               padding: const EdgeInsets.only(right: 4.0),

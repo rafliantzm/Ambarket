@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +17,7 @@ import '../../../../core/widgets/app_error_state.dart';
 import '../../../../core/widgets/app_loading_skeleton.dart';
 import '../../../../core/error/error_mapper.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../domain/models/seller_dashboard_stats.dart';
 import '../providers/seller_provider.dart';
 import 'package:ambarket_mobile/features/wallet/presentation/providers/seller_wallet_provider.dart';
 import '../widgets/seller_review_insights.dart';
@@ -24,6 +27,7 @@ class SellerDashboardScreen extends ConsumerWidget {
 
   Future<void> _onRefresh(WidgetRef ref) async {
     ref.invalidate(sellerDashboardStatsProvider);
+    ref.invalidate(sellerWalletSummaryProvider);
     ref.invalidate(sellerRecentOrdersProvider);
     ref.invalidate(sellerRecentOffersProvider);
     ref.invalidate(myProductsProvider);
@@ -175,12 +179,16 @@ class SellerDashboardScreen extends ConsumerWidget {
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   '@${user.username ?? "seller"}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: context.colors.textSecondary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -374,7 +382,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                   currencyFormatter,
                 ),
                 SizedBox(height: AppSpacing.lg),
-                _buildSalesChartCard(context),
+                _buildSalesChartCard(context, stats),
                 SizedBox(height: AppSpacing.lg),
                 _buildOperationalMetrics(context, stats),
                 SizedBox(height: AppSpacing.lg),
@@ -389,72 +397,90 @@ class SellerDashboardScreen extends ConsumerWidget {
 
   Widget _buildFinancialOverview(
     BuildContext context,
-    dynamic stats,
+    SellerDashboardStats stats,
     double walletBalance,
     NumberFormat currencyFormatter,
   ) {
     return PremiumSurfaceCard(
-      padding: EdgeInsets.all(AppSpacing.lg),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.lg,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isVeryNarrow = constraints.maxWidth < 320;
+          final revenueTile = _FinancialMetricTile(
+            icon: Icons.payments_outlined,
+            label: 'Pendapatan Bersih',
+            value: currencyFormatter.format(stats.totalRevenueDummy),
+            color: context.colors.primary,
+          );
+          final balanceTile = _FinancialMetricTile(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Saldo Aktif',
+            value: currencyFormatter.format(walletBalance),
+            color: context.colors.accent,
+          );
+
+          if (isVeryNarrow) {
+            return Column(
               children: [
-                Text(
-                  'Pendapatan Bersih',
-                  style: TextStyle(
-                    color: context.colors.textSecondary,
-                    fontSize: 13,
+                revenueTile,
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Divider(
+                    height: 1,
+                    color: context.colors.border.withValues(alpha: 0.5),
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  currencyFormatter.format(stats.totalRevenueDummy),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                    color: context.colors.primary,
-                  ),
-                ),
+                balanceTile,
               ],
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: context.colors.border.withValues(alpha: 0.5),
-          ),
-          SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Saldo Aktif',
-                  style: TextStyle(
-                    color: context.colors.textSecondary,
-                    fontSize: 13,
-                  ),
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: revenueTile),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: Container(
+                  width: 1,
+                  height: 68,
+                  color: context.colors.border.withValues(alpha: 0.5),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  currencyFormatter.format(walletBalance),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                    color: context.colors.accent,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+              Expanded(child: balanceTile),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSalesChartCard(BuildContext context) {
+  Widget _buildSalesChartCard(
+    BuildContext context,
+    SellerDashboardStats stats,
+  ) {
+    final values = stats.salesLast7Days.length == 7
+        ? stats.salesLast7Days
+        : const <double>[0, 0, 0, 0, 0, 0, 0];
+    final maxValue = values.fold<double>(0, math.max);
+    final maxY = maxValue <= 0 ? 1.0 : maxValue * 1.2;
+    final spots = <FlSpot>[
+      for (var index = 0; index < values.length; index++)
+        FlSpot(index.toDouble(), values[index]),
+    ];
+    final today = DateTime.now();
+    final firstChartDay = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(const Duration(days: 6));
+    final dayLabels = <String>[
+      for (var index = 0; index < values.length; index++)
+        _weekdayLabel(firstChartDay.add(Duration(days: index))),
+    ];
+
     return RepaintBoundary(
       child: PremiumSurfaceCard(
         padding: EdgeInsets.all(AppSpacing.lg),
@@ -473,7 +499,7 @@ class SellerDashboardScreen extends ConsumerWidget {
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
-                    horizontalInterval: 1,
+                    horizontalInterval: maxY / 4,
                   ),
                   titlesData: FlTitlesData(
                     show: true,
@@ -489,22 +515,13 @@ class SellerDashboardScreen extends ConsumerWidget {
                         reservedSize: 30,
                         interval: 1,
                         getTitlesWidget: (value, meta) {
-                          final days = [
-                            'Sen',
-                            'Sel',
-                            'Rab',
-                            'Kam',
-                            'Jum',
-                            'Sab',
-                            'Min',
-                          ];
-                          if (value.toInt() >= 0 &&
-                              value.toInt() < days.length) {
+                          final index = value.toInt();
+                          if (index >= 0 && index < dayLabels.length) {
                             return SideTitleWidget(
                               meta: meta,
                               space: 8,
                               child: Text(
-                                days[value.toInt()],
+                                dayLabels[index],
                                 style: TextStyle(
                                   color: context.colors.textSecondary,
                                   fontSize: 12,
@@ -524,18 +541,10 @@ class SellerDashboardScreen extends ConsumerWidget {
                   minX: 0,
                   maxX: 6,
                   minY: 0,
-                  maxY: 10,
+                  maxY: maxY,
                   lineBarsData: [
                     LineChartBarData(
-                      spots: const [
-                        FlSpot(0, 3),
-                        FlSpot(1, 1),
-                        FlSpot(2, 4),
-                        FlSpot(3, 2),
-                        FlSpot(4, 5),
-                        FlSpot(5, 7),
-                        FlSpot(6, 6),
-                      ],
+                      spots: spots,
                       isCurved: true,
                       color: context.colors.primary,
                       barWidth: 3,
@@ -554,6 +563,11 @@ class SellerDashboardScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _weekdayLabel(DateTime date) {
+    const labels = <String>['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    return labels[date.weekday - 1];
   }
 
   Widget _buildOperationalMetrics(BuildContext context, dynamic stats) {
@@ -1089,5 +1103,74 @@ class SellerDashboardScreen extends ConsumerWidget {
       default:
         return PremiumBadgeStatus.info;
     }
+  }
+}
+
+class _FinancialMetricTile extends StatelessWidget {
+  const _FinancialMetricTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 16, color: color),
+            ),
+            SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: context.colors.textSecondary,
+                  fontSize: 12,
+                  height: 1.15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          width: double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 23,
+                color: color,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

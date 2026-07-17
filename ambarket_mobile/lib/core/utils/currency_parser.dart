@@ -5,11 +5,17 @@ class CurrencyParser {
   static int parse(String? input) {
     if (input == null || input.trim().isEmpty) return 0;
 
-    // Ambil semua digit angka saja
-    final String digits = input.replaceAll(RegExp(r'[^\d]'), '');
+    final digits = StringBuffer();
+    for (var i = 0; i < input.length; i++) {
+      final codeUnit = input.codeUnitAt(i);
+      if (codeUnit >= 48 && codeUnit <= 57) {
+        digits.writeCharCode(codeUnit);
+      }
+    }
 
-    if (digits.isEmpty) return 0;
+    final value = digits.toString();
+    if (value.isEmpty) return 0;
 
-    return int.tryParse(digits) ?? 0;
+    return int.tryParse(value) ?? 0;
   }
 }

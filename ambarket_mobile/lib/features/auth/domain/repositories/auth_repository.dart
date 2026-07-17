@@ -5,6 +5,7 @@ abstract class AuthRepository {
   User? get currentUser;
 
   Future<AuthResponse> signInWithEmailPassword(String email, String password);
+  Future<bool> signInWithGoogle();
   Future<AuthResponse> signUpWithEmailPassword(
     String email,
     String password, {

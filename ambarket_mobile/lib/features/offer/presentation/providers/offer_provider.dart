@@ -55,6 +55,20 @@ final filteredReceivedOffersProvider =
       return repo.fetchReceivedOffersFiltered(user.id, status: statusFilter);
     });
 
+final sellerAcceptedOfferOrderIdsProvider = FutureProvider.autoDispose
+    .family<Map<String, String>, String>((ref, offerIdsKey) async {
+      if (offerIdsKey.isEmpty) return {};
+
+      final offerIds = offerIdsKey
+          .split(',')
+          .where((id) => id.trim().isNotEmpty)
+          .toList(growable: false);
+      if (offerIds.isEmpty) return {};
+
+      final repo = ref.watch(offerRepositoryProvider);
+      return repo.findOrderIdsByOfferIds(offerIds);
+    });
+
 final validAcceptedOfferProvider = FutureProvider.family
     .autoDispose<OfferModel?, String>((ref, productId) async {
       final user = ref.watch(currentUserProvider);
@@ -83,7 +97,7 @@ class CreateOfferController extends AsyncNotifier<void> {
       final user = ref.read(currentUserProvider);
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
-      await _repo.createOffer(user.id, input);
+      final offer = await _repo.createOffer(user.id, input);
 
       // Notify seller
       final productState = ref
@@ -99,6 +113,7 @@ class CreateOfferController extends AsyncNotifier<void> {
               body:
                   'Anda mendapat tawaran baru untuk produk ${productState.title}',
               relatedType: 'offer',
+              relatedId: offer.id,
             );
       }
 

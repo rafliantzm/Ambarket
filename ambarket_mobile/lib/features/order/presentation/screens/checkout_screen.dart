@@ -91,11 +91,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     return AmbarketScaffold(
       isDesktopConstrained: MediaQuery.of(context).size.width >= 768,
-      appBar: AppBar(title: Text('Checkout')),
+      appBar: AppBar(title: const Text('Checkout')),
       body: productState.when(
-        loading: () => Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (product) {
+          final theme = Theme.of(context);
           final currencyFormatter = NumberFormat.currency(
             locale: 'id_ID',
             symbol: 'Rp',
@@ -130,7 +131,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           return Form(
             key: _formKey,
             child: ListView(
-              padding: EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.xl,
+              ),
               cacheExtent: 800,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               addAutomaticKeepAlives: false,
@@ -280,7 +286,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         .textTheme
                                         .bodySmall!
                                         .copyWith(
-                                          color: Colors.white54,
+                                          color: context.colors.textMuted,
                                           decoration:
                                               TextDecoration.lineThrough,
                                         ),
@@ -306,56 +312,68 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 // 3. Metode Pengiriman
                 AppGlassCard(
-                  padding: EdgeInsets.all(AppSpacing.md),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Metode Pengiriman',
-                        style: Theme.of(context).textTheme.titleLarge!,
+                        style: theme.textTheme.titleLarge,
                       ),
-                      SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         'Catatan: Pengiriman ini hanya simulasi (dummy).',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: context.colors.accent,
                         ),
                       ),
-                      SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.md),
                       ...shippings.map((method) {
                         final isSelected = _selectedShipping == method;
                         return Padding(
-                          padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                           child: InkWell(
                             onTap: () =>
                                 setState(() => _selectedShipping = method),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                             child: Container(
-                              padding: EdgeInsets.all(AppSpacing.sm),
+                              padding: const EdgeInsets.all(AppSpacing.md),
                               decoration: BoxDecoration(
                                 border: Border.all(
                                   color: isSelected
                                       ? context.colors.accent
-                                      : Colors.white24,
+                                      : context.colors.border,
                                 ),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                                 color: isSelected
                                     ? context.colors.accent.withValues(
                                         alpha: 0.1,
                                       )
-                                    : Colors.transparent,
+                                    : context.colors.surfaceHighlight,
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
-                                    isSelected
-                                        ? Icons.local_shipping
-                                        : Icons.local_shipping_outlined,
-                                    color: isSelected
-                                        ? context.colors.accent
-                                        : Colors.white70,
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          (isSelected
+                                                  ? context.colors.accent
+                                                  : context.colors.textMuted)
+                                              .withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Icon(
+                                      isSelected
+                                          ? Icons.local_shipping
+                                          : Icons.local_shipping_outlined,
+                                      color: isSelected
+                                          ? context.colors.accent
+                                          : context.colors.textSecondary,
+                                    ),
                                   ),
-                                  SizedBox(width: AppSpacing.md),
+                                  const SizedBox(width: AppSpacing.md),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -363,23 +381,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                       children: [
                                         Text(
                                           method.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
+                                          style: theme.textTheme.titleMedium
                                               ?.copyWith(
                                                 fontWeight: FontWeight.bold,
+                                                color:
+                                                    context.colors.textPrimary,
                                               ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
+                                        const SizedBox(height: 2),
                                         Text(
                                           method.description,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(color: Colors.white70),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: context
+                                                    .colors
+                                                    .textSecondary,
+                                              ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
                                   ),
+                                  const SizedBox(width: AppSpacing.sm),
                                   Text(
                                     method.cost == 0
                                         ? 'Gratis'
@@ -387,7 +413,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     style: TextStyle(
                                       color: isSelected
                                           ? context.colors.accent
-                                          : Colors.white,
+                                          : context.colors.textPrimary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -404,17 +430,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 // 4. Voucher Dummy
                 AppGlassCard(
-                  padding: EdgeInsets.all(AppSpacing.md),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Voucher',
-                            style: Theme.of(context).textTheme.titleLarge!,
-                          ),
+                          Text('Voucher', style: theme.textTheme.titleLarge),
                           if (_selectedVoucher != null)
                             TextButton(
                               onPressed: () =>
@@ -426,99 +449,119 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             ),
                         ],
                       ),
-                      SizedBox(height: AppSpacing.md),
-                      ...vouchers.map((v) {
-                        final isSelected = _selectedVoucher == v;
-                        final isEligible = subtotal >= v.minPurchase;
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: InkWell(
-                            onTap: isEligible
-                                ? () => setState(() => _selectedVoucher = v)
-                                : null,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.green
-                                      : (isEligible
-                                            ? Colors.white24
-                                            : Colors.grey.withValues(
-                                                alpha: 0.3,
-                                              )),
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                color: isSelected
-                                    ? Colors.green.withValues(alpha: 0.1)
-                                    : Colors.transparent,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.discount,
-                                    color: isSelected
-                                        ? Colors.green
-                                        : (isEligible
-                                              ? Colors.white70
-                                              : Colors.grey.withValues(
-                                                  alpha: 0.5,
-                                                )),
-                                  ),
-                                  SizedBox(width: AppSpacing.md),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          v.title,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: isEligible
-                                                    ? Colors.white
-                                                    : Colors.grey,
-                                              ),
-                                        ),
-                                        Text(
-                                          v.type == 'percent'
-                                              ? 'Diskon ${v.discountPercent}% (Maks ${currencyFormatter.format(v.maxDiscount)})'
-                                              : 'Potongan Ongkir ${currencyFormatter.format(v.flatDiscount)}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                color: isEligible
-                                                    ? Colors.white70
-                                                    : Colors.grey,
-                                              ),
-                                        ),
-                                        if (!isEligible)
-                                          Text(
-                                            'Min. belanja ${currencyFormatter.format(v.minPurchase)}',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: context.colors.error,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (isSelected)
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
-                                    ),
-                                ],
-                              ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (vouchers.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: context.colors.surfaceHighlight,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: context.colors.border),
+                          ),
+                          child: Text(
+                            'Belum ada voucher yang dapat digunakan.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: context.colors.textSecondary,
                             ),
                           ),
-                        );
-                      }),
+                        )
+                      else
+                        ...vouchers.map((v) {
+                          final isSelected = _selectedVoucher == v;
+                          final isEligible = subtotal >= v.minPurchase;
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.sm,
+                            ),
+                            child: InkWell(
+                              onTap: isEligible
+                                  ? () => setState(() => _selectedVoucher = v)
+                                  : null,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.all(AppSpacing.md),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? context.colors.success
+                                        : context.colors.border,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: isSelected
+                                      ? context.colors.success.withValues(
+                                          alpha: 0.1,
+                                        )
+                                      : context.colors.surfaceHighlight,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.discount,
+                                      color: isSelected
+                                          ? context.colors.success
+                                          : (isEligible
+                                                ? context.colors.textSecondary
+                                                : context.colors.textMuted),
+                                    ),
+                                    const SizedBox(width: AppSpacing.md),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            v.title,
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isEligible
+                                                      ? context
+                                                            .colors
+                                                            .textPrimary
+                                                      : context
+                                                            .colors
+                                                            .textMuted,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            v.type == 'percent'
+                                                ? 'Diskon ${v.discountPercent}% (Maks ${currencyFormatter.format(v.maxDiscount)})'
+                                                : 'Potongan Ongkir ${currencyFormatter.format(v.flatDiscount)}',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: isEligible
+                                                      ? context
+                                                            .colors
+                                                            .textSecondary
+                                                      : context
+                                                            .colors
+                                                            .textMuted,
+                                                ),
+                                          ),
+                                          if (!isEligible)
+                                            Text(
+                                              'Min. belanja ${currencyFormatter.format(v.minPurchase)}',
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    color: context.colors.error,
+                                                  ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: context.colors.success,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
                     ],
                   ),
                 ),
@@ -526,20 +569,38 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 // 5. Metode Pembayaran
                 AppGlassCard(
-                  padding: EdgeInsets.all(AppSpacing.md),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Metode Pembayaran',
-                        style: Theme.of(context).textTheme.titleLarge!,
+                        style: theme.textTheme.titleLarge,
                       ),
+                      const SizedBox(height: AppSpacing.sm),
                       ...payments.map(
                         (method) => InkWell(
                           onTap: () =>
                               setState(() => _selectedPayment = method),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                              bottom: AppSpacing.sm,
+                            ),
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: _selectedPayment == method
+                                  ? context.colors.accent.withValues(
+                                      alpha: 0.08,
+                                    )
+                                  : context.colors.surfaceHighlight,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: _selectedPayment == method
+                                    ? context.colors.accent
+                                    : context.colors.border,
+                              ),
+                            ),
                             child: Row(
                               children: [
                                 Icon(
@@ -548,9 +609,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                       : Icons.radio_button_unchecked,
                                   color: _selectedPayment == method
                                       ? context.colors.accent
-                                      : Colors.grey,
+                                      : context.colors.textMuted,
                                 ),
-                                SizedBox(width: 16),
+                                const SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -558,15 +619,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     children: [
                                       Text(
                                         method.name,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              color: context.colors.textPrimary,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
+                                      const SizedBox(height: 2),
                                       Text(
                                         method.description,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  context.colors.textSecondary,
+                                            ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
@@ -583,15 +653,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 // 6. Payment Summary
                 AppGlassCard(
-                  padding: EdgeInsets.all(AppSpacing.md),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Rincian Pembayaran',
-                        style: Theme.of(context).textTheme.titleLarge!,
+                        style: theme.textTheme.titleLarge,
                       ),
-                      SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.md),
                       _buildSummaryRow(
                         context,
                         'Subtotal Produk',
@@ -618,18 +688,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           currencyFormatter,
                           color: Colors.green,
                         ),
-                      Divider(color: Colors.white24, height: 24),
+                      Divider(color: context.colors.border, height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Total Pembayaran',
-                            style: Theme.of(context).textTheme.titleLarge!,
+                          Expanded(
+                            child: Text(
+                              'Total Pembayaran',
+                              style: theme.textTheme.titleLarge,
+                            ),
                           ),
+                          const SizedBox(width: AppSpacing.sm),
                           Text(
                             currencyFormatter.format(totalAmount),
-                            style: Theme.of(context).textTheme.titleLarge!
-                                .copyWith(color: context.colors.accent),
+                            textAlign: TextAlign.right,
+                            style: theme.textTheme.titleLarge!.copyWith(
+                              color: context.colors.accent,
+                            ),
                           ),
                         ],
                       ),
@@ -715,21 +791,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     Color? color,
   }) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium!.copyWith(color: Colors.white70),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                color: context.colors.textSecondary,
+              ),
+            ),
           ),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             formatter.format(amount),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium!.copyWith(color: color ?? Colors.white),
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              color: color ?? context.colors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

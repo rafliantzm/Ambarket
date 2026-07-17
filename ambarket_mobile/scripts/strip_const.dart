@@ -32,10 +32,16 @@ void main() {
 
   // Also, let's just strip `const` from ALL files modified previously to be safe.
   final libDir = Directory('lib');
-  final files = libDir.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart'));
+  final files = libDir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'));
 
   for (final file in files) {
-    if (file.path.contains('app_colors.dart') || file.path.contains('app_theme.dart')) continue;
+    if (file.path.contains('app_colors.dart') ||
+        file.path.contains('app_theme.dart')) {
+      continue;
+    }
 
     String content = file.readAsStringSync();
     if (content.contains('context.colors')) {
@@ -44,10 +50,15 @@ void main() {
       // Or `const double padding = 16.0;`
       // We only want to remove const before Widget instantiations: `const Text`, `const Icon`, `const Padding`, `const EdgeInsets`, `const SizedBox`, `const BorderRadius`, `const BorderSide`, `const BoxDecoration`, `const TextStyle`
 
-      final widgetRegex = RegExp(r'\bconst\s+(Text|Icon|Padding|EdgeInsets|SizedBox|BorderRadius|BorderSide|BoxDecoration|TextStyle|AppLoadingSkeleton|Row|Column|Container|Align|Center)\b');
+      final widgetRegex = RegExp(
+        r'\bconst\s+(Text|Icon|Padding|EdgeInsets|SizedBox|BorderRadius|BorderSide|BoxDecoration|TextStyle|AppLoadingSkeleton|Row|Column|Container|Align|Center)\b',
+      );
 
       if (widgetRegex.hasMatch(content)) {
-        content = content.replaceAllMapped(widgetRegex, (match) => match.group(1)!);
+        content = content.replaceAllMapped(
+          widgetRegex,
+          (match) => match.group(1)!,
+        );
         file.writeAsStringSync(content);
         print('Stripped specific const from ${file.path}');
       }
@@ -55,9 +66,9 @@ void main() {
       // Also remove `const ` in front of other common things that break with dynamic colors
       final generalRegex = RegExp(r'\bconst\s+(?=[\w]+\()');
       if (generalRegex.hasMatch(content)) {
-          content = content.replaceAll(generalRegex, '');
-          file.writeAsStringSync(content);
-          print('Stripped general const from ${file.path}');
+        content = content.replaceAll(generalRegex, '');
+        file.writeAsStringSync(content);
+        print('Stripped general const from ${file.path}');
       }
     }
   }

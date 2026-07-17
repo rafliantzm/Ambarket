@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -29,6 +31,23 @@ class _SellerPublicProfileScreenState
     extends ConsumerState<SellerPublicProfileScreen> {
   String _searchQuery = '';
   String? _selectedCategoryId;
+  Timer? _searchDebounce;
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      final query = value.trim();
+      if (query == _searchQuery) return;
+      setState(() => _searchQuery = query);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,15 +123,20 @@ class _SellerPublicProfileScreenState
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    profile.name ?? 'Penjual',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineMedium
-                                        ?.copyWith(
-                                          color: context.colors.textPrimary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                  Flexible(
+                                    child: Text(
+                                      profile.name ?? 'Penjual',
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            color: context.colors.textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
                                   ),
                                   if (profile.role == 'admin') ...[
                                     SizedBox(width: AppSpacing.sm),
@@ -278,11 +302,7 @@ class _SellerPublicProfileScreenState
 
                         // Search & Categories Section
                         TextField(
-                          onChanged: (val) {
-                            setState(() {
-                              _searchQuery = val;
-                            });
-                          },
+                          onChanged: _onSearchChanged,
                           decoration: InputDecoration(
                             hintText: 'Cari di toko ini...',
                             prefixIcon: Icon(
@@ -419,7 +439,7 @@ class _SellerPublicProfileScreenState
                                                             600
                                                         ? 3
                                                         : 2)),
-                                        childAspectRatio: 0.58,
+                                        childAspectRatio: 0.5,
                                         crossAxisSpacing: 12,
                                         mainAxisSpacing: 16,
                                       ),

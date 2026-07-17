@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_loading_skeleton.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../domain/models/notification_model.dart';
 import '../providers/notification_provider.dart';
 
@@ -147,7 +149,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     child: AppEmptyState(
                       icon: Icons.error_outline,
                       title: 'Terjadi Kesalahan',
-                      message: notificationsState.error.toString(),
+                      message: ErrorMapper.getFriendlyMessage(
+                        notificationsState.error,
+                      ),
                       buttonText: 'Coba Lagi',
                       onButtonPressed: () =>
                           ref.invalidate(notificationsProvider),
@@ -218,34 +222,46 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     return notifications.where((n) {
       if (_selectedFilter == 'Pesanan') {
-        return n.type.startsWith('order_') || n.type == 'payment_paid';
+        return n.relatedType == 'order' ||
+            n.type.startsWith('order_') ||
+            n.type == 'payment_paid';
       }
-      if (_selectedFilter == 'Tawaran') return n.type.startsWith('offer_');
-      if (_selectedFilter == 'Chat') return n.type.startsWith('chat_');
-      if (_selectedFilter == 'Wallet') return n.type.startsWith('withdrawal_');
+      if (_selectedFilter == 'Tawaran') {
+        return n.relatedType == 'offer' || n.type.startsWith('offer_');
+      }
+      if (_selectedFilter == 'Chat') {
+        return n.relatedType == 'chat' || n.type.startsWith('chat_');
+      }
+      if (_selectedFilter == 'Wallet') {
+        return n.relatedType == 'withdrawal' ||
+            n.type.startsWith('withdrawal_');
+      }
       return false;
     }).toList();
   }
 
   void _handleNavigation(BuildContext context, NotificationModel notif) {
-    if (notif.relatedType == 'order' && notif.relatedId != null) {
+    if (notif.relatedType == 'order') {
       if (notif.type == 'order_received' ||
           notif.type == 'payment_paid' ||
           (notif.type == 'order_created' && notif.title == 'Pesanan Baru')) {
-        context.push('/seller-orders');
-      } else if (notif.type == 'order_shipped') {
+        context.push('/seller/orders');
+      } else if (notif.type == 'order_shipped' && notif.relatedId != null) {
         context.push('/orders/${notif.relatedId}/tracking');
       } else {
         context.push('/buyer-orders');
       }
-    } else if (notif.relatedType == 'offer' && notif.relatedId != null) {
+    } else if (notif.relatedType == 'offer') {
       if (notif.type == 'offer_received') {
         context.push('/seller/offers');
       } else {
         context.push('/offers');
       }
     } else if (notif.relatedType == 'withdrawal') {
-      context.push('/seller/wallet');
+      final profile = ref.read(currentProfileProvider).value;
+      context.push(
+        profile?.role == 'admin' ? '/admin/withdrawals' : '/seller/wallet',
+      );
     }
   }
 }
@@ -276,83 +292,83 @@ class _NotificationCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16.0),
-        child: Stack(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: iconColor.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(iconData, color: iconColor),
-                  ),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(iconData, color: iconColor),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                notification.title,
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: context.colors.textPrimary,
-                                      fontWeight: notification.isRead
-                                          ? FontWeight.w600
-                                          : FontWeight.bold,
-                                    ),
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              timeago.format(
-                                notification.createdAt,
-                                locale: 'id',
-                              ),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: context.colors.textMuted),
-                            ),
-                          ],
+                        Expanded(
+                          child: Text(
+                            notification.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: notification.isRead
+                                      ? FontWeight.w600
+                                      : FontWeight.bold,
+                                  height: 1.2,
+                                ),
+                          ),
                         ),
-                        SizedBox(height: 6),
-                        Text(
-                          notification.body,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: notification.isRead
-                                    ? context.colors.textSecondary
-                                    : context.colors.textPrimary,
-                                height: 1.3,
-                              ),
-                        ),
+                        if (!notification.isRead) ...[
+                          const SizedBox(width: AppSpacing.xs),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.only(top: 5),
+                            decoration: BoxDecoration(
+                              color: context.colors.accent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (!notification.isRead)
-              Positioned(
-                top: 16,
-                right: 16,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: context.colors.accent,
-                    shape: BoxShape.circle,
-                  ),
+                    const SizedBox(height: 4),
+                    Text(
+                      timeago.format(notification.createdAt, locale: 'id'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.colors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      notification.body,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: notification.isRead
+                            ? context.colors.textSecondary
+                            : context.colors.textPrimary,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -373,6 +389,6 @@ class _NotificationCard extends StatelessWidget {
     if (type.startsWith('offer_')) return Colors.blue;
     if (type.startsWith('chat_')) return Colors.purple;
     if (type.startsWith('withdrawal_')) return context.colors.accent;
-    return Colors.white;
+    return context.colors.textMuted;
   }
 }

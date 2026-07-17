@@ -100,79 +100,75 @@ class MainShell extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context, int currentIndex) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        border: Border(
+          top: BorderSide(color: context.colors.border.withValues(alpha: 0.7)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
       child: SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-            color: context.colors.surface.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(100),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-            border: Border.all(
-              color: context.colors.border.withValues(alpha: 0.5),
+        top: false,
+        child: NavigationBar(
+          height: 64,
+          elevation: 0,
+          backgroundColor: context.colors.surface,
+          indicatorColor: context.colors.primary.withValues(alpha: 0.14),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          selectedIndex: currentIndex,
+          onDestinationSelected: (index) {
+            switch (index) {
+              case 0:
+                context.go('/');
+                break;
+              case 1:
+                context.go('/cart');
+                break;
+              case 2:
+                context.go('/seller');
+                break;
+              case 3:
+                context.go('/chats');
+                break;
+              case 4:
+                context.go('/profile');
+                break;
+            }
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Beranda',
             ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            child: NavigationBar(
-              height: 64,
-              backgroundColor: Colors.transparent,
-              indicatorColor: context.colors.primary.withValues(alpha: 0.15),
-              selectedIndex: currentIndex,
-              onDestinationSelected: (index) {
-                switch (index) {
-                  case 0:
-                    context.go('/');
-                    break;
-                  case 1:
-                    context.go('/cart');
-                    break;
-                  case 2:
-                    context.go('/seller');
-                    break;
-                  case 3:
-                    context.go('/chats');
-                    break;
-                  case 4:
-                    context.go('/profile');
-                    break;
-                }
-              },
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home),
-                  label: 'Beranda',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.shopping_cart_outlined),
-                  selectedIcon: Icon(Icons.shopping_cart),
-                  label: 'Keranjang',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.add_circle_outline, size: 28),
-                  selectedIcon: Icon(Icons.add_circle, size: 28),
-                  label: 'Jual',
-                ),
-                NavigationDestination(
-                  icon: Icon(CupertinoIcons.chat_bubble_text),
-                  selectedIcon: Icon(CupertinoIcons.chat_bubble_text_fill),
-                  label: 'Chat',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person_outline),
-                  selectedIcon: Icon(Icons.person),
-                  label: 'Akun',
-                ),
-              ],
+            NavigationDestination(
+              icon: Icon(Icons.shopping_cart_outlined),
+              selectedIcon: Icon(Icons.shopping_cart),
+              label: 'Keranjang',
             ),
-          ),
+            NavigationDestination(
+              icon: Icon(Icons.add_circle_outline, size: 28),
+              selectedIcon: Icon(Icons.add_circle, size: 28),
+              label: 'Jual',
+            ),
+            NavigationDestination(
+              icon: Icon(CupertinoIcons.chat_bubble_text),
+              selectedIcon: Icon(CupertinoIcons.chat_bubble_text_fill),
+              label: 'Chat',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Akun',
+            ),
+          ],
         ),
       ),
     );

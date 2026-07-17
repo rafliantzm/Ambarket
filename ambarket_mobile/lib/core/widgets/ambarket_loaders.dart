@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ambarket_mobile/core/theme/app_colors.dart';
 import 'package:ambarket_mobile/core/theme/app_spacing.dart';
 
-const Color _loadingAccent = Color(0xFFE53935);
+const Color _loadingAccent = Color(0xFF10B981);
 
 /// 1. Page Loader for Full Screens (Initial Routing)
 class AmbarketPageLoader extends StatelessWidget {
@@ -15,50 +15,71 @@ class AmbarketPageLoader extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.colors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: context.colors.surfaceHighlight,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                    color: _loadingAccent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: _loadingAccent.withValues(alpha: 0.22),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: context.colors.surfaceHighlight,
-                        borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 48,
+                        color: _loadingAccent,
                       ),
-                    ),
+                      Positioned(
+                        bottom: 20,
+                        child: Icon(
+                          Icons.all_inclusive_rounded,
+                          size: 30,
+                          color: context.colors.primary.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Ambarket',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  status,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                SizedBox(
+                  width: 220,
+                  child: LinearProgressIndicator(
+                    backgroundColor: context.colors.surfaceHighlight,
+                    color: _loadingAccent,
+                    minHeight: 3,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xl),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xxl * 2,
-              ),
-              child: LinearProgressIndicator(
-                backgroundColor: context.colors.surfaceHighlight,
-                color: _loadingAccent,
-                minHeight: 2,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              status,
-              style: TextStyle(color: context.colors.textMuted, fontSize: 12),
-            ),
-          ],
+          ),
         ),
       ),
     );

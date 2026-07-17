@@ -1,5 +1,13 @@
 flutter_native_splash:
-  color: "#FFFFFF"
-  image: "assets/icon.png"
+  color: "#F6FFFB"
+  color_dark: "#061512"
+  image: "assets/brand/ambarket_splash_light.png"
+  image_dark: "assets/brand/ambarket_splash_dark.png"
   android: true
   ios: true
+  web: true
+  android_12:
+    color: "#F6FFFB"
+    color_dark: "#061512"
+    image: "assets/brand/ambarket_splash_light.png"
+    image_dark: "assets/brand/ambarket_splash_dark.png"

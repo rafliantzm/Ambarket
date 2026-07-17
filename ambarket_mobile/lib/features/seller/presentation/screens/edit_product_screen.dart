@@ -12,11 +12,13 @@ import '../providers/seller_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
 import '../../../../core/utils/currency_parser.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/widgets/ambarket_scaffold.dart';
 import '../../../../core/widgets/premium_surface_card.dart';
 import '../../../../core/widgets/premium_text_field.dart';
-import '../../../../core/widgets/premium_dropdown.dart';
+import 'package:ambarket_mobile/core/widgets/premium_dropdown_field.dart';
 import '../../../../core/widgets/premium_button.dart';
+import '../providers/seller_product_provider.dart';
 
 class EditProductScreen extends ConsumerStatefulWidget {
   final String productId;
@@ -90,20 +92,77 @@ class _EditProductScreenState extends ConsumerState<EditProductScreen> {
     _isInitialized = true;
   }
 
-  Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _newImageBytes = bytes;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal membuka kamera atau memilih foto.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showImageSourceSheet() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Ganti Foto Produk',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_outlined),
+                  title: const Text('Ambil dari Kamera'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Pilih dari Galeri'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
-    if (image != null) {
-      final bytes = await image.readAsBytes();
-      setState(() {
-        _newImageBytes = bytes;
-      });
+
+    if (source != null) {
+      await _pickImage(source);
     }
   }
 
   Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+
     final currentProfile = ref.read(currentProfileProvider).value;
     if (currentProfile?.isSuspended == true) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -159,10 +218,16 @@ class _EditProductScreenState extends ConsumerState<EditProductScreen> {
       if (mounted) {
         final state = ref.read(productActionControllerProvider);
         if (state.hasError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: ${state.error}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ErrorMapper.getFriendlyMessage(state.error)),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
         } else {
+          ref.invalidate(sellerProductsProvider);
+          ref.invalidate(sellerProductStatsProvider);
+          ref.invalidate(sellerDashboardStatsProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Produk berhasil diperbarui!')),
           );
@@ -171,9 +236,12 @@ class _EditProductScreenState extends ConsumerState<EditProductScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorMapper.getFriendlyMessage(e)),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     }
   }
@@ -199,9 +267,7 @@ class _EditProductScreenState extends ConsumerState<EditProductScreen> {
       ),
       body: productAsync.when(
         data: (product) {
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _initializeData(product),
-          );
+          _initializeData(product);
 
           return SingleChildScrollView(
             child: Center(
@@ -216,7 +282,7 @@ class _EditProductScreenState extends ConsumerState<EditProductScreen> {
                       children: [
                         // Display primary image if exists
                         GestureDetector(
-                          onTap: isLoading ? null : _pickImage,
+                          onTap: isLoading ? null : _showImageSourceSheet,
                           child: Container(
                             height: 200,
                             decoration: BoxDecoration(
@@ -279,33 +345,33 @@ class _EditProductScreenState extends ConsumerState<EditProductScreen> {
                           padding: const EdgeInsets.all(AppSpacing.lg),
                           child: Column(
                             children: [
-                              PremiumDropdown<String>(
+                              PremiumDropdownField<String>(
+                                key: ValueKey('status-$_selectedStatus'),
                                 value: _selectedStatus,
                                 labelText: 'Status Produk',
-                                hint: 'Pilih status',
-                                items: const [
-                                  DropdownMenuItem(
+                                hintText: 'Pilih status',
+                                items: [
+                                  DropdownItem(
                                     value: 'active',
-                                    child: Text('Active'),
+                                    label: 'Active',
                                   ),
-                                  DropdownMenuItem(
-                                    value: 'sold',
-                                    child: Text('Sold'),
-                                  ),
-                                  DropdownMenuItem(
+                                  DropdownItem(value: 'sold', label: 'Sold'),
+                                  if (_selectedStatus == 'reserved')
+                                    DropdownItem(
+                                      value: 'reserved',
+                                      label: 'Dipesan',
+                                    ),
+                                  DropdownItem(
                                     value: 'archived',
-                                    child: Text('Archived'),
+                                    label: 'Archived',
                                   ),
                                 ],
-                                onChanged: isLoading
-                                    ? null
-                                    : (value) {
-                                        if (value != null) {
-                                          setState(
-                                            () => _selectedStatus = value,
-                                          );
-                                        }
-                                      },
+                                enabled: !isLoading,
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() => _selectedStatus = value);
+                                  }
+                                },
                               ),
                               const SizedBox(height: AppSpacing.md),
 
@@ -322,23 +388,27 @@ class _EditProductScreenState extends ConsumerState<EditProductScreen> {
                               const SizedBox(height: AppSpacing.md),
 
                               categoriesAsync.when(
-                                data: (categories) => PremiumDropdown<String>(
+                                data: (categories) => PremiumDropdownField<String>(
+                                  key: ValueKey(
+                                    'category-$_selectedCategoryId-${categories.length}',
+                                  ),
                                   value: _selectedCategoryId,
                                   labelText: 'Kategori *',
-                                  hint: 'Pilih kategori',
+                                  hintText: 'Pilih kategori',
+                                  enabled: !isLoading,
                                   items: categories.map((cat) {
-                                    return DropdownMenuItem(
+                                    return DropdownItem<String>(
                                       value: cat.id,
-                                      child: Text(cat.name),
+                                      label: cat.name,
                                     );
                                   }).toList(),
-                                  onChanged: isLoading
-                                      ? null
-                                      : (value) {
-                                          setState(() {
-                                            _selectedCategoryId = value;
-                                          });
-                                        },
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedCategoryId = value;
+                                    });
+                                  },
+                                  validator: (val) =>
+                                      val == null ? 'Wajib diisi' : null,
                                 ),
                                 loading: () =>
                                     const CircularProgressIndicator(),
@@ -396,37 +466,28 @@ class _EditProductScreenState extends ConsumerState<EditProductScreen> {
                           padding: const EdgeInsets.all(AppSpacing.lg),
                           child: Column(
                             children: [
-                              PremiumDropdown<String>(
+                              PremiumDropdownField<String>(
                                 value: _selectedCondition,
                                 labelText: 'Kondisi *',
-                                hint: 'Pilih kondisi barang',
-                                items: const [
-                                  DropdownMenuItem(
+                                hintText: 'Pilih kondisi barang',
+                                enabled: !isLoading,
+                                items: [
+                                  DropdownItem(
                                     value: 'like_new',
-                                    child: Text('Like New'),
+                                    label: 'Like New',
                                   ),
-                                  DropdownMenuItem(
-                                    value: 'good',
-                                    child: Text('Good'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'fair',
-                                    child: Text('Fair'),
-                                  ),
-                                  DropdownMenuItem(
+                                  DropdownItem(value: 'good', label: 'Good'),
+                                  DropdownItem(value: 'fair', label: 'Fair'),
+                                  DropdownItem(
                                     value: 'need_repair',
-                                    child: Text('Need Repair'),
+                                    label: 'Need Repair',
                                   ),
                                 ],
-                                onChanged: isLoading
-                                    ? null
-                                    : (value) {
-                                        if (value != null) {
-                                          setState(
-                                            () => _selectedCondition = value,
-                                          );
-                                        }
-                                      },
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() => _selectedCondition = value);
+                                  }
+                                },
                               ),
                               const SizedBox(height: AppSpacing.md),
 

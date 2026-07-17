@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ambarket_mobile/features/order/domain/models/order_model.dart';
+import 'package:ambarket_mobile/features/order/domain/models/refund_request_model.dart';
 import 'package:ambarket_mobile/features/order/domain/repositories/order_repository.dart';
 
 class SupabaseOrderRepository implements OrderRepository {
@@ -65,12 +66,12 @@ class SupabaseOrderRepository implements OrderRepository {
     final response = await _client
         .from('orders')
         .select(
-          '*, product:products(id, title, product_images(id, image_url, is_primary)), seller:profiles!orders_seller_id_fkey(id, name, avatar_url), reviews(id)',
+          '*, product:products(*, categories(*), product_images(*)), seller:profiles!orders_seller_id_fkey(*), reviews(id), refund_requests:order_refund_requests(*)',
         )
         .eq('buyer_id', buyerId)
         .order('created_at', ascending: false);
 
-    return response.map((json) => OrderModel.fromJson(json)).toList();
+    return _parseOrders(response);
   }
 
   @override
@@ -87,7 +88,7 @@ class SupabaseOrderRepository implements OrderRepository {
     var query = _client
         .from('orders')
         .select(
-          '*, product:products(id, title, product_images(id, image_url, is_primary)), buyer:profiles!orders_buyer_id_fkey(id, name, avatar_url), reviews(id)',
+          '*, product:products(*, categories(*), product_images(*)), buyer:profiles!orders_buyer_id_fkey(*), reviews(id), refund_requests:order_refund_requests(*)',
         )
         .eq('seller_id', sellerId);
 
@@ -105,15 +106,15 @@ class SupabaseOrderRepository implements OrderRepository {
 
     final response = await query.order('created_at', ascending: false);
 
-    return response.map((json) => OrderModel.fromJson(json)).toList();
+    return _parseOrders(response);
   }
 
   @override
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
-    await _client
-        .from('orders')
-        .update({'status': newStatus})
-        .eq('id', orderId);
+    await _client.rpc(
+      'update_order_lifecycle_status',
+      params: {'p_order_id': orderId, 'p_status': newStatus},
+    );
   }
 
   @override
@@ -127,10 +128,10 @@ class SupabaseOrderRepository implements OrderRepository {
     final status = response['status'] as String;
 
     if (status == 'pending_payment' || status == 'paid') {
-      await _client
-          .from('orders')
-          .update({'status': 'cancelled'})
-          .eq('id', orderId);
+      await _client.rpc(
+        'update_order_lifecycle_status',
+        params: {'p_order_id': orderId, 'p_status': 'cancelled'},
+      );
     } else {
       throw Exception('Pesanan tidak dapat dibatalkan pada tahap ini.');
     }
@@ -138,13 +139,46 @@ class SupabaseOrderRepository implements OrderRepository {
 
   @override
   Future<void> simulatePayment(String orderId) async {
-    await _client
-        .from('orders')
-        .update({
-          'payment_status': 'paid',
-          'status': 'paid',
-          'paid_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', orderId);
+    await _client.rpc('confirm_order_paid', params: {'p_order_id': orderId});
+  }
+
+  @override
+  Future<RefundRequestModel> requestRefund({
+    required String orderId,
+    required String reason,
+    required String description,
+    required double requestedAmount,
+    List<String> evidenceUrls = const [],
+  }) async {
+    final response = await _client.rpc(
+      'request_order_refund',
+      params: {
+        'p_order_id': orderId,
+        'p_reason': reason,
+        'p_description': description,
+        'p_requested_amount': requestedAmount,
+        'p_evidence_urls': evidenceUrls,
+      },
+    );
+
+    return RefundRequestModel.fromJson(
+      Map<String, dynamic>.from(response as Map),
+    );
+  }
+
+  List<OrderModel> _parseOrders(List<dynamic> rows) {
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map(_tryParseOrder)
+        .whereType<OrderModel>()
+        .toList(growable: false);
+  }
+
+  OrderModel? _tryParseOrder(Map<String, dynamic> row) {
+    try {
+      return OrderModel.fromJson(row);
+    } catch (_) {
+      return null;
+    }
   }
 }

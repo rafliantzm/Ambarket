@@ -1,13 +1,19 @@
 // ignore_for_file: avoid_print
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
 
 Future<void> main() async {
-  await dotenv.load(fileName: ".env");
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  const supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+  );
 
-  final supabaseUrl = dotenv.env['SUPABASE_URL']!;
-  final supabasePublishableKey = dotenv.env['SUPABASE_PUBLISHABLE_KEY']!;
+  if (supabaseUrl.isEmpty || supabasePublishableKey.isEmpty) {
+    stderr.writeln(
+      'Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY dart-define.',
+    );
+    exit(1);
+  }
 
   await Supabase.initialize(
     url: supabaseUrl,

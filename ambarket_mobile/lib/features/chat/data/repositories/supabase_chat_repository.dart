@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/conversation_model.dart';
 import '../../domain/models/message_model.dart';
@@ -5,6 +7,9 @@ import '../../domain/repositories/chat_repository.dart';
 
 class SupabaseChatRepository implements ChatRepository {
   final SupabaseClient _client;
+  static const _messageRefreshInterval = Duration(seconds: 2);
+  static const _unreadRefreshInterval = Duration(seconds: 5);
+  static final Map<String, List<MessageModel>> _messageCache = {};
 
   SupabaseChatRepository(this._client);
 
@@ -23,9 +28,7 @@ class SupabaseChatRepository implements ChatRepository {
         .order('last_message_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List)
-        .map((json) => ConversationModel.fromJson(json))
-        .toList();
+    return _parseConversations(response);
   }
 
   @override
@@ -48,14 +51,7 @@ class SupabaseChatRepository implements ChatRepository {
 
   @override
   Stream<List<MessageModel>> watchMessages(String conversationId) {
-    return _client
-        .from('messages')
-        .stream(primaryKey: ['id'])
-        .eq('conversation_id', conversationId)
-        .order('created_at', ascending: true)
-        .map(
-          (list) => list.map((json) => MessageModel.fromJson(json)).toList(),
-        );
+    return _watchMessagesByPolling(conversationId);
   }
 
   @override
@@ -140,6 +136,56 @@ class SupabaseChatRepository implements ChatRepository {
   }
 
   @override
+  Future<ChatAttachment> sendAttachment(
+    String conversationId,
+    String senderId,
+    String receiverId,
+    ChatAttachmentUpload attachment,
+  ) async {
+    if (attachment.bytes.isEmpty) {
+      throw Exception('Lampiran tidak boleh kosong');
+    }
+
+    final timestamp = DateTime.now().microsecondsSinceEpoch;
+    final safeName = _sanitizeFileName(attachment.fileName);
+    final storagePath = '$senderId/chat/$conversationId/$timestamp-$safeName';
+
+    await _client.storage
+        .from('product-images')
+        .uploadBinary(
+          storagePath,
+          Uint8List.fromList(attachment.bytes),
+          fileOptions: FileOptions(contentType: attachment.mimeType),
+        );
+
+    final attachmentUrl = _client.storage
+        .from('product-images')
+        .getPublicUrl(storagePath);
+
+    final savedAttachment = ChatAttachment(
+      type: attachment.type,
+      url: attachmentUrl,
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+    );
+
+    try {
+      await _client.from('messages').insert({
+        'conversation_id': conversationId,
+        'sender_id': senderId,
+        'receiver_id': receiverId,
+        'message': savedAttachment.toMessagePayload(),
+      });
+    } catch (_) {
+      await _client.storage.from('product-images').remove([storagePath]);
+      rethrow;
+    }
+
+    return savedAttachment;
+  }
+
+  @override
   Future<void> markConversationAsRead(
     String conversationId,
     String userId,
@@ -155,26 +201,150 @@ class SupabaseChatRepository implements ChatRepository {
 
   @override
   Stream<int> watchUnreadCount(String conversationId, String userId) {
-    return _client
-        .from('messages')
-        .stream(primaryKey: ['id'])
-        .eq('conversation_id', conversationId)
-        .map(
-          (list) => list
-              .where(
-                (msg) =>
-                    msg['receiver_id'] == userId && msg['is_read'] == false,
-              )
-              .length,
-        );
+    return _watchUnreadCountByPolling(
+      conversationId: conversationId,
+      userId: userId,
+    );
   }
 
   @override
   Stream<int> watchTotalUnreadCount(String userId) {
-    return _client
-        .from('messages')
-        .stream(primaryKey: ['id'])
-        .eq('receiver_id', userId)
-        .map((list) => list.where((msg) => msg['is_read'] == false).length);
+    return _watchUnreadCountByPolling(userId: userId);
   }
+
+  Stream<List<MessageModel>> _watchMessagesByPolling(
+    String conversationId,
+  ) async* {
+    final cachedMessages = _messageCache[conversationId];
+    var hasYielded = true;
+    var lastSignature = _messagesSignature(cachedMessages ?? const []);
+
+    yield cachedMessages ?? const [];
+
+    while (true) {
+      try {
+        final messages = await _fetchMessages(conversationId);
+        final signature = _messagesSignature(messages);
+        _messageCache[conversationId] = messages;
+
+        if (!hasYielded || signature != lastSignature) {
+          yield messages;
+          lastSignature = signature;
+          hasYielded = true;
+        }
+      } catch (_) {
+        if (!hasYielded) {
+          yield const [];
+          hasYielded = true;
+        }
+      }
+
+      await Future<void>.delayed(_messageRefreshInterval);
+    }
+  }
+
+  Stream<int> _watchUnreadCountByPolling({
+    String? conversationId,
+    required String userId,
+  }) async* {
+    var hasYielded = false;
+    int? lastCount;
+
+    while (true) {
+      try {
+        final count = await _fetchUnreadCount(
+          userId: userId,
+          conversationId: conversationId,
+        );
+
+        if (!hasYielded || count != lastCount) {
+          yield count;
+          lastCount = count;
+          hasYielded = true;
+        }
+      } catch (_) {
+        if (!hasYielded) {
+          yield 0;
+          lastCount = 0;
+          hasYielded = true;
+        }
+      }
+
+      await Future<void>.delayed(_unreadRefreshInterval);
+    }
+  }
+
+  Future<List<MessageModel>> _fetchMessages(String conversationId) async {
+    final response = await _client
+        .from('messages')
+        .select()
+        .eq('conversation_id', conversationId)
+        .order('created_at', ascending: true);
+
+    return (response as List)
+        .whereType<Map<String, dynamic>>()
+        .map(_tryParseMessage)
+        .whereType<MessageModel>()
+        .toList(growable: false);
+  }
+
+  Future<int> _fetchUnreadCount({
+    required String userId,
+    String? conversationId,
+  }) async {
+    var query = _client
+        .from('messages')
+        .select('id')
+        .eq('receiver_id', userId)
+        .eq('is_read', false);
+
+    if (conversationId != null) {
+      query = query.eq('conversation_id', conversationId);
+    }
+
+    final response = await query;
+    return (response as List).length;
+  }
+
+  List<ConversationModel> _parseConversations(List<dynamic> rows) {
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map(_tryParseConversation)
+        .whereType<ConversationModel>()
+        .toList(growable: false);
+  }
+
+  ConversationModel? _tryParseConversation(Map<String, dynamic> row) {
+    try {
+      return ConversationModel.fromJson(row);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  MessageModel? _tryParseMessage(Map<String, dynamic> row) {
+    try {
+      return MessageModel.fromJson(row);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _messagesSignature(List<MessageModel> messages) {
+    return messages
+        .map(
+          (message) =>
+              '${message.id}:${message.isRead}:${message.createdAt.microsecondsSinceEpoch}',
+        )
+        .join('|');
+  }
+}
+
+String _sanitizeFileName(String value) {
+  final trimmed = value.trim();
+  final fallback = trimmed.isEmpty ? 'attachment' : trimmed;
+  return fallback
+      .replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
 }

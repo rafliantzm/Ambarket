@@ -11,6 +11,7 @@ class AmbarketScaffold extends StatelessWidget {
   final Color? backgroundColor;
   final bool isDesktopConstrained;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
+  final bool? resizeToAvoidBottomInset;
 
   const AmbarketScaffold({
     super.key,
@@ -22,6 +23,7 @@ class AmbarketScaffold extends StatelessWidget {
     this.backgroundColor,
     this.isDesktopConstrained = true,
     this.floatingActionButtonLocation,
+    this.resizeToAvoidBottomInset,
   });
 
   @override
@@ -55,12 +57,13 @@ class AmbarketScaffold extends StatelessWidget {
         : content;
 
     return Scaffold(
-      extendBody: true,
+      extendBody: false,
       backgroundColor: backgroundColor ?? context.colors.background,
       appBar: appBar,
       floatingActionButton: floatingActionButton,
       floatingActionButtonLocation: floatingActionButtonLocation,
       bottomNavigationBar: bottomNavigationBar,
+      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       body: scaffoldBody,
     );
   }

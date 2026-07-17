@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/widgets/premium_dropdown_field.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
@@ -133,23 +134,16 @@ class _AdminCreateVoucherScreenState
                           value!.isEmpty ? 'Wajib diisi' : null,
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedType,
-                      decoration: const InputDecoration(
-                        labelText: 'Tipe Kupon',
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'percent',
-                          child: Text('Persentase (%)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'flat',
-                          child: Text('Nominal (Rp)'),
-                        ),
-                        DropdownMenuItem(
+                    PremiumDropdownField<String>(
+                      value: _selectedType,
+                      labelText: 'Tipe Kupon',
+                      hintText: 'Pilih Tipe Kupon',
+                      items: [
+                        DropdownItem(value: 'percent', label: 'Persentase (%)'),
+                        DropdownItem(value: 'flat', label: 'Nominal (Rp)'),
+                        DropdownItem(
                           value: 'flat_shipping',
-                          child: Text('Potongan Ongkir (Rp)'),
+                          label: 'Potongan Ongkir (Rp)',
                         ),
                       ],
                       onChanged: (value) =>

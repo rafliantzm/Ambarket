@@ -44,31 +44,23 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      id: json['id'] as String,
-      sellerId: json['seller_id'] as String,
-      categoryId: json['category_id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
-      price: (json['price'] as num).toDouble(),
-      condition: json['condition'] as String,
-      brand: json['brand'] as String?,
-      location: json['location'] as String,
+      id: _stringValue(json['id'], fallback: 'unknown-product'),
+      sellerId: _stringValue(json['seller_id']),
+      categoryId: _stringValue(json['category_id']),
+      title: _stringValue(json['title'], fallback: 'Produk'),
+      description: _stringValue(json['description']),
+      price: _doubleValue(json['price']),
+      condition: _stringValue(json['condition'], fallback: 'good'),
+      brand: _nullableString(json['brand']),
+      location: _stringValue(json['location']),
       isNegotiable: json['is_negotiable'] as bool? ?? false,
-      defects: json['defects'] as String?,
-      completeness: json['completeness'] as String?,
-      usageDuration: json['usage_duration'] as String?,
-      status: json['status'] as String? ?? 'active',
-      createdAt: DateTime.parse(json['created_at'] as String),
-      category: json['categories'] != null
-          ? CategoryModel.fromJson(json['categories'] as Map<String, dynamic>)
-          : null,
-      images: json['product_images'] != null
-          ? (json['product_images'] as List)
-                .map(
-                  (i) => ProductImageModel.fromJson(i as Map<String, dynamic>),
-                )
-                .toList()
-          : [],
+      defects: _nullableString(json['defects']),
+      completeness: _nullableString(json['completeness']),
+      usageDuration: _nullableString(json['usage_duration']),
+      status: _stringValue(json['status'], fallback: 'active'),
+      createdAt: _dateValue(json['created_at']),
+      category: _parseCategory(json['categories']),
+      images: _parseImages(json['product_images']),
     );
   }
 
@@ -91,4 +83,62 @@ class ProductModel {
       'created_at': createdAt.toIso8601String(),
     };
   }
+}
+
+String _stringValue(dynamic value, {String fallback = ''}) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return fallback;
+}
+
+String? _nullableString(dynamic value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return null;
+}
+
+double _doubleValue(dynamic value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value) ?? 0;
+  }
+  return 0;
+}
+
+DateTime _dateValue(dynamic value) {
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+CategoryModel? _parseCategory(dynamic value) {
+  if (value is! Map<String, dynamic>) {
+    return null;
+  }
+
+  try {
+    return CategoryModel.fromJson(value);
+  } catch (_) {
+    return null;
+  }
+}
+
+List<ProductImageModel> _parseImages(dynamic value) {
+  if (value is! List) {
+    return const [];
+  }
+
+  return value
+      .whereType<Map<String, dynamic>>()
+      .map(ProductImageModel.fromJson)
+      .where((image) => image.imageUrl.isNotEmpty)
+      .toList(growable: false);
 }

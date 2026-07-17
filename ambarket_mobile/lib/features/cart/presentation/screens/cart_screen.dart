@@ -118,12 +118,12 @@ class CartScreen extends ConsumerWidget {
 
                   final isAvailable = product.status == 'active';
 
-                  return AppGlassCard(
-                    padding: EdgeInsets.all(AppSpacing.sm),
+                  Widget productPreview = GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => context.push('/products/${product.id}'),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Product Image
                         Container(
                           width: 80,
                           height: 80,
@@ -157,92 +157,98 @@ class CartScreen extends ConsumerWidget {
                                 ),
                         ),
                         SizedBox(width: AppSpacing.md),
-                        // Details
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                product.title,
-                                style: Theme.of(context).textTheme.bodyLarge!
-                                    .copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: isAvailable
-                                          ? context.colors.textPrimary
-                                          : context.colors.textSecondary,
-                                      decoration: isAvailable
-                                          ? null
-                                          : TextDecoration.lineThrough,
-                                    ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                currencyFormatter.format(product.price),
-                                style: Theme.of(context).textTheme.bodyMedium!
-                                    .copyWith(
-                                      color: isAvailable
-                                          ? context.colors.primary
-                                          : context.colors.textSecondary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  if (!isAvailable) ...[
-                                    AppStatusBadge(
-                                      status: BadgeStatus.error,
-                                      label: 'Tidak Tersedia',
-                                    ),
-                                  ] else ...[
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
+                          child: Semantics(
+                            button: true,
+                            label: 'Buka detail ${product.title}',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  product.title,
+                                  style: Theme.of(context).textTheme.bodyLarge!
+                                      .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: isAvailable
+                                            ? context.colors.textPrimary
+                                            : context.colors.textSecondary,
+                                        decoration: isAvailable
+                                            ? null
+                                            : TextDecoration.lineThrough,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: context.colors.backgroundDarker,
-                                        borderRadius: BorderRadius.circular(4),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  currencyFormatter.format(product.price),
+                                  style: Theme.of(context).textTheme.bodyMedium!
+                                      .copyWith(
+                                        color: isAvailable
+                                            ? context.colors.primary
+                                            : context.colors.textSecondary,
+                                        fontWeight: FontWeight.w700,
                                       ),
-                                      child: Text(
-                                        product.condition == 'new'
-                                            ? 'Baru'
-                                            : 'Bekas',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              color:
-                                                  context.colors.textSecondary,
-                                              fontSize: 10,
-                                            ),
-                                      ),
+                                ),
+                                SizedBox(height: 8),
+                                if (!isAvailable)
+                                  AppStatusBadge(
+                                    status: BadgeStatus.error,
+                                    label: 'Tidak Tersedia',
+                                  )
+                                else
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
                                     ),
-                                  ],
-                                  Spacer(),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.red,
-                                      size: 20,
+                                    decoration: BoxDecoration(
+                                      color: context.colors.backgroundDarker,
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
-                                    onPressed: actionState.isLoading
-                                        ? null
-                                        : () {
-                                            ref
-                                                .read(
-                                                  cartActionControllerProvider
-                                                      .notifier,
-                                                )
-                                                .removeFromCart(item.id);
-                                          },
+                                    child: Text(
+                                      product.condition == 'new'
+                                          ? 'Baru'
+                                          : 'Bekas',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: context.colors.textSecondary,
+                                            fontSize: 10,
+                                          ),
+                                    ),
                                   ),
-                                ],
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  return AppGlassCard(
+                    padding: EdgeInsets.all(AppSpacing.sm),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: productPreview),
+                        IconButton(
+                          tooltip: 'Hapus dari keranjang',
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                            size: 20,
+                          ),
+                          onPressed: actionState.isLoading
+                              ? null
+                              : () {
+                                  ref
+                                      .read(
+                                        cartActionControllerProvider.notifier,
+                                      )
+                                      .removeFromCart(item.id);
+                                },
                         ),
                       ],
                     ),

@@ -96,9 +96,113 @@ final conversationDetailProvider = FutureProvider.family
 
 final messagesStreamProvider = StreamProvider.family
     .autoDispose<List<MessageModel>, String>((ref, conversationId) {
+      final keepAlive = ref.keepAlive();
+      Timer? closeTimer;
+      ref.onCancel(() {
+        closeTimer = Timer(const Duration(minutes: 2), keepAlive.close);
+      });
+      ref.onResume(() {
+        closeTimer?.cancel();
+        closeTimer = null;
+      });
+      ref.onDispose(() {
+        closeTimer?.cancel();
+      });
+
       final repo = ref.watch(chatRepositoryProvider);
       return repo.watchMessages(conversationId);
     });
+
+final pendingMessagesProvider =
+    NotifierProvider.family<
+      PendingMessagesNotifier,
+      List<MessageModel>,
+      String
+    >(PendingMessagesNotifier.new);
+
+class PendingMessagesNotifier extends Notifier<List<MessageModel>> {
+  final String conversationId;
+
+  PendingMessagesNotifier(this.conversationId);
+
+  @override
+  List<MessageModel> build() => const [];
+
+  void add(MessageModel message) {
+    state = [...state, message];
+  }
+
+  void remove(String messageId) {
+    state = state
+        .where((message) => message.id != messageId)
+        .toList(growable: false);
+  }
+}
+
+final visibleMessagesProvider =
+    Provider.family<AsyncValue<List<MessageModel>>, String>((
+      ref,
+      conversationId,
+    ) {
+      final remoteMessages = ref.watch(messagesStreamProvider(conversationId));
+      final pendingMessages = ref.watch(
+        pendingMessagesProvider(conversationId),
+      );
+
+      return remoteMessages.whenData(
+        (messages) => mergeVisibleMessages(messages, pendingMessages),
+      );
+    });
+
+List<MessageModel> mergeVisibleMessages(
+  List<MessageModel> remoteMessages,
+  List<MessageModel> pendingMessages,
+) {
+  final deliveredPending = <String>{};
+
+  for (final pending in pendingMessages) {
+    if (remoteMessages.any(
+      (remote) => _matchesPendingMessage(remote, pending),
+    )) {
+      deliveredPending.add(pending.id);
+    }
+  }
+
+  final visible = [
+    ...remoteMessages,
+    ...pendingMessages.where(
+      (message) => !deliveredPending.contains(message.id),
+    ),
+  ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+  final seenIds = <String>{};
+  return visible
+      .where((message) => seenIds.add(message.id))
+      .toList(growable: false);
+}
+
+bool _matchesPendingMessage(MessageModel remote, MessageModel pending) {
+  if (!pending.id.startsWith('local-')) {
+    return remote.id == pending.id;
+  }
+
+  final timeGap = remote.createdAt.difference(pending.createdAt).abs();
+  final remoteAttachment = ChatAttachment.tryParse(remote.message);
+  final pendingAttachment =
+      pending.attachment ?? ChatAttachment.tryParse(pending.message);
+  if (remoteAttachment != null && pendingAttachment != null) {
+    return remote.senderId == pending.senderId &&
+        remote.receiverId == pending.receiverId &&
+        remoteAttachment.type == pendingAttachment.type &&
+        remoteAttachment.fileName == pendingAttachment.fileName &&
+        timeGap <= const Duration(minutes: 5);
+  }
+
+  return remote.senderId == pending.senderId &&
+      remote.receiverId == pending.receiverId &&
+      remote.message == pending.message &&
+      timeGap <= const Duration(minutes: 2);
+}
 
 final unreadCountProvider = StreamProvider.family.autoDispose<int, String>((
   ref,
@@ -175,15 +279,42 @@ class ChatActionController extends AsyncNotifier<void> {
     String receiverId,
     String message,
   ) async {
-    state = const AsyncLoading();
     try {
       final user = ref.read(currentUserProvider);
       if (user == null) throw Exception('Silakan login terlebih dahulu.');
 
-      await _repo.sendMessage(conversationId, user.id, receiverId, message);
+      await _repo
+          .sendMessage(conversationId, user.id, receiverId, message)
+          .timeout(const Duration(seconds: 12));
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  Future<ChatAttachment> sendAttachment(
+    String conversationId,
+    String receiverId,
+    ChatAttachmentUpload attachment,
+  ) async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) throw Exception('User not logged in');
+
+    state = const AsyncLoading();
+    try {
+      final savedAttachment = await _repo.sendAttachment(
+        conversationId,
+        user.id,
+        receiverId,
+        attachment,
+      );
+      ref.invalidate(myConversationsProvider);
+      state = const AsyncData(null);
+      return savedAttachment;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
     }
   }
 

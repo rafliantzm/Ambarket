@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ambarket_mobile/features/report/presentation/providers/report_provider.dart';
 import 'package:ambarket_mobile/core/theme/app_spacing.dart';
 import 'package:ambarket_mobile/core/widgets/app_button.dart';
+import 'package:ambarket_mobile/core/widgets/premium_dropdown_field.dart';
 import 'package:ambarket_mobile/core/widgets/app_glass_card.dart';
 
 class CreateReportScreen extends ConsumerStatefulWidget {
@@ -119,16 +120,14 @@ class _CreateReportScreenState extends ConsumerState<CreateReportScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Jenis Laporan',
-                        border: OutlineInputBorder(),
-                      ),
-                      initialValue: _selectedTargetType,
+                    PremiumDropdownField<String>(
+                      labelText: 'Jenis Laporan',
+                      hintText: 'Pilih jenis laporan',
+                      value: _selectedTargetType,
                       items: _targetTypes.entries.map((e) {
-                        return DropdownMenuItem(
+                        return DropdownItem<String>(
                           value: e.key,
-                          child: Text(e.value),
+                          label: e.value,
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -158,16 +157,14 @@ class _CreateReportScreenState extends ConsumerState<CreateReportScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Alasan Laporan',
-                        border: OutlineInputBorder(),
-                      ),
-                      initialValue: _selectedReason,
+                    PremiumDropdownField<String>(
+                      labelText: 'Alasan Laporan',
+                      hintText: 'Pilih alasan laporan',
+                      value: _selectedReason,
                       items: _reasons.entries.map((e) {
-                        return DropdownMenuItem(
+                        return DropdownItem<String>(
                           value: e.key,
-                          child: Text(e.value),
+                          label: e.value,
                         );
                       }).toList(),
                       onChanged: (val) {

@@ -21,6 +21,7 @@ import '../../features/seller/presentation/screens/seller_products_screen.dart';
 import '../../features/wallet/presentation/screens/seller_wallet_screen.dart';
 
 import 'package:ambarket_mobile/features/offer/presentation/screens/my_offers_screen.dart';
+import 'package:ambarket_mobile/features/offer/domain/models/offer_model.dart';
 import 'package:ambarket_mobile/features/offer/presentation/screens/seller_offers_screen.dart';
 import 'package:ambarket_mobile/features/order/presentation/screens/checkout_screen.dart';
 import 'package:ambarket_mobile/features/order/presentation/screens/payment_dummy_screen.dart';
@@ -46,6 +47,8 @@ import 'package:ambarket_mobile/features/admin/presentation/screens/admin_users_
 import 'package:ambarket_mobile/features/admin/presentation/screens/admin_reviews_screen.dart';
 import 'package:ambarket_mobile/features/admin/presentation/screens/admin_vouchers_screen.dart';
 import 'package:ambarket_mobile/features/admin/presentation/screens/admin_create_voucher_screen.dart';
+import 'package:ambarket_mobile/features/admin/presentation/screens/admin_withdrawals_screen.dart';
+import 'package:ambarket_mobile/features/admin/presentation/screens/admin_refunds_screen.dart';
 import 'package:ambarket_mobile/features/profile/presentation/providers/profile_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -157,10 +160,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/checkout',
+        redirect: (context, state) =>
+            state.extra is OfferModel ? null : '/cart',
         builder: (context, state) {
+          final offer = state.extra is OfferModel
+              ? state.extra as OfferModel
+              : null;
           return CheckoutScreen(
-            productId: state.pathParameters['id'] ?? '',
-            offerId: null,
+            productId: offer?.productId,
+            offerId: offer?.id,
           );
         },
       ),
@@ -171,6 +179,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/seller/orders',
         builder: (context, state) => const SellerOrdersScreen(),
+      ),
+      GoRoute(
+        path: '/seller-orders',
+        redirect: (context, state) => '/seller/orders',
       ),
       GoRoute(
         path: '/seller/offers',
@@ -222,6 +234,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/vouchers/new',
         builder: (context, state) => const AdminCreateVoucherScreen(),
+      ),
+      GoRoute(
+        path: '/admin/withdrawals',
+        builder: (context, state) => const AdminWithdrawalsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/refunds',
+        builder: (context, state) => const AdminRefundsScreen(),
       ),
 
       GoRoute(

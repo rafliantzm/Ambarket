@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_error_state.dart';
 import '../providers/offer_provider.dart';
 import '../../../chat/presentation/providers/chat_provider.dart';
 import '../../domain/models/offer_model.dart';
@@ -56,7 +58,11 @@ class _SentOffersTab extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) => AppErrorState(
+        title: 'Tawaran Belum Dapat Dimuat',
+        message: ErrorMapper.getFriendlyMessage(err),
+        onRetry: () => ref.invalidate(mySentOffersProvider),
+      ),
     );
   }
 }
@@ -85,7 +91,11 @@ class _ReceivedOffersTab extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error: $err')),
+      error: (err, stack) => AppErrorState(
+        title: 'Tawaran Belum Dapat Dimuat',
+        message: ErrorMapper.getFriendlyMessage(err),
+        onRetry: () => ref.invalidate(myReceivedOffersProvider),
+      ),
     );
   }
 }

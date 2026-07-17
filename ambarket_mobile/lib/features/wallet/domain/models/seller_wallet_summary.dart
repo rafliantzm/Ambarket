@@ -1,6 +1,7 @@
 class SellerWalletSummary {
   final double availableBalance;
   final double pendingBalance;
+  final double disputedBalance;
   final double totalEarning;
   final double completedOrderRevenue;
   final int withdrawalCount;
@@ -9,6 +10,7 @@ class SellerWalletSummary {
   SellerWalletSummary({
     required this.availableBalance,
     required this.pendingBalance,
+    this.disputedBalance = 0,
     required this.totalEarning,
     required this.completedOrderRevenue,
     required this.withdrawalCount,
@@ -19,6 +21,7 @@ class SellerWalletSummary {
     return SellerWalletSummary(
       availableBalance: 0,
       pendingBalance: 0,
+      disputedBalance: 0,
       totalEarning: 0,
       completedOrderRevenue: 0,
       withdrawalCount: 0,
@@ -30,6 +33,7 @@ class SellerWalletSummary {
     return SellerWalletSummary(
       availableBalance: (json['available_balance'] as num?)?.toDouble() ?? 0.0,
       pendingBalance: (json['pending_balance'] as num?)?.toDouble() ?? 0.0,
+      disputedBalance: (json['disputed_balance'] as num?)?.toDouble() ?? 0.0,
       totalEarning: (json['total_earning'] as num?)?.toDouble() ?? 0.0,
       completedOrderRevenue:
           (json['completed_order_revenue'] as num?)?.toDouble() ?? 0.0,

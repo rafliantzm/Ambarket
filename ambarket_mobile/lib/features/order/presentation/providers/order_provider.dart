@@ -9,6 +9,7 @@ import 'package:ambarket_mobile/features/marketplace/presentation/providers/mark
 import 'package:ambarket_mobile/features/notification/presentation/providers/notification_provider.dart';
 import 'package:ambarket_mobile/features/seller/presentation/providers/seller_provider.dart';
 import 'package:ambarket_mobile/features/cart/presentation/providers/cart_provider.dart';
+import 'package:ambarket_mobile/features/wallet/presentation/providers/seller_wallet_provider.dart';
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   return SupabaseOrderRepository(Supabase.instance.client);
@@ -212,6 +213,10 @@ class OrderActionController extends Notifier<OrderActionState> {
         } else if (newStatus == 'shipped') {
           title = 'Pesanan Dikirim';
           body = 'Barang Anda sedang dalam perjalanan.';
+        } else if (newStatus == 'delivered') {
+          title = 'Pesanan Diterima';
+          body =
+              'Pesanan ditandai diterima. Dana masih ditahan sampai transaksi selesai.';
         } else if (newStatus == 'completed') {
           title = 'Pesanan Selesai';
           body = 'Pesanan telah selesai. Terima kasih!';
@@ -231,6 +236,7 @@ class OrderActionController extends Notifier<OrderActionState> {
 
       ref.invalidate(buyerOrdersProvider);
       ref.invalidate(sellerOrdersProvider);
+      ref.invalidate(sellerWalletSummaryProvider);
 
       if (newStatus == 'completed' && order != null) {
         // Also refresh marketplace and product detail because the DB trigger just marked it as 'sold'
@@ -239,6 +245,8 @@ class OrderActionController extends Notifier<OrderActionState> {
 
         // If the current user happens to be the seller (e.g., testing with same account or just to be safe)
         ref.invalidate(myProductsProvider);
+        ref.invalidate(sellerWalletSummaryProvider);
+        ref.invalidate(sellerWithdrawalsProvider);
       }
 
       // Invalidate seller dashboard stats to update sold/active counts
@@ -289,9 +297,58 @@ class OrderActionController extends Notifier<OrderActionState> {
       return false;
     }
   }
+
+  Future<bool> requestRefund({
+    required OrderModel order,
+    required String reason,
+    required String description,
+    required double requestedAmount,
+    List<String> evidenceUrls = const [],
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await ref
+          .read(orderRepositoryProvider)
+          .requestRefund(
+            orderId: order.id,
+            reason: reason,
+            description: description,
+            requestedAmount: requestedAmount,
+            evidenceUrls: evidenceUrls,
+          );
+
+      try {
+        await ref
+            .read(notificationRepositoryProvider)
+            .createDummyNotification(
+              userId: order.sellerId,
+              type: 'refund_requested',
+              title: 'Pengajuan Refund Baru',
+              body:
+                  'Buyer mengajukan refund untuk pesanan ${order.invoiceNumber ?? _shortOrderCode(order.id)}.',
+              relatedType: 'order',
+              relatedId: order.id,
+            );
+      } catch (_) {}
+
+      ref.invalidate(buyerOrdersProvider);
+      ref.invalidate(sellerOrdersProvider);
+      ref.invalidate(sellerWalletSummaryProvider);
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
 }
 
 final orderActionControllerProvider =
     NotifierProvider<OrderActionController, OrderActionState>(() {
       return OrderActionController();
     });
+
+String _shortOrderCode(String id) {
+  final length = id.length < 8 ? id.length : 8;
+  return id.substring(0, length).toUpperCase();
+}

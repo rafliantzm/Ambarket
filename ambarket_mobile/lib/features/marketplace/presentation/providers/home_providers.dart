@@ -8,14 +8,14 @@ final homeRecommendedProvider = FutureProvider.autoDispose<List<ProductModel>>((
 ) async {
   ref.keepAlive();
   final repo = ref.watch(marketplaceRepositoryProvider);
-  return repo.fetchRecommendedProducts();
+  return repo.fetchRecommendedProducts(limit: 6);
 });
 
 final homeLatestProductsProvider =
     FutureProvider.autoDispose<List<ProductModel>>((ref) async {
       ref.keepAlive();
       final repo = ref.watch(marketplaceRepositoryProvider);
-      return repo.fetchLatestProducts();
+      return repo.fetchLatestProducts(limit: 6);
     });
 
 final homeBestDealsProvider = FutureProvider.autoDispose<List<ProductModel>>((
@@ -23,7 +23,7 @@ final homeBestDealsProvider = FutureProvider.autoDispose<List<ProductModel>>((
 ) async {
   ref.keepAlive();
   final repo = ref.watch(marketplaceRepositoryProvider);
-  return repo.fetchBestDealProducts();
+  return repo.fetchBestDealProducts(limit: 6);
 });
 
 final homeNearbyProductsProvider =
@@ -37,5 +37,5 @@ final homeNearbyProductsProvider =
         location = profileAsync.value!.location;
       }
 
-      return repo.fetchNearbyProducts(location);
+      return repo.fetchNearbyProducts(location, limit: 6);
     });

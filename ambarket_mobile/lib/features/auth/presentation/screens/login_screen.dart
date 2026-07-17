@@ -49,6 +49,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _loginWithGoogle() async {
+    final success = await ref
+        .read(authControllerProvider.notifier)
+        .signInWithGoogle();
+
+    if (mounted && !success) {
+      final error = ref.read(authControllerProvider).error;
+      final errorMessage = ErrorMapper.getFriendlyMessage(error);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: context.colors.accent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _showForgotPasswordDialog() {
     showDialog(
       context: context,
@@ -240,6 +259,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         label: 'Masuk',
                         isLoading: isLoading,
                         onPressed: _login,
+                      ),
+                      SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Divider(color: context.colors.border),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                            ),
+                            child: Text(
+                              'atau',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: context.colors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(color: context.colors.border),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: AppSpacing.md),
+                      AppButton(
+                        label: 'Masuk dengan Google',
+                        icon: Icons.g_mobiledata_rounded,
+                        variant: AppButtonVariant.outline,
+                        isLoading: isLoading,
+                        onPressed: _loginWithGoogle,
                       ),
                       SizedBox(height: AppSpacing.md),
                       AppButton(

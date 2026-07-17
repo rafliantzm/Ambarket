@@ -10,6 +10,24 @@ import '../../../offer/domain/models/offer_model.dart';
 
 class SupabaseSellerRepository implements SellerRepository {
   final SupabaseClient _client;
+  static const _productListSelect = '''
+    id,
+    seller_id,
+    category_id,
+    title,
+    price,
+    condition,
+    is_negotiable,
+    status,
+    created_at,
+    categories (id, name, icon, created_at),
+    product_images (id, product_id, image_url, is_primary, created_at)
+  ''';
+  static const _productDetailSelect = '''
+    *,
+    categories (*),
+    product_images (*)
+  ''';
 
   SupabaseSellerRepository(this._client);
 
@@ -21,11 +39,7 @@ class SupabaseSellerRepository implements SellerRepository {
   }) async {
     final response = await _client
         .from('products')
-        .select('''
-          *,
-          categories (*),
-          product_images (*)
-        ''')
+        .select(_productListSelect)
         .eq('seller_id', sellerId)
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
@@ -45,11 +59,7 @@ class SupabaseSellerRepository implements SellerRepository {
   }) async {
     var query = _client
         .from('products')
-        .select('''
-          *,
-          categories (*),
-          product_images (*)
-        ''')
+        .select(_productListSelect)
         .eq('seller_id', sellerId);
 
     if (status != 'all') {
@@ -147,11 +157,7 @@ class SupabaseSellerRepository implements SellerRepository {
   ) async {
     final response = await _client
         .from('products')
-        .select('''
-          *,
-          categories (*),
-          product_images (*)
-        ''')
+        .select(_productDetailSelect)
         .eq('id', productId)
         .eq('seller_id', sellerId)
         .single();
@@ -198,11 +204,19 @@ class SupabaseSellerRepository implements SellerRepository {
     String sellerId,
     UpdateProductInput input,
   ) async {
-    await _client
+    final updatedProduct = await _client
         .from('products')
         .update(input.toJson())
         .eq('id', productId)
-        .eq('seller_id', sellerId);
+        .eq('seller_id', sellerId)
+        .select('id')
+        .maybeSingle();
+
+    if (updatedProduct == null) {
+      throw Exception(
+        'Produk tidak dapat diperbarui. Pastikan produk masih ada dan Anda memiliki akses.',
+      );
+    }
 
     if (input.newImageBytesList.isNotEmpty) {
       // 1. Fetch old images
@@ -248,11 +262,19 @@ class SupabaseSellerRepository implements SellerRepository {
       updateData['sold_at'] = DateTime.now().toIso8601String();
     }
 
-    await _client
+    final updatedProduct = await _client
         .from('products')
         .update(updateData)
         .eq('id', productId)
-        .eq('seller_id', sellerId);
+        .eq('seller_id', sellerId)
+        .select('id')
+        .maybeSingle();
+
+    if (updatedProduct == null) {
+      throw Exception(
+        'Status produk tidak dapat diperbarui. Pastikan produk masih ada dan Anda memiliki akses.',
+      );
+    }
   }
 
   @override
@@ -343,7 +365,7 @@ class SupabaseSellerRepository implements SellerRepository {
       _client.from('products').select('status').eq('seller_id', sellerId),
       _client
           .from('orders')
-          .select('status, total_price')
+          .select('status, total_price, created_at')
           .eq('seller_id', sellerId),
       _client
           .from('offers')
@@ -365,9 +387,33 @@ class SupabaseSellerRepository implements SellerRepository {
     }
 
     double revenue = 0.0;
+    final today = DateTime.now();
+    final firstChartDay = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(const Duration(days: 6));
+    final salesLast7Days = List<double>.filled(7, 0);
+
     for (final row in orders) {
       if (row['status'] == 'completed' && row['total_price'] != null) {
-        revenue += (row['total_price'] as num).toDouble();
+        final totalPrice = (row['total_price'] as num).toDouble();
+        revenue += totalPrice;
+
+        final createdAt = DateTime.tryParse(
+          row['created_at']?.toString() ?? '',
+        );
+        if (createdAt != null) {
+          final orderDay = DateTime(
+            createdAt.year,
+            createdAt.month,
+            createdAt.day,
+          );
+          final chartIndex = orderDay.difference(firstChartDay).inDays;
+          if (chartIndex >= 0 && chartIndex < salesLast7Days.length) {
+            salesLast7Days[chartIndex] += totalPrice;
+          }
+        }
       }
     }
 
@@ -390,6 +436,7 @@ class SupabaseSellerRepository implements SellerRepository {
       averageRating: avgRating,
       totalReviews: reviewsCount,
       totalRevenueDummy: revenue,
+      salesLast7Days: salesLast7Days,
       cancelledOrdersCount: countOrdersByStatus('cancelled'),
       returnedOrdersCount: countOrdersByStatus('returned'),
     );

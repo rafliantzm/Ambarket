@@ -139,8 +139,14 @@ class ProductPurchasePanel extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: isOwner ? null : onChatPressed,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: context.colors.textPrimary,
-                      side: BorderSide(color: context.colors.borderStrong),
+                      foregroundColor: isOwner
+                          ? context.colors.textMuted
+                          : context.colors.textPrimary,
+                      side: BorderSide(
+                        color: isOwner
+                            ? context.colors.border
+                            : context.colors.borderStrong,
+                      ),
                       padding: EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: Icon(CupertinoIcons.chat_bubble_text),
@@ -179,8 +185,14 @@ class ProductPurchasePanel extends StatelessWidget {
                         ? () => _showTooltip(context, buyDisabledReason!)
                         : onCartPressed,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: context.colors.textPrimary,
-                      side: BorderSide(color: context.colors.borderStrong),
+                      foregroundColor: buyDisabledReason != null
+                          ? context.colors.textMuted
+                          : context.colors.textPrimary,
+                      side: BorderSide(
+                        color: buyDisabledReason != null
+                            ? context.colors.border
+                            : context.colors.borderStrong,
+                      ),
                       padding: EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: Text(

@@ -245,8 +245,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              chat.lastMessage ??
-                                                  'Mulai percakapan',
+                                              chat.lastMessagePreview,
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 color: context

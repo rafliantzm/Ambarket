@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/error/error_mapper.dart';
 import '../../domain/models/offer_model.dart';
 import '../providers/offer_provider.dart';
 import 'package:intl/intl.dart';
@@ -30,6 +31,10 @@ class _MakeOfferDialogState extends ConsumerState<MakeOfferDialog> {
   final _formKey = GlobalKey<FormState>();
   final _priceController = TextEditingController();
   final _messageController = TextEditingController();
+  final _priceFormatter = CurrencyInputFormatter();
+  final _priceFocusNode = FocusNode();
+  final _messageFocusNode = FocusNode();
+  bool _isSubmitting = false;
 
   final _currencyFormat = NumberFormat.currency(
     locale: 'id_ID',
@@ -39,12 +44,16 @@ class _MakeOfferDialogState extends ConsumerState<MakeOfferDialog> {
 
   @override
   void dispose() {
+    _priceFocusNode.dispose();
+    _messageFocusNode.dispose();
     _priceController.dispose();
     _messageController.dispose();
     super.dispose();
   }
 
   void _submit() async {
+    if (_isSubmitting) return;
+
     final currentProfile = ref.read(currentProfileProvider).value;
     if (currentProfile?.isSuspended == true) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,6 +66,14 @@ class _MakeOfferDialogState extends ConsumerState<MakeOfferDialog> {
 
     final price = CurrencyParser.parse(_priceController.text).toDouble();
     if (price <= 0) return;
+    if (price >= widget.originalPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Harga tawaran harus lebih rendah dari harga asli.'),
+        ),
+      );
+      return;
+    }
 
     final input = CreateOfferInput(
       productId: widget.productId,
@@ -67,91 +84,192 @@ class _MakeOfferDialogState extends ConsumerState<MakeOfferDialog> {
           : _messageController.text.trim(),
     );
 
-    await ref.read(createOfferControllerProvider.notifier).createOffer(input);
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await ref.read(createOfferControllerProvider.notifier).createOffer(input);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ErrorMapper.getFriendlyMessage(error))),
+      );
+      setState(() {
+        _isSubmitting = false;
+      });
+      return;
+    }
+    if (!mounted) return;
+
+    final state = ref.read(createOfferControllerProvider);
+    if (state.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ErrorMapper.getFriendlyMessage(state.error!))),
+      );
+      setState(() {
+        _isSubmitting = false;
+      });
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Tawaran berhasil dikirim')));
+    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(createOfferControllerProvider);
-    final isLoading = state is AsyncLoading;
-
-    ref.listen(createOfferControllerProvider, (prev, next) {
-      if (next is AsyncError) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.error.toString())));
-      } else if (next is AsyncData && prev is AsyncLoading) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tawaran berhasil dikirim')),
-        );
-        Navigator.of(context).pop();
-      }
-    });
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewInsets.bottom;
+    final compact = mediaQuery.size.height < 720 || bottomInset > 0;
+    final availableHeight =
+        mediaQuery.size.height -
+        bottomInset -
+        mediaQuery.padding.top -
+        AppSpacing.md;
+    final maxSheetHeight = availableHeight.clamp(320.0, 640.0).toDouble();
 
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.lg,
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Tawar Harga', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              widget.productName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SafeArea(
+        top: false,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 560,
+              maxHeight: maxSheetHeight,
             ),
-            Text(
-              'Harga Asli: ${_currencyFormat.format(widget.originalPrice)}',
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextFormField(
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              enabled: !isLoading,
-              inputFormatters: [CurrencyInputFormatter()],
-              decoration: const InputDecoration(
-                labelText: 'Harga Tawaran (Rp) *',
-                prefixText: 'Rp ',
-                hintText: 'Misal: 50.000',
+            child: Material(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
               ),
-              validator: (val) {
-                if (val == null || val.trim().isEmpty) return 'Wajib diisi';
-                final p = CurrencyParser.parse(val);
-                if (p <= 0) return 'Harga tidak valid';
-                return null;
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextFormField(
-              controller: _messageController,
-              enabled: !isLoading,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Pesan (Opsional)',
-                hintText: 'Misal: Bisa COD besok?',
+              clipBehavior: Clip.none,
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                  AppSpacing.lg,
+                  AppSpacing.lg + mediaQuery.padding.bottom,
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 5,
+                          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outlineVariant.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Tawar Harga',
+                        style:
+                            (compact
+                                    ? Theme.of(context).textTheme.titleMedium
+                                    : Theme.of(context).textTheme.titleLarge)
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: compact ? AppSpacing.xs : AppSpacing.sm),
+                      Text(
+                        widget.productName,
+                        maxLines: compact ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Harga Asli: ${_currencyFormat.format(widget.originalPrice)}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: compact ? AppSpacing.sm : AppSpacing.md),
+                      TextFormField(
+                        controller: _priceController,
+                        focusNode: _priceFocusNode,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        scrollPadding: const EdgeInsets.only(
+                          bottom: AppSpacing.xl,
+                        ),
+                        enabled: !_isSubmitting,
+                        inputFormatters: [_priceFormatter],
+                        onFieldSubmitted: (_) {
+                          _messageFocusNode.requestFocus();
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Harga Tawaran (Rp) *',
+                          prefixText: 'Rp ',
+                          hintText: 'Misal: 50.000',
+                        ),
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty) {
+                            return 'Wajib diisi';
+                          }
+                          final p = CurrencyParser.parse(val);
+                          if (p <= 0) return 'Harga tidak valid';
+                          if (p >= widget.originalPrice) {
+                            return 'Harus lebih rendah dari harga asli';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: compact ? AppSpacing.sm : AppSpacing.md),
+                      TextFormField(
+                        controller: _messageController,
+                        focusNode: _messageFocusNode,
+                        enabled: !_isSubmitting,
+                        textInputAction: TextInputAction.done,
+                        scrollPadding: const EdgeInsets.only(
+                          bottom: AppSpacing.xl,
+                        ),
+                        minLines: compact ? 1 : 2,
+                        maxLines: compact ? 2 : 4,
+                        onFieldSubmitted: (_) {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Pesan (Opsional)',
+                          hintText: 'Misal: Bisa COD besok?',
+                        ),
+                      ),
+                      SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
+                      ElevatedButton(
+                        onPressed: _isSubmitting ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Kirim Tawaran'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: isLoading ? null : _submit,
-              child: isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Kirim Tawaran'),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
+          ),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import '../../../marketplace/domain/models/product_model.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_glass_card.dart';
@@ -17,6 +18,11 @@ class SellerProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
     final imageUrl = product.images.isNotEmpty
         ? product.images.first.imageUrl
         : null;
@@ -33,10 +39,10 @@ class SellerProductCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 80,
-                height: 80,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   color: theme.colorScheme.surfaceContainerHighest,
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -45,10 +51,10 @@ class SellerProductCard extends ConsumerWidget {
                         imageUrl: imageUrl,
                         fit: BoxFit.cover,
                         memCacheWidth:
-                            (80 * MediaQuery.devicePixelRatioOf(context))
+                            (88 * MediaQuery.devicePixelRatioOf(context))
                                 .round(),
                         memCacheHeight:
-                            (80 * MediaQuery.devicePixelRatioOf(context))
+                            (88 * MediaQuery.devicePixelRatioOf(context))
                                 .round(),
                         fadeInDuration: Duration.zero,
                         fadeOutDuration: Duration.zero,
@@ -66,29 +72,46 @@ class SellerProductCard extends ConsumerWidget {
                     Text(
                       product.title,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Rp ${product.price.toStringAsFixed(0)}',
+                      currencyFormat.format(product.price),
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
-                      runSpacing: 4,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         _buildStatusBadge(),
                         if (product.condition.isNotEmpty)
-                          Text(
-                            product.condition,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.65),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant,
+                              ),
+                            ),
+                            child: Text(
+                              _formatCondition(product.condition),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                       ],
@@ -99,41 +122,61 @@ class SellerProductCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          const Divider(),
+          Divider(color: theme.colorScheme.outlineVariant, height: 1),
           const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.end,
+          Row(
             children: [
-              OutlinedButton(
-                onPressed: () => context.push('/products/${product.id}'),
-                child: const Text('Lihat Detail'),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.push('/products/${product.id}'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text('Lihat Detail'),
+                ),
               ),
-              if (product.status != 'rejected' && product.status != 'hidden')
-                OutlinedButton(
-                  onPressed: () =>
-                      context.push('/seller/products/${product.id}/edit'),
-                  child: const Text('Edit'),
+              if (product.status != 'rejected' &&
+                  product.status != 'hidden') ...[
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () =>
+                        context.push('/seller/products/${product.id}/edit'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text('Edit'),
+                  ),
                 ),
-              if (product.status == 'active')
-                AppButton(
-                  label: 'Arsipkan',
-                  isLoading: isLoading,
-                  onPressed: isLoading
-                      ? () {}
-                      : () => _handleArchive(context, ref),
-                ),
-              if (product.status == 'archived')
-                AppButton(
-                  label: 'Aktifkan',
-                  isLoading: isLoading,
-                  onPressed: isLoading
-                      ? () {}
-                      : () => _handleReactivate(context, ref),
-                ),
+              ],
             ],
           ),
+          if (product.status == 'active' || product.status == 'archived') ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 180),
+                child: product.status == 'active'
+                    ? AppButton(
+                        label: 'Arsipkan',
+                        isLoading: isLoading,
+                        onPressed: () => _handleArchive(context, ref),
+                      )
+                    : AppButton(
+                        label: 'Aktifkan',
+                        isLoading: isLoading,
+                        onPressed: () => _handleReactivate(context, ref),
+                      ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -174,6 +217,19 @@ class SellerProductCard extends ConsumerWidget {
     }
 
     return AppStatusBadge(status: badgeStatus, label: badgeText);
+  }
+
+  String _formatCondition(String condition) {
+    final normalized = condition.replaceAll('_', ' ').trim();
+    if (normalized.isEmpty) return condition;
+    return normalized
+        .split(RegExp(r'\s+'))
+        .map(
+          (word) => word.isEmpty
+              ? word
+              : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+        )
+        .join(' ');
   }
 
   void _handleArchive(BuildContext context, WidgetRef ref) {

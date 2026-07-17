@@ -55,4 +55,34 @@ void main() {
 
     expect(find.text('Wajib diisi'), findsOneWidget);
   });
+
+  testWidgets('Make Offer dialog remains usable on compact screens', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: MakeOfferDialog(
+              productId: '1',
+              sellerId: '2',
+              originalPrice: 1500000,
+              productName: 'Hexohm Vapezoo Dengan Nama Produk Panjang',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tawar Harga'), findsOneWidget);
+    expect(find.text('Kirim Tawaran'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

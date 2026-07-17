@@ -33,6 +33,13 @@ class FakeOfferRepository implements OfferRepository {
       updatedAt: DateTime.now(),
     );
   }
+
+  @override
+  Future<Map<String, String>> findOrderIdsByOfferIds(
+    List<String> offerIds,
+  ) async {
+    return {if (offerIds.contains('off2')) 'off2': 'mock_order_for_offer'};
+  }
 }
 
 void main() {

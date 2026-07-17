@@ -11,6 +11,7 @@ class SellerDashboardStats {
   final double averageRating;
   final int totalReviews;
   final double totalRevenueDummy;
+  final List<double> salesLast7Days;
   final int cancelledOrdersCount;
   final int returnedOrdersCount;
 
@@ -27,6 +28,7 @@ class SellerDashboardStats {
     this.averageRating = 0.0,
     this.totalReviews = 0,
     this.totalRevenueDummy = 0.0,
+    this.salesLast7Days = const <double>[0, 0, 0, 0, 0, 0, 0],
     this.cancelledOrdersCount = 0,
     this.returnedOrdersCount = 0,
   });

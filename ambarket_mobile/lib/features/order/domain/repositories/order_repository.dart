@@ -1,4 +1,5 @@
 import 'package:ambarket_mobile/features/order/domain/models/order_model.dart';
+import 'package:ambarket_mobile/features/order/domain/models/refund_request_model.dart';
 
 abstract class OrderRepository {
   /// Create a new order
@@ -42,4 +43,13 @@ abstract class OrderRepository {
 
   /// Simulate payment for an order
   Future<void> simulatePayment(String orderId);
+
+  /// Buyer submits a refund/dispute request for an order.
+  Future<RefundRequestModel> requestRefund({
+    required String orderId,
+    required String reason,
+    required String description,
+    required double requestedAmount,
+    List<String> evidenceUrls = const [],
+  });
 }

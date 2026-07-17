@@ -19,8 +19,25 @@ final sellerRepositoryProvider = Provider<SellerRepository>((ref) {
 class PaginatedSellerProductsState {
   final List<ProductModel> products;
   final bool hasMore;
+  final bool isFetchingMore;
 
-  PaginatedSellerProductsState({required this.products, required this.hasMore});
+  PaginatedSellerProductsState({
+    required this.products,
+    required this.hasMore,
+    this.isFetchingMore = false,
+  });
+
+  PaginatedSellerProductsState copyWith({
+    List<ProductModel>? products,
+    bool? hasMore,
+    bool? isFetchingMore,
+  }) {
+    return PaginatedSellerProductsState(
+      products: products ?? this.products,
+      hasMore: hasMore ?? this.hasMore,
+      isFetchingMore: isFetchingMore ?? this.isFetchingMore,
+    );
+  }
 }
 
 class MyProductsNotifier extends AsyncNotifier<PaginatedSellerProductsState> {
@@ -53,7 +70,10 @@ class MyProductsNotifier extends AsyncNotifier<PaginatedSellerProductsState> {
 
   Future<void> fetchMore() async {
     final currentState = state.value;
-    if (currentState == null || !currentState.hasMore || state.isLoading) {
+    if (currentState == null ||
+        !currentState.hasMore ||
+        currentState.isFetchingMore ||
+        state.isLoading) {
       return;
     }
     final user = ref.read(currentUserProvider);
@@ -61,7 +81,7 @@ class MyProductsNotifier extends AsyncNotifier<PaginatedSellerProductsState> {
       return;
     }
 
-    state = const AsyncLoading();
+    state = AsyncData(currentState.copyWith(isFetchingMore: true));
     try {
       _offset += _limit;
       final repo = ref.read(sellerRepositoryProvider);
@@ -77,8 +97,9 @@ class MyProductsNotifier extends AsyncNotifier<PaginatedSellerProductsState> {
           hasMore: newProducts.length == _limit,
         ),
       );
-    } catch (e, st) {
-      state = AsyncError(e, st);
+    } catch (_) {
+      _offset -= _limit;
+      state = AsyncData(currentState.copyWith(isFetchingMore: false));
     }
   }
 }

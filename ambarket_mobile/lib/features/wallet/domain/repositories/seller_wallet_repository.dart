@@ -10,7 +10,7 @@ abstract class SellerWalletRepository {
   Future<List<SellerWithdrawalModel>> fetchSellerWithdrawals(String sellerId);
 
   /// Submits a dummy withdrawal request.
-  Future<void> requestDummyWithdrawal(
+  Future<SellerWithdrawalModel> requestDummyWithdrawal(
     String sellerId,
     DummyWithdrawalInput input,
   );

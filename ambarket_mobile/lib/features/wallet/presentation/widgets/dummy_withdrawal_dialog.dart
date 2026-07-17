@@ -49,15 +49,27 @@ class _DummyWithdrawalDialogState extends ConsumerState<DummyWithdrawalDialog> {
       note: _noteController.text.trim(),
     );
 
-    await ref
+    final success = await ref
         .read(sellerWithdrawalActionControllerProvider.notifier)
         .submitDummyWithdrawal(input);
 
-    if (mounted) {
+    if (!mounted) return;
+
+    if (success) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Pengajuan penarikan dummy berhasil dibuat.'),
+        ),
+      );
+    } else {
+      final error = ref.read(sellerWithdrawalActionControllerProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error?.toString() ?? 'Pengajuan penarikan gagal dibuat.',
+          ),
+          backgroundColor: Colors.red,
         ),
       );
     }

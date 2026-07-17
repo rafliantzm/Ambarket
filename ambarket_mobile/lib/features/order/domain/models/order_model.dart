@@ -1,6 +1,7 @@
 import 'package:ambarket_mobile/features/marketplace/domain/models/product_model.dart';
 import 'package:ambarket_mobile/features/profile/domain/models/profile_model.dart';
 import 'package:ambarket_mobile/features/offer/domain/models/offer_model.dart';
+import 'package:ambarket_mobile/features/order/domain/models/refund_request_model.dart';
 
 class OrderModel {
   final String id;
@@ -30,6 +31,7 @@ class OrderModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isReviewed;
+  final List<RefundRequestModel> refundRequests;
 
   final ProductModel? product;
   final ProfileModel? buyer;
@@ -63,6 +65,7 @@ class OrderModel {
     required this.createdAt,
     required this.updatedAt,
     this.isReviewed = false,
+    this.refundRequests = const [],
     this.product,
     this.buyer,
     this.seller,
@@ -70,58 +73,43 @@ class OrderModel {
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final createdAt = _parseDate(json['created_at']);
+    final totalPrice = _doubleValue(json['total_price']);
+
     return OrderModel(
-      id: json['id'] as String,
-      offerId: json['offer_id'] as String?,
-      productId: json['product_id'] as String,
-      buyerId: json['buyer_id'] as String,
-      sellerId: json['seller_id'] as String,
-      totalPrice: double.parse(json['total_price'].toString()),
+      id: _stringValue(json['id'], fallback: 'unknown-order'),
+      offerId: _nullableString(json['offer_id']),
+      productId: _stringValue(json['product_id']),
+      buyerId: _stringValue(json['buyer_id']),
+      sellerId: _stringValue(json['seller_id']),
+      totalPrice: totalPrice,
 
-      receiverName: json['receiver_name'] as String?,
-      receiverPhone: json['receiver_phone'] as String?,
-      shippingAddress: json['shipping_address'] as String?,
-      shippingMethod: json['shipping_method'] as String?,
-      shippingCost: json['shipping_cost'] != null
-          ? double.parse(json['shipping_cost'].toString())
-          : 0,
-      paymentMethod: json['payment_method'] as String? ?? 'cod',
-      paymentStatus: json['payment_status'] as String? ?? 'unpaid',
-      paymentDueAt: json['payment_due_at'] != null
-          ? DateTime.parse(json['payment_due_at'] as String)
-          : null,
-      paidAt: json['paid_at'] != null
-          ? DateTime.parse(json['paid_at'] as String)
-          : null,
-      invoiceNumber: json['invoice_number'] as String?,
-      voucherCode: json['voucher_code'] as String?,
-      discountAmount: json['discount_amount'] != null
-          ? double.parse(json['discount_amount'].toString())
-          : 0,
-      serviceFee: json['service_fee'] != null
-          ? double.parse(json['service_fee'].toString())
-          : 0,
-      subtotal: json['subtotal'] != null
-          ? double.parse(json['subtotal'].toString())
-          : double.parse(json['total_price'].toString()),
+      receiverName: _nullableString(json['receiver_name']),
+      receiverPhone: _nullableString(
+        json['receiver_phone'] ?? json['shipping_phone'],
+      ),
+      shippingAddress: _nullableString(json['shipping_address']),
+      shippingMethod: _nullableString(json['shipping_method']),
+      shippingCost: _doubleValue(json['shipping_cost']),
+      paymentMethod: _stringValue(json['payment_method'], fallback: 'cod'),
+      paymentStatus: _stringValue(json['payment_status'], fallback: 'unpaid'),
+      paymentDueAt: _parseNullableDate(json['payment_due_at']),
+      paidAt: _parseNullableDate(json['paid_at']),
+      invoiceNumber: _nullableString(json['invoice_number']),
+      voucherCode: _nullableString(json['voucher_code']),
+      discountAmount: _doubleValue(json['discount_amount']),
+      serviceFee: _doubleValue(json['service_fee']),
+      subtotal: _doubleValue(json['subtotal'], fallback: totalPrice),
 
-      status: json['status'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
-      isReviewed:
-          json['reviews'] != null && (json['reviews'] as List).isNotEmpty,
-      product: json['product'] != null
-          ? ProductModel.fromJson(json['product'] as Map<String, dynamic>)
-          : null,
-      buyer: json['buyer'] != null
-          ? ProfileModel.fromJson(json['buyer'] as Map<String, dynamic>)
-          : null,
-      seller: json['seller'] != null
-          ? ProfileModel.fromJson(json['seller'] as Map<String, dynamic>)
-          : null,
-      offer: json['offer'] != null
-          ? OfferModel.fromJson(json['offer'] as Map<String, dynamic>)
-          : null,
+      status: _stringValue(json['status'], fallback: 'pending_payment'),
+      createdAt: createdAt,
+      updatedAt: _parseDate(json['updated_at'], fallback: createdAt),
+      isReviewed: _hasReviews(json['reviews']),
+      refundRequests: _parseRefundRequests(json['refund_requests']),
+      product: _parseProduct(json['product']),
+      buyer: _parseProfile(json['buyer']),
+      seller: _parseProfile(json['seller']),
+      offer: _parseOffer(json['offer']),
     );
   }
 
@@ -182,6 +170,7 @@ class OrderModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isReviewed,
+    List<RefundRequestModel>? refundRequests,
     ProductModel? product,
     ProfileModel? buyer,
     ProfileModel? seller,
@@ -214,10 +203,137 @@ class OrderModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isReviewed: isReviewed ?? this.isReviewed,
+      refundRequests: refundRequests ?? this.refundRequests,
       product: product ?? this.product,
       buyer: buyer ?? this.buyer,
       seller: seller ?? this.seller,
       offer: offer ?? this.offer,
     );
   }
+
+  RefundRequestModel? get activeRefundRequest {
+    for (final request in refundRequests) {
+      if (request.isOpen) {
+        return request;
+      }
+    }
+    return null;
+  }
+
+  bool get hasActiveRefundRequest => activeRefundRequest != null;
+
+  bool get canBuyerRequestRefund {
+    return !hasActiveRefundRequest &&
+        (status == 'paid' ||
+            status == 'packed' ||
+            status == 'shipped' ||
+            status == 'delivered');
+  }
+}
+
+String _stringValue(dynamic value, {String fallback = ''}) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return fallback;
+}
+
+String? _nullableString(dynamic value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return null;
+}
+
+double _doubleValue(dynamic value, {double fallback = 0}) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value) ?? fallback;
+  }
+  return fallback;
+}
+
+DateTime _parseDate(dynamic value, {DateTime? fallback}) {
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value) ??
+        fallback ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return fallback ?? DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+DateTime? _parseNullableDate(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value);
+  }
+  return null;
+}
+
+bool _hasReviews(dynamic value) {
+  return value is List && value.isNotEmpty;
+}
+
+ProductModel? _parseProduct(dynamic value) {
+  if (value is! Map<String, dynamic>) {
+    return null;
+  }
+
+  try {
+    return ProductModel.fromJson(value);
+  } catch (_) {
+    return null;
+  }
+}
+
+ProfileModel? _parseProfile(dynamic value) {
+  if (value is! Map<String, dynamic>) {
+    return null;
+  }
+
+  try {
+    return ProfileModel.fromJson(value);
+  } catch (_) {
+    return null;
+  }
+}
+
+OfferModel? _parseOffer(dynamic value) {
+  if (value is! Map<String, dynamic>) {
+    return null;
+  }
+
+  try {
+    return OfferModel.fromJson(value);
+  } catch (_) {
+    return null;
+  }
+}
+
+List<RefundRequestModel> _parseRefundRequests(dynamic value) {
+  if (value is! List) {
+    return const [];
+  }
+
+  return value
+      .whereType<Map<String, dynamic>>()
+      .map((row) {
+        try {
+          return RefundRequestModel.fromJson(row);
+        } catch (_) {
+          return null;
+        }
+      })
+      .whereType<RefundRequestModel>()
+      .toList(growable: false);
 }

@@ -13,10 +13,10 @@ class CategoryModel {
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      icon: json['icon'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      id: _stringValue(json['id'], fallback: 'unknown-category'),
+      name: _stringValue(json['name'], fallback: 'Kategori'),
+      icon: _nullableString(json['icon']),
+      createdAt: _dateValue(json['created_at']),
     );
   }
 
@@ -28,4 +28,28 @@ class CategoryModel {
       'created_at': createdAt.toIso8601String(),
     };
   }
+}
+
+String _stringValue(dynamic value, {String fallback = ''}) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return fallback;
+}
+
+String? _nullableString(dynamic value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return null;
+}
+
+DateTime _dateValue(dynamic value) {
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return DateTime.fromMillisecondsSinceEpoch(0);
 }

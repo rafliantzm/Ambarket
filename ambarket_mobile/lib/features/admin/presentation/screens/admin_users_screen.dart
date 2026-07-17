@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ambarket_mobile/features/admin/presentation/providers/admin_provider.dart';
@@ -16,6 +18,23 @@ class AdminUsersScreen extends ConsumerStatefulWidget {
 
 class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   String _searchQuery = '';
+  Timer? _searchDebounce;
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      final query = value.toLowerCase().trim();
+      if (query == _searchQuery) return;
+      setState(() => _searchQuery = query);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +63,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
-              onChanged: (value) =>
-                  setState(() => _searchQuery = value.toLowerCase()),
+              onChanged: _onSearchChanged,
             ),
           ),
           Expanded(

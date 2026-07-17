@@ -69,9 +69,12 @@ class VouchersScreen extends ConsumerWidget {
                     subtitle:
                         '${voucher.description}\nMin. belanja ${currencyFormatter.format(voucher.minPurchase)}'
                         '${voucher.expiresAt != null ? '\nBerlaku hingga: ${DateFormat('dd MMM yyyy, HH:mm').format(voucher.expiresAt!)}' : ''}',
-                    label: voucher.type == 'percent'
-                        ? 'Diskon ${voucher.discountPercent}%'
-                        : 'Potongan Harga',
+                    label:
+                        voucher.type == 'percent' && voucher.discountPercent > 0
+                        ? 'Diskon ${voucher.discountPercent.toInt()}%'
+                        : (voucher.flatDiscount > 0
+                              ? 'Potongan ${currencyFormatter.format(voucher.flatDiscount)}'
+                              : ''),
                     ctaText: voucher.isClaimed ? 'DIKLAIM' : 'KLAIM',
                     icon: Icons.local_activity_rounded,
                     isClaimed: voucher.isClaimed,

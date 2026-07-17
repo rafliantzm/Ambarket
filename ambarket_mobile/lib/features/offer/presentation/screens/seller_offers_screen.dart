@@ -117,6 +117,23 @@ class SellerOffersScreen extends ConsumerWidget {
             );
           }
 
+          final acceptedOfferIds =
+              offers
+                  .where((offer) => offer.status == 'accepted')
+                  .map((offer) => offer.id)
+                  .toList(growable: false)
+                ..sort();
+          final orderIdsByOfferId = acceptedOfferIds.isEmpty
+              ? const <String, String>{}
+              : ref
+                        .watch(
+                          sellerAcceptedOfferOrderIdsProvider(
+                            acceptedOfferIds.join(','),
+                          ),
+                        )
+                        .value ??
+                    const <String, String>{};
+
           return ListView.builder(
             padding: EdgeInsets.symmetric(
               horizontal: isDesktop && MediaQuery.of(context).size.width > 1200
@@ -130,7 +147,10 @@ class SellerOffersScreen extends ConsumerWidget {
             addRepaintBoundaries: true,
             itemCount: offers.length,
             itemBuilder: (context, index) {
-              return SellerOfferCard(offer: offers[index]);
+              return SellerOfferCard(
+                offer: offers[index],
+                orderId: orderIdsByOfferId[offers[index].id],
+              );
             },
           );
         },
@@ -170,8 +190,9 @@ class SellerOffersScreen extends ConsumerWidget {
 
 class SellerOfferCard extends ConsumerWidget {
   final OfferModel offer;
+  final String? orderId;
 
-  const SellerOfferCard({super.key, required this.offer});
+  const SellerOfferCard({super.key, required this.offer, this.orderId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -409,23 +430,10 @@ class SellerOfferCard extends ConsumerWidget {
                   icon: const Icon(Icons.chat, size: 18),
                   label: const Text('Chat'),
                 ),
-                if (offer.status == 'accepted')
-                  FutureBuilder(
-                    future: ref
-                        .read(offerRepositoryProvider)
-                        .findOrderByOfferId(offer.id),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data != null) {
-                        final orderId = snapshot.data!.id;
-                        return PremiumButton(
-                          label: 'Lihat Pesanan',
-                          onPressed: () => context.push(
-                            '/orders/$orderId/tracking',
-                          ), // adjust as needed
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
+                if (offer.status == 'accepted' && orderId != null)
+                  PremiumButton(
+                    label: 'Lihat Pesanan',
+                    onPressed: () => context.push('/orders/$orderId/tracking'),
                   ),
 
                 if (offer.status == 'pending') ...[

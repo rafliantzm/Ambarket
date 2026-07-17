@@ -42,7 +42,7 @@ class SupabaseOfferRepository implements OfferRepository {
         .from('offers')
         .insert(input.toJson(buyerId))
         .select(
-          '*, products(id, title, product_images(id, image_url, is_primary)), buyer:profiles!buyer_id(id, name, avatar_url), seller:profiles!seller_id(id, name, avatar_url)',
+          '*, products(*, product_images(*)), buyer:profiles!buyer_id(*), seller:profiles!seller_id(*)',
         )
         .single();
 
@@ -54,7 +54,7 @@ class SupabaseOfferRepository implements OfferRepository {
     final response = await _client
         .from('offers')
         .select(
-          '*, products(id, title, product_images(id, image_url, is_primary)), seller:profiles!seller_id(id, name, avatar_url)',
+          '*, products(*, product_images(*)), seller:profiles!seller_id(*)',
         )
         .eq('buyer_id', buyerId)
         .order('created_at', ascending: false);
@@ -74,9 +74,7 @@ class SupabaseOfferRepository implements OfferRepository {
   }) async {
     var query = _client
         .from('offers')
-        .select(
-          '*, products(id, title, product_images(id, image_url, is_primary)), buyer:profiles!buyer_id(id, name, avatar_url)',
-        )
+        .select('*, products(*, product_images(*)), buyer:profiles!buyer_id(*)')
         .eq('seller_id', sellerId);
 
     if (status != null && status != 'all') {
@@ -92,7 +90,7 @@ class SupabaseOfferRepository implements OfferRepository {
     final response = await _client
         .from('orders')
         .select(
-          '*, product:products(id, title, product_images(id, image_url, is_primary)), buyer:profiles!orders_buyer_id_fkey(id, name, avatar_url), seller:profiles!orders_seller_id_fkey(id, name, avatar_url)',
+          '*, product:products(*, categories(*), product_images(*)), buyer:profiles!orders_buyer_id_fkey(*), seller:profiles!orders_seller_id_fkey(*)',
         )
         .eq('offer_id', offerId)
         .maybeSingle();
@@ -102,10 +100,28 @@ class SupabaseOfferRepository implements OfferRepository {
   }
 
   @override
+  Future<Map<String, String>> findOrderIdsByOfferIds(
+    List<String> offerIds,
+  ) async {
+    if (offerIds.isEmpty) return {};
+
+    final response = await _client
+        .from('orders')
+        .select('id, offer_id')
+        .inFilter('offer_id', offerIds);
+
+    return {
+      for (final row in response as List)
+        if (row['offer_id'] != null && row['id'] != null)
+          row['offer_id'] as String: row['id'] as String,
+    };
+  }
+
+  @override
   Future<List<OfferModel>> fetchOffersForProduct(String productId) async {
     final response = await _client
         .from('offers')
-        .select('*, buyer:profiles!buyer_id(id, name, avatar_url)')
+        .select('*, buyer:profiles!buyer_id(*)')
         .eq('product_id', productId)
         .order('created_at', ascending: false);
 
@@ -114,17 +130,23 @@ class SupabaseOfferRepository implements OfferRepository {
 
   @override
   Future<void> cancelOffer(String offerId, String buyerId) async {
-    await _client
+    final updatedOffer = await _client
         .from('offers')
         .update({'status': 'cancelled'})
         .eq('id', offerId)
         .eq('buyer_id', buyerId)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle();
+
+    if (updatedOffer == null) {
+      throw Exception('Tawaran tidak dapat dibatalkan atau statusnya berubah.');
+    }
   }
 
   @override
   Future<void> acceptOffer(String offerId, String sellerId) async {
-    await _client
+    final updatedOffer = await _client
         .from('offers')
         .update({
           'status': 'accepted',
@@ -135,17 +157,29 @@ class SupabaseOfferRepository implements OfferRepository {
         })
         .eq('id', offerId)
         .eq('seller_id', sellerId)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle();
+
+    if (updatedOffer == null) {
+      throw Exception('Tawaran tidak dapat diterima atau statusnya berubah.');
+    }
   }
 
   @override
   Future<void> rejectOffer(String offerId, String sellerId) async {
-    await _client
+    final updatedOffer = await _client
         .from('offers')
         .update({'status': 'rejected'})
         .eq('id', offerId)
         .eq('seller_id', sellerId)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle();
+
+    if (updatedOffer == null) {
+      throw Exception('Tawaran tidak dapat ditolak atau statusnya berubah.');
+    }
   }
 
   @override

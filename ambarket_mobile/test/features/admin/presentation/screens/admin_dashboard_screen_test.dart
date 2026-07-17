@@ -34,6 +34,11 @@ void main() {
     expect(find.text('50'), findsOneWidget); // Total users
     expect(find.text('100'), findsOneWidget); // Total products
     // We don't use ListTile anymore in the new UI, we use custom AppGlassCard tiles.
+    await tester.scrollUntilVisible(
+      find.text('Moderasi Produk'),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
     expect(find.text('Moderasi Produk'), findsOneWidget);
   });
 }

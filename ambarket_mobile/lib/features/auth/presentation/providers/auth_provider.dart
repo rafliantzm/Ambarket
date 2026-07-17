@@ -47,6 +47,23 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
+  Future<bool> signInWithGoogle() async {
+    state = const AsyncLoading();
+    try {
+      final isStarted = await _authRepository.signInWithGoogle();
+      if (!isStarted) {
+        throw Exception(
+          'Login Google tidak dapat dibuka. Periksa browser atau koneksi internet perangkat.',
+        );
+      }
+      state = const AsyncData(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+
   Future<AuthResponse?> signUp(
     String email,
     String password,

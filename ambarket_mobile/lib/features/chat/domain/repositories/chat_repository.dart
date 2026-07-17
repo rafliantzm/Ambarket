@@ -22,6 +22,12 @@ abstract class ChatRepository {
     String receiverId,
     String message,
   );
+  Future<ChatAttachment> sendAttachment(
+    String conversationId,
+    String senderId,
+    String receiverId,
+    ChatAttachmentUpload attachment,
+  );
   Future<void> markConversationAsRead(String conversationId, String userId);
   Stream<int> watchUnreadCount(String conversationId, String userId);
   Stream<int> watchTotalUnreadCount(String userId);

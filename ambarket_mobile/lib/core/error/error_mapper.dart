@@ -9,8 +9,17 @@ class ErrorMapper {
 
     if (error is AuthException) {
       final msg = error.message.toLowerCase();
+      final code = error.code?.toLowerCase();
       if (msg.contains('invalid login credentials')) {
         return 'Email atau kata sandi yang Anda masukkan salah.';
+      }
+      if (code == 'over_email_send_rate_limit' ||
+          code == 'over_request_rate_limit' ||
+          msg.contains('email rate limit') ||
+          msg.contains('email limit') ||
+          msg.contains('rate limit') ||
+          msg.contains('too many requests')) {
+        return 'Batas pengiriman email verifikasi sedang tercapai. Tunggu beberapa menit lalu coba lagi, atau gunakan email lain.';
       }
       if (msg.contains('user already registered') ||
           msg.contains('user_already_exists') ||
@@ -43,8 +52,19 @@ class ErrorMapper {
       if (msg.contains('failed host lookup')) {
         return 'Koneksi internet bermasalah. Pastikan perangkat Anda terhubung ke internet.';
       }
+      if (msg.contains('tawaran')) {
+        return _cleanExceptionMessage(error);
+      }
+      if (msg.contains('produk') &&
+          (msg.contains('tidak') || msg.contains('gagal'))) {
+        return _cleanExceptionMessage(error);
+      }
     }
 
     return 'Terjadi kendala teknis. Silakan coba beberapa saat lagi.';
+  }
+
+  static String _cleanExceptionMessage(Exception error) {
+    return error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
   }
 }

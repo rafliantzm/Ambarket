@@ -33,24 +33,20 @@ class ProfileModel {
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
-      id: json['id'] as String,
-      name: json['name'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      role: json['role'] as String? ?? 'user',
-      createdAt: DateTime.parse(json['created_at'] as String),
-      username: json['username'] as String?,
-      phone: json['phone'] as String?,
-      location: json['location'] as String?,
-      address: json['address'] as String?,
-      bio: json['bio'] as String?,
+      id: _stringValue(json['id'], fallback: 'unknown-user'),
+      name: _nullableString(json['name']),
+      avatarUrl: _nullableString(json['avatar_url']),
+      role: _stringValue(json['role'], fallback: 'user'),
+      createdAt: _dateValue(json['created_at']),
+      username: _nullableString(json['username']),
+      phone: _nullableString(json['phone']),
+      location: _nullableString(json['location']),
+      address: _nullableString(json['address']),
+      bio: _nullableString(json['bio']),
       isSuspended: json['is_suspended'] as bool? ?? false,
-      suspensionReason: json['suspension_reason'] as String?,
-      suspendedAt: json['suspended_at'] != null
-          ? DateTime.parse(json['suspended_at'] as String)
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
+      suspensionReason: _nullableString(json['suspension_reason']),
+      suspendedAt: _nullableDate(json['suspended_at']),
+      updatedAt: _nullableDate(json['updated_at']),
     );
   }
 
@@ -106,4 +102,41 @@ class ProfileModel {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+}
+
+String _stringValue(dynamic value, {String fallback = ''}) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return fallback;
+}
+
+String? _nullableString(dynamic value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return null;
+}
+
+DateTime _dateValue(dynamic value) {
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+DateTime? _nullableDate(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value);
+  }
+  return null;
 }

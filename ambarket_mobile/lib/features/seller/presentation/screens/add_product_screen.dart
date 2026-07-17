@@ -13,7 +13,7 @@ import '../../../../core/utils/currency_parser.dart';
 import '../../../../core/widgets/ambarket_scaffold.dart';
 import '../../../../core/widgets/premium_surface_card.dart';
 import '../../../../core/widgets/premium_text_field.dart';
-import '../../../../core/widgets/premium_dropdown.dart';
+import '../../../../core/widgets/premium_dropdown_field.dart';
 import '../../../../core/widgets/premium_button.dart';
 
 class AddProductScreen extends ConsumerStatefulWidget {
@@ -54,16 +54,71 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _imageBytes = bytes;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal membuka kamera atau memilih foto.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showImageSourceSheet() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Pilih Foto Produk',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_outlined),
+                  title: const Text('Ambil dari Kamera'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Pilih dari Galeri'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
-    if (image != null) {
-      final bytes = await image.readAsBytes();
-      setState(() {
-        _imageBytes = bytes;
-      });
+
+    if (source != null) {
+      await _pickImage(source);
     }
   }
 
@@ -173,7 +228,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                   children: [
                     // Image Picker
                     GestureDetector(
-                      onTap: isLoading ? null : _pickImage,
+                      onTap: isLoading ? null : _showImageSourceSheet,
                       child: Container(
                         height: 200,
                         decoration: BoxDecoration(
@@ -229,7 +284,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Format: JPG/PNG, Max 5MB',
+                                    'Kamera atau galeri, format JPG/PNG',
                                     style: TextStyle(
                                       color: Theme.of(
                                         context,
@@ -270,23 +325,24 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                           categoriesAsync.when(
                             data: (categories) => StatefulBuilder(
                               builder: (context, setCategoryState) =>
-                                  PremiumDropdown<String>(
+                                  PremiumDropdownField<String>(
                                     value: _selectedCategoryId,
                                     labelText: 'Kategori *',
-                                    hint: 'Pilih kategori',
+                                    hintText: 'Pilih kategori',
                                     items: categories.map((cat) {
-                                      return DropdownMenuItem(
+                                      return DropdownItem<String>(
                                         value: cat.id,
-                                        child: Text(cat.name),
+                                        label: cat.name,
                                       );
                                     }).toList(),
-                                    onChanged: isLoading
-                                        ? null
-                                        : (value) {
-                                            setCategoryState(() {
-                                              _selectedCategoryId = value;
-                                            });
-                                          },
+                                    enabled: !isLoading,
+                                    onChanged: (value) {
+                                      setCategoryState(() {
+                                        _selectedCategoryId = value;
+                                      });
+                                    },
+                                    validator: (val) =>
+                                        val == null ? 'Wajib diisi' : null,
                                   ),
                             ),
                             loading: () => const CircularProgressIndicator(),
@@ -352,36 +408,26 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                         children: [
                           StatefulBuilder(
                             builder: (context, setConditionState) =>
-                                PremiumDropdown<String>(
+                                PremiumDropdownField<String>(
                                   value: _selectedCondition,
                                   labelText: 'Kondisi *',
-                                  hint: 'Pilih kondisi',
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: 'new',
-                                      child: Text('Baru'),
-                                    ),
-                                    DropdownMenuItem(
+                                  hintText: 'Pilih kondisi',
+                                  enabled: !isLoading,
+                                  items: [
+                                    DropdownItem(value: 'new', label: 'Baru'),
+                                    DropdownItem(
                                       value: 'like_new',
-                                      child: Text('Seperti Baru'),
+                                      label: 'Seperti Baru',
                                     ),
-                                    DropdownMenuItem(
-                                      value: 'good',
-                                      child: Text('Baik'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'fair',
-                                      child: Text('Cukup'),
-                                    ),
+                                    DropdownItem(value: 'good', label: 'Baik'),
+                                    DropdownItem(value: 'fair', label: 'Cukup'),
                                   ],
-                                  onChanged: isLoading
-                                      ? null
-                                      : (value) {
-                                          setConditionState(() {
-                                            _selectedCondition = value!;
-                                          });
-                                          _selectedCondition = value!;
-                                        },
+                                  onChanged: (value) {
+                                    setConditionState(() {
+                                      _selectedCondition = value!;
+                                    });
+                                    _selectedCondition = value!;
+                                  },
                                 ),
                           ),
                           const SizedBox(height: AppSpacing.md),

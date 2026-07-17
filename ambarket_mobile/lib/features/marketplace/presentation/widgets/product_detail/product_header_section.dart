@@ -21,80 +21,95 @@ class ProductHeaderSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AppGlassCard(
-      padding: EdgeInsets.all(AppSpacing.xl),
-      variant: AppGlassCardVariant.elevated,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (validOffer != null)
-            Container(
-              margin: EdgeInsets.only(bottom: AppSpacing.md),
-              padding: EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.2),
-                border: Border.all(color: Colors.amber),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.local_offer, color: Colors.amber, size: 20),
-                  SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'Tawaran disetujui! Sisa waktu: ${validOffer!.expiresAt?.difference(DateTime.now()).inHours ?? 0} jam',
-                      style: TextStyle(
-                        color: Colors.amber,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 430;
+
+        return AppGlassCard(
+          padding: EdgeInsets.all(isCompact ? AppSpacing.lg : AppSpacing.xl),
+          variant: AppGlassCardVariant.elevated,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (validOffer != null)
+                Container(
+                  margin: EdgeInsets.only(bottom: AppSpacing.md),
+                  padding: EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.2),
+                    border: Border.all(color: Colors.amber),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_offer, color: Colors.amber, size: 20),
+                      SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'Tawaran disetujui! Sisa waktu: ${validOffer!.expiresAt?.difference(DateTime.now()).inHours ?? 0} jam',
+                          style: TextStyle(
+                            color: Colors.amber,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                ),
+              Text(
+                product.title,
+                style:
+                    (isCompact
+                            ? theme.textTheme.titleLarge
+                            : theme.textTheme.headlineSmall)
+                        ?.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          height: 1.18,
+                        ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: AppSpacing.xs),
+              AppMoneyText(
+                amount: validOffer != null
+                    ? validOffer!.offerPrice
+                    : product.price,
+                originalAmount: validOffer != null ? product.price : null,
+                fontSize: isCompact ? 24 : 28,
+                fontWeight: FontWeight.w800,
+                color: context.colors.primary,
+              ),
+              SizedBox(height: AppSpacing.sm),
+              AppStatusBadge(
+                label: _mapCondition(product.condition),
+                status: BadgeStatus.neutral,
+              ),
+              SizedBox(height: isCompact ? AppSpacing.lg : AppSpacing.xl),
+              Divider(color: context.colors.border, height: 1),
+              SizedBox(height: AppSpacing.lg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(
+                    context,
+                    Icons.remove_red_eye_outlined,
+                    'Dilihat',
+                    '412',
+                  ),
+                  _buildStatItem(
+                    context,
+                    Icons.verified_user_outlined,
+                    'Garansi',
+                    'Resmi',
                   ),
                 ],
               ),
-            ),
-          Text(
-            product.title,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: context.colors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: AppSpacing.xs),
-          AppMoneyText(
-            amount: validOffer != null ? validOffer!.offerPrice : product.price,
-            originalAmount: validOffer != null ? product.price : null,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: context.colors.primary,
-          ),
-          SizedBox(height: AppSpacing.sm),
-          AppStatusBadge(
-            label: _mapCondition(product.condition),
-            status: BadgeStatus.neutral,
-          ),
-          SizedBox(height: AppSpacing.xl),
-          Divider(color: context.colors.border, height: 1),
-          SizedBox(height: AppSpacing.lg),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                context,
-                Icons.remove_red_eye_outlined,
-                'Dilihat',
-                '412',
-              ),
-              _buildStatItem(
-                context,
-                Icons.verified_user_outlined,
-                'Garansi',
-                'Resmi',
-              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

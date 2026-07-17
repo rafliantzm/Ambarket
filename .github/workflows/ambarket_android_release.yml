@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - qa/full-system-rc-audit
 
 jobs:
   build-android:
@@ -37,13 +38,10 @@ jobs:
         working-directory: ambarket_mobile
         run: flutter --version
 
-      - name: Create env file
-        working-directory: ambarket_mobile
+      - name: Validate runtime configuration
         run: |
-          cat > .env <<EOF
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          EOF
+          test -n "${{ secrets.SUPABASE_URL }}"
+          test -n "${{ secrets.SUPABASE_PUBLISHABLE_KEY }}"
 
       - name: Install dependencies
         working-directory: ambarket_mobile
@@ -59,11 +57,17 @@ jobs:
 
       - name: Build APK release
         working-directory: ambarket_mobile
-        run: flutter build apk --release
+        run: >
+          flutter build apk --release
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Build AppBundle release
         working-directory: ambarket_mobile
-        run: flutter build appbundle --release
+        run: >
+          flutter build appbundle --release
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

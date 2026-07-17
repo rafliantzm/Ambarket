@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class SupabaseAuthRepository implements AuthRepository {
+  static const googleRedirectTo = 'io.supabase.ambarket://login-callback/';
+
   final SupabaseClient _supabaseClient;
 
   SupabaseAuthRepository(this._supabaseClient);
@@ -21,6 +24,14 @@ class SupabaseAuthRepository implements AuthRepository {
     return await _supabaseClient.auth.signInWithPassword(
       email: email,
       password: password,
+    );
+  }
+
+  @override
+  Future<bool> signInWithGoogle() async {
+    return _supabaseClient.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: kIsWeb ? null : googleRedirectTo,
     );
   }
 

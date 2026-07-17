@@ -13,57 +13,102 @@ class SupabaseSellerWalletRepository implements SellerWalletRepository {
   @override
   Future<SellerWalletSummary> fetchSellerWalletSummary(String sellerId) async {
     try {
-      // 1. Calculate total revenue from completed orders
-      final completedOrders = await _client
-          .from('orders')
-          .select('total_price')
-          .eq('seller_id', sellerId)
-          .eq('status', 'completed');
+      // Seller wallets can be stale if the sync RPC has not run or failed.
+      // Completed orders are the authoritative source for seller earnings.
+      final results = await Future.wait<dynamic>([
+        _fetchCompletedOrderRevenue(sellerId),
+        _fetchPendingSettlementRevenue(sellerId),
+        _fetchDisputedOrderRevenue(sellerId),
+        _fetchWithdrawalsSummary(sellerId),
+      ]);
+      final totalRevenue = results[0] as double;
+      final pendingSettlement = results[1] as double;
+      final disputedBalance = results[2] as double;
+      final withdrawalsSummary = results[3] as _WithdrawalsSummary;
 
-      double totalRevenue = 0;
-      for (var row in completedOrders) {
-        if (row['total_price'] != null) {
-          totalRevenue += (row['total_price'] as num).toDouble();
-        }
-      }
-
-      // 2. Fetch withdrawals
-      final withdrawalsRes = await _client
-          .from('seller_withdrawals')
-          .select('amount, status')
-          .eq('seller_id', sellerId);
-
-      final withdrawals = List<Map<String, dynamic>>.from(withdrawalsRes);
-
-      double pendingBalance = 0;
-      double withdrawnBalance = 0;
-      int pendingCount = 0;
-
-      for (var w in withdrawals) {
-        final amount = (w['amount'] as num).toDouble();
-        if (w['status'] == 'pending') {
-          pendingBalance += amount;
-          pendingCount++;
-        } else if (w['status'] == 'approved_dummy') {
-          withdrawnBalance += amount;
-        }
-      }
-
-      double availableBalance =
-          totalRevenue - pendingBalance - withdrawnBalance;
+      var availableBalance =
+          totalRevenue -
+          withdrawalsSummary.pendingBalance -
+          withdrawalsSummary.withdrawnBalance;
       if (availableBalance < 0) availableBalance = 0;
 
       return SellerWalletSummary(
         availableBalance: availableBalance,
-        pendingBalance: pendingBalance,
+        pendingBalance: pendingSettlement,
+        disputedBalance: disputedBalance,
         totalEarning: totalRevenue,
         completedOrderRevenue: totalRevenue,
-        withdrawalCount: withdrawals.length,
-        pendingWithdrawalCount: pendingCount,
+        withdrawalCount: withdrawalsSummary.withdrawalCount,
+        pendingWithdrawalCount: withdrawalsSummary.pendingWithdrawalCount,
       );
     } catch (e) {
       throw Exception(ErrorMapper.getFriendlyMessage(e));
     }
+  }
+
+  Future<double> _fetchPendingSettlementRevenue(String sellerId) async {
+    final activeOrders = await _client
+        .from('orders')
+        .select('total_price')
+        .eq('seller_id', sellerId)
+        .inFilter('status', ['paid', 'packed', 'shipped', 'delivered']);
+
+    var pending = 0.0;
+    for (final row in activeOrders) {
+      pending += _asDouble(row['total_price']);
+    }
+    return pending;
+  }
+
+  Future<double> _fetchDisputedOrderRevenue(String sellerId) async {
+    final disputedOrders = await _client
+        .from('orders')
+        .select('total_price')
+        .eq('seller_id', sellerId)
+        .eq('status', 'disputed');
+
+    var disputed = 0.0;
+    for (final row in disputedOrders) {
+      disputed += _asDouble(row['total_price']);
+    }
+    return disputed;
+  }
+
+  Future<double> _fetchCompletedOrderRevenue(String sellerId) async {
+    final completedOrders = await _client
+        .from('orders')
+        .select(
+          'total_price, status, refund_requests:order_refund_requests(status, approved_amount)',
+        )
+        .eq('seller_id', sellerId)
+        .inFilter('status', ['completed', 'partially_refunded']);
+
+    var totalRevenue = 0.0;
+    for (final row in completedOrders) {
+      final totalPrice = _asDouble(row['total_price']);
+      if (row['status'] == 'partially_refunded') {
+        final sellerShare = totalPrice - _approvedRefundAmount(row);
+        totalRevenue += sellerShare < 0 ? 0 : sellerShare;
+      } else {
+        totalRevenue += totalPrice;
+      }
+    }
+
+    return totalRevenue;
+  }
+
+  double _approvedRefundAmount(Map<String, dynamic> orderRow) {
+    final refunds = orderRow['refund_requests'];
+    if (refunds is! List) return 0;
+
+    var approved = 0.0;
+    for (final item in refunds) {
+      if (item is Map<String, dynamic> &&
+          item['status'] == 'partially_approved') {
+        approved = _asDouble(item['approved_amount']);
+      }
+    }
+    return approved;
   }
 
   @override
@@ -86,15 +131,17 @@ class SupabaseSellerWalletRepository implements SellerWalletRepository {
   }
 
   @override
-  Future<void> requestDummyWithdrawal(
+  Future<SellerWithdrawalModel> requestDummyWithdrawal(
     String sellerId,
     DummyWithdrawalInput input,
   ) async {
     try {
-      await _client.from('seller_withdrawals').insert({
-        'seller_id': sellerId,
-        ...input.toJson(),
-      });
+      final response = await _client
+          .from('seller_withdrawals')
+          .insert({'seller_id': sellerId, ...input.toJson()})
+          .select()
+          .single();
+      return SellerWithdrawalModel.fromJson(response);
     } catch (e) {
       throw Exception(ErrorMapper.getFriendlyMessage(e));
     }
@@ -108,23 +155,7 @@ class SupabaseSellerWalletRepository implements SellerWalletRepository {
         params: {'p_seller_id': sellerId},
       );
     } catch (e) {
-      // Fallback if RPC doesn't exist
-      try {
-        final existing = await _client
-            .from('seller_wallets')
-            .select('id')
-            .eq('seller_id', sellerId)
-            .maybeSingle();
-        if (existing == null) {
-          await _client.from('seller_wallets').insert({
-            'seller_id': sellerId,
-            'available_balance': 0,
-            'pending_balance': 0,
-            'total_earning': 0,
-            'updated_at': DateTime.now().toIso8601String(),
-          });
-        }
-      } catch (_) {}
+      throw Exception(ErrorMapper.getFriendlyMessage(e));
     }
   }
 
@@ -138,69 +169,56 @@ class SupabaseSellerWalletRepository implements SellerWalletRepository {
         params: {'p_seller_id': sellerId},
       );
     } catch (e) {
-      // Fallback: Compute in Dart if RPC doesn't exist
-      try {
-        // 1. Calculate total revenue from completed orders
-        final completedOrders = await _client
-            .from('orders')
-            .select('total_price')
-            .eq('seller_id', sellerId)
-            .eq('status', 'completed');
-
-        double totalRevenue = 0;
-        for (var row in completedOrders) {
-          if (row['total_price'] != null) {
-            totalRevenue += (row['total_price'] as num).toDouble();
-          }
-        }
-
-        // 2. Calculate pending and approved withdrawals
-        final withdrawals = await _client
-            .from('seller_withdrawals')
-            .select('amount, status')
-            .eq('seller_id', sellerId);
-
-        double pending = 0;
-        double withdrawn = 0;
-        for (var row in withdrawals) {
-          if (row['status'] == 'pending') {
-            pending += (row['amount'] as num).toDouble();
-          } else if (row['status'] == 'approved_dummy') {
-            withdrawn += (row['amount'] as num).toDouble();
-          }
-        }
-
-        double availableBalance = totalRevenue - pending - withdrawn;
-        if (availableBalance < 0) availableBalance = 0;
-
-        // 3. Upsert into seller_wallets
-        final existing = await _client
-            .from('seller_wallets')
-            .select('id')
-            .eq('seller_id', sellerId)
-            .maybeSingle();
-        if (existing == null) {
-          await _client.from('seller_wallets').insert({
-            'seller_id': sellerId,
-            'total_earning': totalRevenue,
-            'pending_balance': pending,
-            'available_balance': availableBalance,
-            'updated_at': DateTime.now().toIso8601String(),
-          });
-        } else {
-          await _client
-              .from('seller_wallets')
-              .update({
-                'total_earning': totalRevenue,
-                'pending_balance': pending,
-                'available_balance': availableBalance,
-                'updated_at': DateTime.now().toIso8601String(),
-              })
-              .eq('seller_id', sellerId);
-        }
-      } catch (innerE) {
-        // Ignore if error
-      }
+      throw Exception(ErrorMapper.getFriendlyMessage(e));
     }
   }
+
+  Future<_WithdrawalsSummary> _fetchWithdrawalsSummary(String sellerId) async {
+    final withdrawalsRes = await _client
+        .from('seller_withdrawals')
+        .select('amount, status')
+        .eq('seller_id', sellerId);
+
+    final withdrawals = List<Map<String, dynamic>>.from(withdrawalsRes);
+
+    double pendingBalance = 0;
+    double withdrawnBalance = 0;
+    int pendingCount = 0;
+
+    for (final withdrawal in withdrawals) {
+      final amount = _asDouble(withdrawal['amount']);
+      if (withdrawal['status'] == 'pending') {
+        pendingBalance += amount;
+        pendingCount++;
+      } else if (withdrawal['status'] == 'approved_dummy') {
+        withdrawnBalance += amount;
+      }
+    }
+
+    return _WithdrawalsSummary(
+      pendingBalance: pendingBalance,
+      withdrawnBalance: withdrawnBalance,
+      withdrawalCount: withdrawals.length,
+      pendingWithdrawalCount: pendingCount,
+    );
+  }
+
+  double _asDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+}
+
+class _WithdrawalsSummary {
+  final double pendingBalance;
+  final double withdrawnBalance;
+  final int withdrawalCount;
+  final int pendingWithdrawalCount;
+
+  const _WithdrawalsSummary({
+    required this.pendingBalance,
+    required this.withdrawnBalance,
+    required this.withdrawalCount,
+    required this.pendingWithdrawalCount,
+  });
 }

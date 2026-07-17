@@ -31,6 +31,11 @@ class ProductBottomActionBar extends StatelessWidget {
     bool isActive = product.status == 'active';
     bool isNegotiable = product.isNegotiable;
 
+    String? chatDisabledReason;
+    if (isOwner) {
+      chatDisabledReason = 'Produk milik Anda';
+    }
+
     String? offerDisabledReason;
     if (isOwner) {
       offerDisabledReason = 'Produk milik Anda';
@@ -65,86 +70,122 @@ class ProductBottomActionBar extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Chat
-          OutlinedButton(
-            onPressed: isOwner ? null : onChatPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.colors.textPrimary,
-              side: BorderSide(color: context.colors.borderStrong),
-              padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(CupertinoIcons.chat_bubble_text),
-                SizedBox(width: 6),
-                Text('Chat', style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          SizedBox(width: AppSpacing.sm),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 480;
+          final iconOnlySecondary = constraints.maxWidth < 480;
+          final primaryLabel = compact ? 'Beli' : 'Beli / Keranjang';
+          final gap = compact ? AppSpacing.xs : AppSpacing.sm;
 
-          // Tawar
-          OutlinedButton(
-            onPressed: offerDisabledReason != null
-                ? () => _showTooltip(context, offerDisabledReason!)
-                : onOfferPressed,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.colors.textPrimary,
-              side: BorderSide(color: context.colors.borderStrong),
-              padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.local_offer_outlined),
-                SizedBox(width: 6),
-                Text('Tawar', style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          SizedBox(width: AppSpacing.sm),
-
-          // Beli / Keranjang
-          Expanded(
-            child: ElevatedButton(
-              onPressed: buyDisabledReason != null
-                  ? () => _showTooltip(context, buyDisabledReason!)
-                  : () {
-                      // Show modal bottom sheet to choose "Add to Cart" or "Buy Now"
-                      _showPurchaseOptions(context);
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.colors.primary,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 14),
+          Widget secondaryButton({
+            required IconData icon,
+            required String label,
+            required String? disabledReason,
+            required VoidCallback onPressed,
+          }) {
+            final button = OutlinedButton(
+              onPressed: disabledReason != null
+                  ? () => _showTooltip(context, disabledReason)
+                  : onPressed,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: disabledReason != null
+                    ? context.colors.textMuted
+                    : context.colors.textPrimary,
+                side: BorderSide(
+                  color: disabledReason != null
+                      ? context.colors.border
+                      : context.colors.borderStrong,
+                ),
+                padding: EdgeInsets.symmetric(
+                  vertical: compact ? 12 : 14,
+                  horizontal: iconOnlySecondary ? 12 : 14,
+                ),
+                minimumSize: Size.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 0,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.add_shopping_cart_rounded),
-                  SizedBox(width: 8),
-                  Text(
-                    'Beli / Keranjang',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  Icon(icon, size: compact ? 20 : 24),
+                  if (!iconOnlySecondary) ...[
+                    SizedBox(width: 6),
+                    Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
                 ],
               ),
-            ),
-          ),
-        ],
+            );
+
+            return Tooltip(
+              message: label,
+              child: SizedBox(
+                width: iconOnlySecondary ? 50 : null,
+                child: button,
+              ),
+            );
+          }
+
+          return Row(
+            children: [
+              secondaryButton(
+                icon: CupertinoIcons.chat_bubble_text,
+                label: 'Chat',
+                disabledReason: chatDisabledReason,
+                onPressed: onChatPressed,
+              ),
+              SizedBox(width: gap),
+              secondaryButton(
+                icon: Icons.local_offer_outlined,
+                label: 'Tawar',
+                disabledReason: offerDisabledReason,
+                onPressed: onOfferPressed,
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: buyDisabledReason != null
+                      ? () => _showTooltip(context, buyDisabledReason!)
+                      : () {
+                          _showPurchaseOptions(context);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: buyDisabledReason != null
+                        ? context.colors.surfaceHighlight
+                        : context.colors.primary,
+                    foregroundColor: buyDisabledReason != null
+                        ? context.colors.textMuted
+                        : Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      vertical: compact ? 12 : 14,
+                      horizontal: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_shopping_cart_rounded),
+                        SizedBox(width: 8),
+                        Text(
+                          primaryLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

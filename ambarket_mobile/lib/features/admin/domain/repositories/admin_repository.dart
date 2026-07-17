@@ -3,6 +3,8 @@ import 'package:ambarket_mobile/features/admin/domain/models/admin_audit_log_mod
 import 'package:ambarket_mobile/features/marketplace/domain/models/product_model.dart';
 import 'package:ambarket_mobile/features/profile/domain/models/profile_model.dart';
 import 'package:ambarket_mobile/features/review/domain/models/review_model.dart';
+import 'package:ambarket_mobile/features/wallet/domain/models/seller_withdrawal_model.dart';
+import 'package:ambarket_mobile/features/order/domain/models/refund_request_model.dart';
 
 abstract class AdminRepository {
   Future<Map<String, dynamic>> fetchAdminDashboardStats();
@@ -32,6 +34,14 @@ abstract class AdminRepository {
     int limit = 20,
     int offset = 0,
   });
+  Future<List<SellerWithdrawalModel>> fetchAllWithdrawalsForAdmin({
+    int limit = 20,
+    int offset = 0,
+  });
+  Future<List<RefundRequestModel>> fetchRefundRequestsForAdmin({
+    int limit = 30,
+    int offset = 0,
+  });
 
   // Moderation Actions
   Future<void> hideProduct(String productId, String note);
@@ -43,6 +53,13 @@ abstract class AdminRepository {
 
   Future<void> hideReview(String reviewId, String note);
   Future<void> restoreReview(String reviewId);
+  Future<void> updateWithdrawalStatus(String withdrawalId, String status);
+  Future<RefundRequestModel> resolveRefundRequest({
+    required String refundId,
+    required String decision,
+    double approvedAmount = 0,
+    String? adminNote,
+  });
 
   // Audit Logs
   Future<List<AdminAuditLogModel>> fetchAuditLogs({

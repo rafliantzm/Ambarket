@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/premium_dropdown_field.dart';
 import '../../../../core/widgets/app_error_state.dart';
 import 'package:ambarket_mobile/core/widgets/ambarket_loaders.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
@@ -77,7 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ref.invalidate(homeNearbyProductsProvider);
           },
           child: CustomScrollView(
-            cacheExtent: 900,
+            cacheExtent: 420,
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             slivers: [
               SliverToBoxAdapter(
@@ -181,50 +182,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             final selectedCondition = ref.watch(
                               selectedConditionProvider,
                             );
-                            return DropdownButton<String>(
-                              value: selectedCondition,
-                              hint: Text(
-                                'Semua Kondisi',
-                                style: TextStyle(
-                                  color: context.colors.textSecondary,
-                                ),
+                            return SizedBox(
+                              width: 200,
+                              child: PremiumDropdownField<String?>(
+                                value: selectedCondition,
+                                hintText: 'Semua Kondisi',
+                                items: [
+                                  DropdownItem(
+                                    value: null,
+                                    label: 'Semua Kondisi',
+                                  ),
+                                  DropdownItem(value: 'new', label: 'Baru'),
+                                  DropdownItem(
+                                    value: 'like_new',
+                                    label: 'Seperti Baru',
+                                  ),
+                                  DropdownItem(value: 'good', label: 'Baik'),
+                                  DropdownItem(value: 'fair', label: 'Cukup'),
+                                ],
+                                onChanged: (val) {
+                                  ref
+                                      .read(selectedConditionProvider.notifier)
+                                      .updateCondition(val);
+                                },
                               ),
-                              dropdownColor: context.colors.backgroundDarker,
-                              underline: SizedBox(),
-                              style: TextStyle(
-                                color: context.colors.textPrimary,
-                              ),
-                              icon: Icon(
-                                Icons.arrow_drop_down,
-                                color: context.colors.textMuted,
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: null,
-                                  child: Text('Semua Kondisi'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'new',
-                                  child: Text('Baru'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'like_new',
-                                  child: Text('Seperti Baru'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'good',
-                                  child: Text('Baik'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'fair',
-                                  child: Text('Cukup'),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                ref
-                                    .read(selectedConditionProvider.notifier)
-                                    .updateCondition(val);
-                              },
                             );
                           },
                         ),
@@ -299,17 +280,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: crossAxisCount,
-                                  childAspectRatio: 0.58,
+                                  childAspectRatio: 0.5,
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 16,
                                 ),
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
+                                if (index >= products.products.length) {
+                                  return const AmbarketLoadMoreIndicator();
+                                }
                                 return ProductCard(
                                   product: products.products[index],
                                 );
                               },
-                              childCount: products.products.length,
+                              childCount:
+                                  products.products.length +
+                                  (products.isFetchingMore ? 1 : 0),
                               addAutomaticKeepAlives: false,
                               addRepaintBoundaries: true,
                             ),

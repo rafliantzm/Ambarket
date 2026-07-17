@@ -15,11 +15,11 @@ class ProductImageModel {
 
   factory ProductImageModel.fromJson(Map<String, dynamic> json) {
     return ProductImageModel(
-      id: json['id'] as String,
-      productId: json['product_id'] as String,
-      imageUrl: json['image_url'] as String,
+      id: _stringValue(json['id'], fallback: 'unknown-image'),
+      productId: _stringValue(json['product_id']),
+      imageUrl: _stringValue(json['image_url']),
       isPrimary: json['is_primary'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: _dateValue(json['created_at']),
     );
   }
 
@@ -32,4 +32,21 @@ class ProductImageModel {
       'created_at': createdAt.toIso8601String(),
     };
   }
+}
+
+String _stringValue(dynamic value, {String fallback = ''}) {
+  if (value is String && value.trim().isNotEmpty) {
+    return value;
+  }
+  return fallback;
+}
+
+DateTime _dateValue(dynamic value) {
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+  }
+  return DateTime.fromMillisecondsSinceEpoch(0);
 }
