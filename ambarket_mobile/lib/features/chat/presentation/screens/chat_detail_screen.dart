@@ -818,6 +818,21 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPending = message.id.startsWith('local-');
+    final attachment = message.attachment;
+    final isMediaMessage =
+        attachment != null &&
+        ((attachment.isImage && attachment.url.isNotEmpty) ||
+            attachment.isVideo);
+    final bubbleRadius = BorderRadius.circular(18).copyWith(
+      topRight: isMe && !showAvatarAndName
+          ? const Radius.circular(6)
+          : const Radius.circular(18),
+      bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(18),
+      topLeft: !isMe && !showAvatarAndName
+          ? const Radius.circular(6)
+          : const Radius.circular(18),
+      bottomLeft: !isMe ? const Radius.circular(4) : const Radius.circular(18),
+    );
 
     return RepaintBoundary(
       child: Padding(
@@ -874,34 +889,29 @@ class _MessageBubble extends StatelessWidget {
                 if (!isMe) const SizedBox(width: 48),
                 Flexible(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                    padding: message.hasAttachment
+                        ? EdgeInsets.all(isMediaMessage ? 3 : AppSpacing.sm)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 13,
+                            vertical: 8,
+                          ),
                     decoration: BoxDecoration(
                       color: isMe
                           ? context.colors.primary
                           : context.colors.surface,
-                      borderRadius: BorderRadius.circular(16).copyWith(
-                        topRight: isMe && !showAvatarAndName
-                            ? const Radius.circular(4)
-                            : const Radius.circular(16),
-                        bottomRight: isMe
-                            ? const Radius.circular(0)
-                            : const Radius.circular(16),
-                        topLeft: !isMe && !showAvatarAndName
-                            ? const Radius.circular(4)
-                            : const Radius.circular(16),
-                        bottomLeft: !isMe
-                            ? const Radius.circular(0)
-                            : const Radius.circular(16),
-                      ),
-                      border: isMe
+                      borderRadius: bubbleRadius,
+                      border: isMe || isMediaMessage
                           ? null
-                          : Border.all(color: context.colors.border),
+                          : Border.all(
+                              color: context.colors.border.withValues(
+                                alpha: 0.72,
+                              ),
+                            ),
                     ),
                     constraints: BoxConstraints(
-                      maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+                      maxWidth:
+                          MediaQuery.sizeOf(context).width *
+                          (message.hasAttachment ? 0.78 : 0.76),
                     ),
                     child: message.hasAttachment
                         ? _AttachmentMessageContent(
@@ -967,8 +977,28 @@ class _AttachmentMessageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xs),
+    final colors = context.colors;
+    final visualWidth = (MediaQuery.sizeOf(context).width * 0.68)
+        .clamp(188.0, 310.0)
+        .toDouble();
+    final overlayMeta = DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        child: _MessageMeta(
+          time: time,
+          isMe: isMe,
+          isPending: isPending,
+          isRead: isRead,
+          forceLight: true,
+        ),
+      ),
+    );
+    final regularMeta = Padding(
+      padding: const EdgeInsets.only(top: 5),
       child: Align(
         alignment: Alignment.centerRight,
         child: _MessageMeta(
@@ -981,26 +1011,160 @@ class _AttachmentMessageContent extends StatelessWidget {
     );
 
     if (attachment.isImage && attachment.url.isNotEmpty) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: CachedNetworkImage(
-              imageUrl: attachment.url,
-              width: 220,
-              height: 170,
-              fit: BoxFit.cover,
-            ),
+      return InkWell(
+        onTap: () => _openAttachment(context, attachment),
+        borderRadius: BorderRadius.circular(15),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Stack(
+            children: [
+              Container(
+                width: visualWidth,
+                constraints: const BoxConstraints(
+                  minHeight: 96,
+                  maxHeight: 340,
+                ),
+                color: isMe
+                    ? Colors.black.withValues(alpha: 0.08)
+                    : colors.surfaceHighlight,
+                alignment: Alignment.center,
+                child: CachedNetworkImage(
+                  imageUrl: attachment.url,
+                  imageBuilder: (context, imageProvider) {
+                    return Image(
+                      image: imageProvider,
+                      width: visualWidth,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.medium,
+                    );
+                  },
+                  placeholder: (context, url) => SizedBox(
+                    height: 150,
+                    child: Center(
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => SizedBox(
+                    height: 150,
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(right: 7, bottom: 7, child: overlayMeta),
+            ],
           ),
-          meta,
-        ],
+        ),
       );
     }
 
-    final icon = attachment.isVideo
-        ? Icons.play_circle_outline_rounded
-        : attachment.isDocument
+    if (attachment.isVideo) {
+      return InkWell(
+        onTap: attachment.url.isEmpty
+            ? null
+            : () => _openAttachment(context, attachment),
+        borderRadius: BorderRadius.circular(15),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Stack(
+            children: [
+              Container(
+                width: visualWidth,
+                height: (visualWidth * 0.62).clamp(126.0, 190.0).toDouble(),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF17212B),
+                      colors.primary.withValues(alpha: 0.82),
+                    ],
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.32),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 38,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: Text(
+                        attachment.fileName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (attachment.formattedSize.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        attachment.formattedSize,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.76),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Positioned(left: 8, top: 8, child: _MediaTypeBadge(label: 'MP4')),
+              Positioned(right: 7, bottom: 7, child: overlayMeta),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (attachment.isImage && attachment.url.isEmpty) {
+      return SizedBox(
+        width: visualWidth,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 112,
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: isMe ? Colors.white : colors.primary,
+                ),
+              ),
+            ),
+            regularMeta,
+          ],
+        ),
+      );
+    }
+
+    final icon = attachment.isDocument
         ? Icons.description_outlined
         : Icons.attach_file_rounded;
 
@@ -1016,21 +1180,21 @@ class _AttachmentMessageContent extends StatelessWidget {
       onTap: attachment.url.isEmpty
           ? null
           : () => _openAttachment(context, attachment),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 210, maxWidth: 240),
+        constraints: BoxConstraints(minWidth: 210, maxWidth: visualWidth),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: (isMe ? Colors.white : context.colors.primary)
                         .withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
@@ -1070,7 +1234,7 @@ class _AttachmentMessageContent extends StatelessWidget {
                 ),
               ],
             ),
-            meta,
+            regularMeta,
           ],
         ),
       ),
@@ -1083,28 +1247,27 @@ class _MessageMeta extends StatelessWidget {
   final bool isMe;
   final bool isPending;
   final bool isRead;
+  final bool forceLight;
 
   const _MessageMeta({
     required this.time,
     required this.isMe,
     required this.isPending,
     required this.isRead,
+    this.forceLight = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final textColor = forceLight
+        ? Colors.white.withValues(alpha: 0.84)
+        : isMe
+        ? Colors.white.withValues(alpha: 0.7)
+        : context.colors.textMuted;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          time,
-          style: TextStyle(
-            fontSize: 10,
-            color: isMe
-                ? Colors.white.withValues(alpha: 0.7)
-                : context.colors.textMuted,
-          ),
-        ),
+        Text(time, style: TextStyle(fontSize: 10, color: textColor)),
         if (isMe) ...[
           const SizedBox(width: 4),
           Icon(
@@ -1118,6 +1281,34 @@ class _MessageMeta extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _MediaTypeBadge extends StatelessWidget {
+  final String label;
+
+  const _MediaTypeBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
     );
   }
 }
