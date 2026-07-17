@@ -317,20 +317,6 @@ class OrderActionController extends Notifier<OrderActionState> {
             evidenceUrls: evidenceUrls,
           );
 
-      try {
-        await ref
-            .read(notificationRepositoryProvider)
-            .createDummyNotification(
-              userId: order.sellerId,
-              type: 'refund_requested',
-              title: 'Pengajuan Refund Baru',
-              body:
-                  'Buyer mengajukan refund untuk pesanan ${order.invoiceNumber ?? _shortOrderCode(order.id)}.',
-              relatedType: 'order',
-              relatedId: order.id,
-            );
-      } catch (_) {}
-
       ref.invalidate(buyerOrdersProvider);
       ref.invalidate(sellerOrdersProvider);
       ref.invalidate(sellerWalletSummaryProvider);
@@ -347,8 +333,3 @@ final orderActionControllerProvider =
     NotifierProvider<OrderActionController, OrderActionState>(() {
       return OrderActionController();
     });
-
-String _shortOrderCode(String id) {
-  final length = id.length < 8 ? id.length : 8;
-  return id.substring(0, length).toUpperCase();
-}

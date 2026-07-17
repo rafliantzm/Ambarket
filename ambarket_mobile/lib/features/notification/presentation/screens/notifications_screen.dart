@@ -223,7 +223,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     return notifications.where((n) {
       if (_selectedFilter == 'Pesanan') {
         return n.relatedType == 'order' ||
+            n.relatedType == 'refund' ||
             n.type.startsWith('order_') ||
+            n.type.startsWith('refund_') ||
             n.type == 'payment_paid';
       }
       if (_selectedFilter == 'Tawaran') {
@@ -241,7 +243,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   void _handleNavigation(BuildContext context, NotificationModel notif) {
-    if (notif.relatedType == 'order') {
+    if (notif.relatedType == 'refund') {
+      final profile = ref.read(currentProfileProvider).value;
+      if (profile?.role == 'admin') {
+        context.push('/admin/refunds');
+      } else if (notif.relatedId != null) {
+        context.push('/orders/${notif.relatedId}/tracking');
+      } else {
+        context.push('/buyer-orders');
+      }
+    } else if (notif.relatedType == 'order') {
       if (notif.type == 'order_received' ||
           notif.type == 'payment_paid' ||
           (notif.type == 'order_created' && notif.title == 'Pesanan Baru')) {
@@ -375,6 +386,7 @@ class _NotificationCard extends StatelessWidget {
   }
 
   IconData _getIconData(String type) {
+    if (type.startsWith('refund_')) return Icons.gavel_outlined;
     if (type.startsWith('order_')) return Icons.local_shipping;
     if (type == 'payment_paid') return Icons.account_balance_wallet;
     if (type.startsWith('offer_')) return Icons.local_offer;
@@ -384,6 +396,7 @@ class _NotificationCard extends StatelessWidget {
   }
 
   Color _getIconColor(BuildContext context, String type) {
+    if (type.startsWith('refund_')) return Colors.redAccent;
     if (type.startsWith('order_')) return Colors.orange;
     if (type == 'payment_paid') return Colors.green;
     if (type.startsWith('offer_')) return Colors.blue;

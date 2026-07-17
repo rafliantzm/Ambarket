@@ -398,20 +398,6 @@ class SupabaseAdminRepository implements AdminRepository {
       'approved_amount': refund.approvedAmount,
     });
 
-    try {
-      await _client.rpc(
-        'create_dummy_notification',
-        params: {
-          'p_user_id': refund.buyerId,
-          'p_type': 'refund_$decision',
-          'p_title': 'Keputusan Refund',
-          'p_body': 'Admin sudah memutuskan pengajuan refund Anda.',
-          'p_related_type': 'order',
-          'p_related_id': refund.orderId,
-        },
-      );
-    } catch (_) {}
-
     return refund;
   }
 
